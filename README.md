@@ -1,6 +1,6 @@
 # RealEstate OS Showcase
 
-Eine sharebare Bewerbungscodebasis fuer die dotega Senior-Engineer-Rolle.
+Eine sharebare Bewerbungscodebasis für die dotega Senior-Engineer-Rolle.
 
 ## Live
 
@@ -28,7 +28,7 @@ cd ../frontend && npm run start
 Frontend: `http://localhost:4200`  
 API: `http://localhost:8098/actuator/health`
 
-Der Apache-VHost fuer den gebauten Stand nutzt `https://realestate.localhost`
+Der Apache-VHost für den gebauten Stand nutzt `https://realestate.localhost`
 und proxyt `/api` auf das Backend.
 
 ## CI
@@ -43,15 +43,15 @@ Bewerbungs-PDF unter `output/pdf/sascha-dobrochynskyy-dotega-bewerbung.pdf`.
 
 ## Registrierung testen
 
-Lokal ist Mail standardmaessig deaktiviert. Die API gibt deshalb einen lokalen
-Set-Password-Link zurueck. Auf Stage werden SMTP-Secrets nur als Env-Datei auf
+Lokal ist Mail standardmäßig deaktiviert. Die API gibt deshalb einen lokalen
+Set-Password-Link zurück. Auf Stage werden SMTP-Secrets nur als Env-Datei auf
 dem Server gesetzt.
 
 Stage-Flow:
 
-1. https://realestate.stage.dev oeffnen.
+1. https://realestate.stage.dev öffnen.
 2. Name, E-Mail und Organisation eintragen.
-3. Aktivierungslink aus der E-Mail oeffnen.
+3. Aktivierungslink aus der E-Mail öffnen.
 4. Passwort vergeben und das Dashboard testen.
 
 Lokaler Browser-Smoke:
