@@ -1,11 +1,16 @@
 package com.skyyware.realestate.mail;
 
 import com.skyyware.realestate.config.RealEstateProperties;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,11 +31,17 @@ public class TransactionalMailService {
             return new MailDelivery(false, setupLink);
         }
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(properties.mail().from());
-        message.setTo(email);
-        message.setSubject("RealEstate OS Zugang aktivieren");
-        message.setText("""
+        MimeMessage message = mailSender.createMimeMessage();
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, StandardCharsets.UTF_8.name());
+            helper.setFrom(new InternetAddress(
+                    properties.mail().from(),
+                    properties.mail().fromName(),
+                    StandardCharsets.UTF_8.name()
+            ));
+            helper.setTo(email);
+            helper.setSubject("RealEstate OS Zugang aktivieren");
+            helper.setText("""
                 Hallo %s,
 
                 willkommen bei RealEstate OS. Bitte vergib dein Passwort über diesen Link:
@@ -42,6 +53,9 @@ public class TransactionalMailService {
                 Viele Grüße
                 Sascha Dobrochynskyy
                 """.formatted(name, setupLink));
+        } catch (MessagingException | UnsupportedEncodingException exception) {
+            throw new IllegalStateException("Password setup mail could not be composed.", exception);
+        }
         try {
             mailSender.send(message);
         } catch (MailException exception) {

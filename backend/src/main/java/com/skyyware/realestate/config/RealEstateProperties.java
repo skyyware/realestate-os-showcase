@@ -12,6 +12,6 @@ public record RealEstateProperties(
     public record Security(String jwtSecret) {
     }
 
-    public record Mail(String from, boolean enabled) {
+    public record Mail(String from, String fromName, boolean enabled) {
     }
 }
