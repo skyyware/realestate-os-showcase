@@ -1,12 +1,12 @@
 # RealEstate OS Showcase
 
-Eine sharebare Bewerbungscodebasis für die dotega Senior-Engineer-Rolle.
+Eine sharebare Product-Engineering-Codebasis für moderne digitale
+WEG-Verwaltung.
 
 ## Live
 
 - Stage: https://realestate.stage.dev
 - GitHub: https://github.com/skyyware/realestate-os-showcase
-- Bewerbungs-PDF: https://realestate.stage.dev/docs/sascha-dobrochynskyy-dotega-bewerbung.pdf
 - Lokal: https://realestate.localhost
 
 ## Stack
@@ -38,8 +38,7 @@ npm install
 npm run ci
 ```
 
-Der CI-Befehl testet das Backend, baut das Angular-Frontend und erzeugt das
-Bewerbungs-PDF unter `output/pdf/sascha-dobrochynskyy-dotega-bewerbung.pdf`.
+Der CI-Befehl testet das Backend und baut das Angular-Frontend.
 
 ## Registrierung testen
 

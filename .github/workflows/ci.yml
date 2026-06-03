@@ -33,14 +33,5 @@ jobs:
         run: npm ci
         working-directory: frontend
 
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
-
       - name: Build and verify
         run: npm run ci
-
-      - name: Upload application PDF
-        uses: actions/upload-artifact@v7
-        with:
-          name: sascha-dobrochynskyy-dotega-bewerbung
-          path: output/pdf/sascha-dobrochynskyy-dotega-bewerbung.pdf
