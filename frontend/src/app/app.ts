@@ -1,7 +1,7 @@
 import { CommonModule, CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { API_BASE_URL } from './core/api';
 
 @Component({
@@ -10,9 +10,10 @@ import { API_BASE_URL } from './core/api';
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })
-export class App implements OnInit {
+export class App implements OnInit, OnDestroy {
   private readonly http = inject(HttpClient);
   private readonly fb = inject(FormBuilder);
+  private readonly sessionExpiredHandler = () => this.handleSessionExpired();
 
   protected readonly mode = signal<'register' | 'login' | 'password' | 'dashboard'>('register');
   protected readonly activeSection = signal<Section>('overview');
@@ -23,8 +24,14 @@ export class App implements OnInit {
   protected readonly registrationPreview = signal<RegistrationPreview | null>(null);
   protected readonly setupToken = signal('');
   protected readonly searchTerm = signal('');
+  protected readonly selectedPropertyId = signal<string | null>(null);
 
-  protected readonly selectedProperty = computed(() => this.dashboard()?.properties.find(item => item.id === this.dashboard()?.selectedPropertyId) ?? this.dashboard()?.properties[0]);
+  protected readonly selectedProperty = computed(() => {
+    const dashboard = this.dashboard();
+    if (!dashboard) return undefined;
+    const propertyId = this.selectedPropertyId() ?? dashboard.selectedPropertyId;
+    return dashboard.properties.find(item => item.id === propertyId) ?? dashboard.properties[0];
+  });
   protected readonly hasWorkspace = computed(() => (this.dashboard()?.properties.length ?? 0) > 0);
   protected readonly filteredProperties = computed(() => {
     const term = this.searchTerm().trim().toLowerCase();
@@ -71,14 +78,14 @@ export class App implements OnInit {
     title: ['', [Validators.required, Validators.maxLength(180)]],
     description: ['', [Validators.required, Validators.maxLength(1000)]],
     priority: ['MEDIUM' as TaskPriority, [Validators.required]],
-    dueDate: ['', [Validators.required]]
+    dueDate: ['', [Validators.required, germanDateValidator]]
   });
 
   protected readonly financeForm = this.fb.nonNullable.group({
     label: ['', [Validators.required, Validators.maxLength(180)]],
     amount: [0, [Validators.required]],
     category: ['Hausgeld', [Validators.required, Validators.maxLength(80)]],
-    bookedOn: [this.today(), [Validators.required]],
+    bookedOn: [this.today(), [Validators.required, germanDateValidator]],
     status: ['BOOKED', [Validators.required, Validators.maxLength(32)]]
   });
 
@@ -86,10 +93,11 @@ export class App implements OnInit {
     title: ['', [Validators.required, Validators.maxLength(180)]],
     documentType: ['PDF', [Validators.required, Validators.maxLength(80)]],
     fileName: ['', [Validators.required, Validators.maxLength(240)]],
-    documentDate: [this.today(), [Validators.required]]
+    documentDate: [this.today(), [Validators.required, germanDateValidator]]
   });
 
   ngOnInit(): void {
+    window.addEventListener('realestate:session-expired', this.sessionExpiredHandler);
     const params = new URLSearchParams(location.search);
     const token = params.get('token');
     if (location.pathname.includes('set-password') && token) {
@@ -102,6 +110,10 @@ export class App implements OnInit {
       this.mode.set('dashboard');
       this.loadDashboard();
     }
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('realestate:session-expired', this.sessionExpiredHandler);
   }
 
   protected register(): void {
@@ -168,27 +180,39 @@ export class App implements OnInit {
 
   protected createUnit(): void {
     if (this.unitForm.invalid) return;
-    this.submitDashboardRequest('units', { ...this.unitForm.getRawValue(), propertyId: this.selectedProperty()?.id }, 'Einheit wurde angelegt.');
+    const propertyId = this.requireSelectedPropertyId();
+    if (!propertyId) return;
+    this.submitDashboardRequest('units', { ...this.unitForm.getRawValue(), propertyId }, 'Einheit wurde angelegt.');
   }
 
   protected addTask(): void {
     if (this.taskForm.invalid) return;
-    this.submitDashboardRequest('tasks', { ...this.taskForm.getRawValue(), propertyId: this.selectedProperty()?.id }, 'Aufgabe wurde erstellt und protokolliert.');
+    const propertyId = this.requireSelectedPropertyId();
+    if (!propertyId) return;
+    const formValue = this.taskForm.getRawValue();
+    this.submitDashboardRequest('tasks', { ...formValue, dueDate: this.toIsoDate(formValue.dueDate), propertyId }, 'Aufgabe wurde erstellt und protokolliert.');
   }
 
   protected createFinance(): void {
     if (this.financeForm.invalid) return;
-    this.submitDashboardRequest('finances', { ...this.financeForm.getRawValue(), propertyId: this.selectedProperty()?.id }, 'Finanzereignis wurde erfasst.');
+    const propertyId = this.requireSelectedPropertyId();
+    if (!propertyId) return;
+    const formValue = this.financeForm.getRawValue();
+    this.submitDashboardRequest('finances', { ...formValue, bookedOn: this.toIsoDate(formValue.bookedOn), propertyId }, 'Finanzereignis wurde erfasst.');
   }
 
   protected createDocument(): void {
     if (this.documentForm.invalid) return;
-    this.submitDashboardRequest('documents', { ...this.documentForm.getRawValue(), propertyId: this.selectedProperty()?.id }, 'Dokument wurde abgelegt.');
+    const propertyId = this.requireSelectedPropertyId();
+    if (!propertyId) return;
+    const formValue = this.documentForm.getRawValue();
+    this.submitDashboardRequest('documents', { ...formValue, documentDate: this.toIsoDate(formValue.documentDate), propertyId }, 'Dokument wurde abgelegt.');
   }
 
   protected logout(): void {
     localStorage.removeItem('realestate.token');
     this.dashboard.set(null);
+    this.selectedPropertyId.set(null);
     this.mode.set('login');
     history.replaceState({}, '', '/');
   }
@@ -207,6 +231,16 @@ export class App implements OnInit {
 
   protected updateSearch(value: Event): void {
     this.searchTerm.set((value.target as HTMLInputElement).value);
+  }
+
+  protected selectProperty(event: Event): void {
+    this.selectPropertyId((event.target as HTMLSelectElement).value);
+  }
+
+  protected selectPropertyId(propertyId: string): void {
+    if (!propertyId || propertyId === this.selectedProperty()?.id) return;
+    this.selectedPropertyId.set(propertyId);
+    this.loadDashboard(propertyId);
   }
 
   protected priorityLabel(priority: string): string {
@@ -235,7 +269,7 @@ export class App implements OnInit {
       .subscribe({
         next: dashboard => {
           this.loading.set(false);
-          this.dashboard.set(dashboard);
+          this.applyDashboard(dashboard);
           this.info.set(success);
           if (path === 'properties') this.propertyForm.reset({ name: '', address: '', city: '', unitCount: 1, cashBalance: 0, reserveBalance: 0 });
           if (path === 'units') this.unitForm.reset({ ownerName: '', unitLabel: '', shareValue: 0 });
@@ -255,10 +289,13 @@ export class App implements OnInit {
       });
   }
 
-  private loadDashboard(): void {
+  private loadDashboard(propertyId = this.selectedPropertyId() ?? undefined): void {
     this.begin();
-    this.http.get<Dashboard>(`${API_BASE_URL}/workspace/dashboard`)
-      .subscribe({ next: dashboard => { this.loading.set(false); this.dashboard.set(dashboard); }, error: error => this.fail(error) });
+    const url = propertyId
+      ? `${API_BASE_URL}/workspace/dashboard?propertyId=${encodeURIComponent(propertyId)}`
+      : `${API_BASE_URL}/workspace/dashboard`;
+    this.http.get<Dashboard>(url)
+      .subscribe({ next: dashboard => { this.loading.set(false); this.applyDashboard(dashboard); }, error: error => this.fail(error) });
   }
 
   private acceptSession(session: AuthSession): void {
@@ -277,9 +314,36 @@ export class App implements OnInit {
     this.info.set('');
   }
 
-  private fail(error: { error?: { message?: string } }): void {
+  private fail(error: { status?: number; error?: { message?: string } }): void {
+    if (error.status === 401 && this.mode() === 'dashboard') {
+      this.handleSessionExpired();
+      return;
+    }
     this.loading.set(false);
     this.error.set(error.error?.message ?? 'Der Vorgang konnte nicht abgeschlossen werden.');
+  }
+
+  private applyDashboard(dashboard: Dashboard): void {
+    this.dashboard.set(dashboard);
+    this.selectedPropertyId.set(dashboard.selectedPropertyId ?? dashboard.properties[0]?.id ?? null);
+  }
+
+  private requireSelectedPropertyId(): string | null {
+    const propertyId = this.selectedProperty()?.id;
+    if (propertyId) return propertyId;
+    this.error.set('Bitte zuerst eine Immobilie hinzufügen.');
+    this.activeSection.set('properties');
+    return null;
+  }
+
+  private handleSessionExpired(): void {
+    this.loading.set(false);
+    this.dashboard.set(null);
+    this.selectedPropertyId.set(null);
+    this.mode.set('login');
+    this.error.set('Ihre Sitzung ist abgelaufen. Bitte erneut einloggen.');
+    this.info.set('');
+    history.replaceState({}, '', '/');
   }
 
   private normalizeEmail(email: string): string {
@@ -299,8 +363,31 @@ export class App implements OnInit {
   }
 
   private today(): string {
-    return new Date().toISOString().slice(0, 10);
+    const date = new Date();
+    return `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}.${date.getFullYear()}`;
   }
+
+  private toIsoDate(value: string): string {
+    const match = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(value);
+    if (!match) return value;
+    const [, day, month, year] = match;
+    return `${year}-${month}-${day}`;
+  }
+}
+
+function germanDateValidator(control: AbstractControl): ValidationErrors | null {
+  const value = String(control.value ?? '');
+  if (!value) return null;
+  const match = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(value);
+  if (!match) return { germanDate: true };
+  const [, dayValue, monthValue, yearValue] = match;
+  const day = Number(dayValue);
+  const month = Number(monthValue);
+  const year = Number(yearValue);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+    ? null
+    : { germanDate: true };
 }
 
 type Section = 'overview' | 'properties' | 'units' | 'finances' | 'tasks' | 'documents' | 'activity';

@@ -83,13 +83,34 @@
         <strong>RealEstate OS</strong>
       </div>
       <nav>
-        <button type="button" [class.active]="activeSection() === 'overview'" (click)="selectSection('overview')"><span>⌂</span> Übersicht</button>
-        <button type="button" [class.active]="activeSection() === 'properties'" (click)="selectSection('properties')"><span>▦</span> Immobilien</button>
-        <button type="button" [class.active]="activeSection() === 'units'" (click)="selectSection('units')"><span>□</span> Einheiten</button>
-        <button type="button" [class.active]="activeSection() === 'finances'" (click)="selectSection('finances')"><span>€</span> Finanzen</button>
-        <button type="button" [class.active]="activeSection() === 'tasks'" (click)="selectSection('tasks')"><span>✓</span> Aufgaben</button>
-        <button type="button" [class.active]="activeSection() === 'documents'" (click)="selectSection('documents')"><span>◇</span> Dokumente</button>
-        <button type="button" [class.active]="activeSection() === 'activity'" (click)="selectSection('activity')"><span>●</span> Aktivität</button>
+        <button type="button" [class.active]="activeSection() === 'overview'" (click)="selectSection('overview')">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10.5V20h5v-5h4v5h5v-9.5"/></svg></span>
+          Übersicht
+        </button>
+        <button type="button" [class.active]="activeSection() === 'properties'" (click)="selectSection('properties')">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V7.5A2.5 2.5 0 0 1 6.5 5h8A2.5 2.5 0 0 1 17 7.5V20"/><path d="M17 10h1.5A1.5 1.5 0 0 1 20 11.5V20"/><path d="M8 9h5M8 13h5M8 17h5"/></svg></span>
+          Immobilien
+        </button>
+        <button type="button" [class.active]="activeSection() === 'units'" (click)="selectSection('units')">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="M9 5v14M15 5v14M5 12h14"/></svg></span>
+          Einheiten
+        </button>
+        <button type="button" [class.active]="activeSection() === 'finances'" (click)="selectSection('finances')">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><path d="M15 8.5a4 4 0 1 0 0 7M8 11h6M8 14h6"/></svg></span>
+          Finanzen
+        </button>
+        <button type="button" [class.active]="activeSection() === 'tasks'" (click)="selectSection('tasks')">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="m8.5 12.5 2.2 2.2 4.8-5.2"/></svg></span>
+          Aufgaben
+        </button>
+        <button type="button" [class.active]="activeSection() === 'documents'" (click)="selectSection('documents')">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h4M10 12h5M10 16h5"/></svg></span>
+          Dokumente
+        </button>
+        <button type="button" [class.active]="activeSection() === 'activity'" (click)="selectSection('activity')">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h4M5 12h9M5 17h6"/><path d="M17 8.5v5l3 2"/></svg></span>
+          Aktivität
+        </button>
       </nav>
       <div class="sidebar-footer">
         <small>Verwaltung</small>
@@ -99,16 +120,27 @@
 
     <section class="workspace">
       <header class="topbar">
-        <div class="workspace-picker">
+        <label class="workspace-picker">
           <span>Workspace</span>
-          <strong>{{ selectedProperty()?.name || 'Erste Immobilie hinzufügen' }}</strong>
-        </div>
+          @if (dashboard()?.properties?.length) {
+            <select aria-label="Workspace auswählen" [value]="selectedProperty()?.id || ''" (change)="selectProperty($event)">
+              @for (property of dashboard()?.properties; track property.id) {
+                <option [value]="property.id">{{ property.name }} · {{ property.city }}</option>
+              }
+            </select>
+          } @else {
+            <strong>Erste Immobilie hinzufügen</strong>
+          }
+        </label>
         <label class="search">
           <span>Suche</span>
           <input type="search" placeholder="Immobilie, Stadt oder Adresse" (input)="updateSearch($event)" />
         </label>
         <div class="top-actions">
-          <button class="icon-button" type="button" aria-label="Benachrichtigungen">{{ dashboard()?.activity?.length || 0 }}</button>
+          <button class="icon-button notification-button" type="button" aria-label="Benachrichtigungen">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-2 7-2 9h16c0-2-2-2-2-9"/><path d="M10 21h4"/></svg>
+            <span>{{ dashboard()?.activity?.length || 0 }}</span>
+          </button>
           <div class="user-pill">
             <span>{{ dashboard()?.user?.fullName?.slice(0, 1) || 'U' }}</span>
             <div>
@@ -181,13 +213,13 @@
               <div class="table">
                 <div class="table-head"><span>Immobilie</span><span>Einheiten</span><span>WEG-Kontostand</span><span>Rücklagenstand</span><span>Status</span></div>
                 @for (property of filteredProperties(); track property.id) {
-                  <div class="table-row">
+                  <button class="table-row property-row" type="button" [class.selected]="selectedProperty()?.id === property.id" (click)="selectPropertyId(property.id)">
                     <div class="property-name"><span class="thumb">{{ property.name.slice(0, 2).toUpperCase() }}</span><div><strong>{{ property.name }}</strong><small>{{ property.address }}, {{ property.city }}</small></div></div>
                     <span>{{ property.unitCount }}</span>
                     <span>{{ property.cashBalance | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</span>
                     <span>{{ property.reserveBalance | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</span>
                     <span class="status">{{ property.status }}</span>
-                  </div>
+                  </button>
                 }
               </div>
             </article>
@@ -200,7 +232,7 @@
                 <input formControlName="label" placeholder="Rechnung oder Buchung" />
                 <input formControlName="amount" type="number" step="0.01" placeholder="Betrag" />
                 <input formControlName="category" placeholder="Kategorie" />
-                <input formControlName="bookedOn" type="date" />
+                <input formControlName="bookedOn" inputmode="numeric" placeholder="TT.MM.JJJJ" aria-label="Buchungsdatum" />
                 <select formControlName="status"><option value="BOOKED">Gebucht</option><option value="OPEN">Offen</option><option value="REVIEW">Prüfung</option></select>
                 <button type="submit">Erfassen</button>
               </form>
@@ -223,7 +255,7 @@
               <form class="compact-form" [formGroup]="taskForm" (ngSubmit)="addTask()">
                 <input formControlName="title" placeholder="Aufgabe" />
                 <select formControlName="priority"><option value="LOW">Niedrig</option><option value="MEDIUM">Mittel</option><option value="HIGH">Hoch</option><option value="URGENT">Dringend</option></select>
-                <input formControlName="dueDate" type="date" />
+                <input formControlName="dueDate" inputmode="numeric" placeholder="TT.MM.JJJJ" aria-label="Fälligkeitsdatum" />
                 <button type="submit">Anlegen</button>
                 <textarea formControlName="description" placeholder="Beschreibung"></textarea>
               </form>
@@ -266,7 +298,7 @@
                 <input formControlName="title" placeholder="Dokumenttitel" />
                 <input formControlName="documentType" placeholder="Typ" />
                 <input formControlName="fileName" placeholder="Dateiname" />
-                <input formControlName="documentDate" type="date" />
+                <input formControlName="documentDate" inputmode="numeric" placeholder="TT.MM.JJJJ" aria-label="Dokumentdatum" />
                 <button type="submit">Ablegen</button>
               </form>
               <div class="list">

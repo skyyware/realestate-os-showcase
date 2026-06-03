@@ -84,5 +84,30 @@ class WorkspaceFlowTest {
         assertThat(complete.tasks()).hasSize(1);
         assertThat(complete.metrics().pendingPayments()).isEqualByComparingTo("1250.00");
         assertThat(complete.onboarding().completion()).isEqualTo(100);
+
+        WorkspaceService.DashboardView secondProperty = workspaceService.createProperty(user.id(), new WorkspaceService.CreatePropertyCommand(
+                "Neckarblick 4",
+                "Neckarblick 4",
+                "Stuttgart",
+                8,
+                new BigDecimal("42000.00"),
+                new BigDecimal("88000.00")
+        ));
+        assertThat(secondProperty.selectedPropertyId()).isNotEqualTo(withProperty.selectedPropertyId());
+        assertThat(secondProperty.units()).isEmpty();
+        assertThat(secondProperty.metrics().cashBalance()).isEqualByComparingTo("42000.00");
+
+        workspaceService.createUnit(user.id(), new WorkspaceService.CreateUnitCommand(
+                secondProperty.selectedPropertyId(),
+                "Beirat Stuttgart",
+                "Einheit 02",
+                new BigDecimal("92.00")
+        ));
+
+        WorkspaceService.DashboardView firstAgain = workspaceService.dashboard(user.id(), withProperty.selectedPropertyId());
+        WorkspaceService.DashboardView secondAgain = workspaceService.dashboard(user.id(), secondProperty.selectedPropertyId());
+
+        assertThat(firstAgain.units()).extracting(WorkspaceService.UnitView::unitLabel).containsExactly("Einheit 07");
+        assertThat(secondAgain.units()).extracting(WorkspaceService.UnitView::unitLabel).containsExactly("Einheit 02");
     }
 }

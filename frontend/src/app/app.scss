@@ -294,12 +294,23 @@ button:disabled {
   text-align: left;
 }
 
-.sidebar nav button span {
+.nav-icon {
   display: inline-grid;
   place-items: center;
   width: 24px;
   height: 24px;
-  font-weight: 900;
+  flex: 0 0 auto;
+}
+
+.nav-icon svg,
+.notification-button svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
 }
 
 .sidebar nav button.active,
@@ -356,6 +367,16 @@ button:disabled {
   font-size: 0.75rem;
 }
 
+.workspace-picker select {
+  min-height: 24px;
+  border: 0;
+  padding: 0 22px 0 0;
+  color: #071b46;
+  background-color: transparent;
+  font-weight: 850;
+  box-shadow: none;
+}
+
 .search {
   display: grid;
   box-shadow: none;
@@ -380,6 +401,20 @@ button:disabled {
   color: #071b46;
   background: #fff;
   border: 1px solid #dae4ef;
+}
+
+.notification-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.notification-button span {
+  min-width: 18px;
+  color: #008765;
+  font-size: 0.78rem;
+  font-weight: 900;
 }
 
 .user-pill {
@@ -520,6 +555,28 @@ button:disabled {
 
 .table-row + .table-row {
   border-top: 1px solid #e5edf5;
+}
+
+button.table-row {
+  width: 100%;
+  min-height: auto;
+  border: 0;
+  border-radius: 0;
+  padding: 13px 18px;
+  color: #071b46;
+  background: #fff;
+  box-shadow: none;
+  font: inherit;
+  text-align: left;
+}
+
+button.table-row + button.table-row {
+  border-top: 1px solid #e5edf5;
+}
+
+button.table-row:hover,
+button.table-row.selected {
+  background: #f0faf6;
 }
 
 .property-name {

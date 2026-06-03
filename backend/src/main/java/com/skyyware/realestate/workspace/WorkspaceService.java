@@ -53,6 +53,11 @@ public class WorkspaceService {
 
     @Transactional(readOnly = true)
     public DashboardView dashboard(UUID userId) {
+        return dashboard(userId, null);
+    }
+
+    @Transactional(readOnly = true)
+    public DashboardView dashboard(UUID userId, UUID selectedPropertyId) {
         AppUser user = user(userId);
         List<PropertyAsset> assets = properties.findByOwnerOrderByCreatedAtAsc(user);
         List<ActivityEvent> activityEvents = activities.findTop12ByUserOrderByCreatedAtDesc(user);
@@ -71,7 +76,7 @@ public class WorkspaceService {
             );
         }
 
-        PropertyAsset selected = assets.getFirst();
+        PropertyAsset selected = selectedPropertyId == null ? assets.getFirst() : propertyFor(user, selectedPropertyId);
         List<OwnerUnit> ownerUnits = units.findByProperty(selected);
         List<WorkTask> workTasks = tasks.findTop8ByPropertyOrderByCreatedAtDesc(selected);
         List<FinanceEvent> financeEvents = finances.findTop8ByPropertyOrderByBookedOnDesc(selected);
@@ -119,7 +124,7 @@ public class WorkspaceService {
                 command.reserveBalance()
         ));
         activities.save(new ActivityEvent(user, property, "PROPERTY", "Immobilie hinzugefügt: " + property.name()));
-        return dashboard(userId);
+        return dashboard(userId, property.id());
     }
 
     @Transactional
@@ -128,7 +133,7 @@ public class WorkspaceService {
         PropertyAsset property = propertyFor(user, command.propertyId());
         units.save(new OwnerUnit(property, command.ownerName(), command.unitLabel(), command.shareValue()));
         activities.save(new ActivityEvent(user, property, "UNIT", "Einheit hinzugefügt: " + command.unitLabel()));
-        return dashboard(userId);
+        return dashboard(userId, property.id());
     }
 
     @Transactional
@@ -137,7 +142,7 @@ public class WorkspaceService {
         PropertyAsset property = propertyFor(user, command.propertyId());
         tasks.save(new WorkTask(property, command.title(), command.description(), command.priority(), command.dueDate()));
         activities.save(new ActivityEvent(user, property, "TASK", "Neue Aufgabe erstellt: " + command.title()));
-        return dashboard(userId);
+        return dashboard(userId, property.id());
     }
 
     @Transactional
@@ -146,7 +151,7 @@ public class WorkspaceService {
         PropertyAsset property = propertyFor(user, command.propertyId());
         finances.save(new FinanceEvent(property, command.label(), command.amount(), command.category(), command.bookedOn(), command.status()));
         activities.save(new ActivityEvent(user, property, "FINANCE", "Finanzereignis erfasst: " + command.label()));
-        return dashboard(userId);
+        return dashboard(userId, property.id());
     }
 
     @Transactional
@@ -155,7 +160,7 @@ public class WorkspaceService {
         PropertyAsset property = propertyFor(user, command.propertyId());
         documents.save(new PropertyDocument(property, command.title(), command.documentType(), command.fileName(), command.documentDate()));
         activities.save(new ActivityEvent(user, property, "DOCUMENT", "Dokument abgelegt: " + command.title()));
-        return dashboard(userId);
+        return dashboard(userId, property.id());
     }
 
     private AppUser user(UUID userId) {
