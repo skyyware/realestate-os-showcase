@@ -1,7 +1,6 @@
-# RealEstate OS Showcase
+# RealEstate OS
 
-Eine sharebare Product-Engineering-Codebasis für moderne digitale
-WEG-Verwaltung.
+Eine shipbare Product-Engineering-Codebasis für moderne digitale WEG-Verwaltung.
 
 ## Live
 
@@ -15,7 +14,8 @@ WEG-Verwaltung.
 - Angular 21, standalone components, typed reactive forms, functional HTTP interceptor
 - PostgreSQL 16 lokal und Aurora-kompatibles Schema
 - Keycloak-ready Identity Boundary via `docker-compose --profile identity`
-- SMTP-Onboarding mit Registrierung, E-Mail-Link und Passwortvergabe
+- Onboarding mit Registrierung, E-Mail-Link, Passwortvergabe und leerem Workspace
+- Produktflows für Immobilien, Einheiten, Finanzen, Aufgaben, Dokumente und Aktivität
 
 ## Lokal starten
 
@@ -59,8 +59,8 @@ Lokaler Browser-Smoke:
 npm run qa:local
 ```
 
-Der Smoke registriert einen frischen lokalen Nutzer, setzt ein Passwort, legt
-eine Aufgabe an und schreibt Screenshots nach `output/qa`.
+Der Smoke registriert einen frischen lokalen Nutzer, setzt ein Passwort, baut
+einen Workspace ohne Seed-Daten auf und schreibt Screenshots nach `output/qa`.
 
 ## Architektur
 

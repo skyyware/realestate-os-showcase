@@ -5,17 +5,17 @@
         <span class="brand-mark">RE</span>
         <div>
           <strong>RealEstate OS</strong>
-          <small>Product Engineering Showcase</small>
+          <small>Digitale WEG-Verwaltung</small>
         </div>
       </div>
       <h1>WEG-Verwaltung, klar und digital.</h1>
       <p>
-        Ein gemeinsamer Arbeitsraum für Eigentümer, Beirat und Verwaltung: Finanzen,
-        Aufgaben und Entscheidungen bleiben transparent nachvollziehbar.
+        Ein gemeinsamer Arbeitsraum für Eigentümer, Beirat und Verwaltung:
+        Finanzen, Aufgaben, Dokumente und Entscheidungen bleiben transparent nachvollziehbar.
       </p>
       <ul>
-        <li>Ein gemeinsamer Überblick für Konto, Rücklage und offene Zahlungen</li>
-        <li>Aufgaben und Beschlüsse mit nachvollziehbarem Aktivitätsfeed</li>
+        <li>Leerer Workspace: Immobilie anlegen und direkt losarbeiten</li>
+        <li>Aufgaben, Finanzereignisse, Dokumente und Einheiten mit Aktivitätsfeed</li>
         <li>Onboarding per E-Mail-Link mit sicherer Passwortvergabe</li>
       </ul>
       <figure class="product-visual">
@@ -27,7 +27,7 @@
       @if (mode() === 'register') {
         <div class="card-heading">
           <p>Account erstellen</p>
-          <h2>Demo-Zugang anfordern</h2>
+          <h2>Zugang anfordern</h2>
         </div>
         <form [formGroup]="registerForm" (ngSubmit)="register()">
           <label>Name <input formControlName="fullName" autocomplete="name" placeholder="Ihr Name" /></label>
@@ -77,128 +77,234 @@
   @if (mode() === 'dashboard' && dashboard()) {
     <aside class="sidebar">
       <div class="brand compact">
-        <span class="brand-mark">RE</span>
+        <span class="brand-icon">
+          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 15 16 6l11 9v12h-7v-8h-8v8H5z" fill="currentColor"/></svg>
+        </span>
         <strong>RealEstate OS</strong>
       </div>
       <nav>
-        <a class="active">Übersicht</a>
-        <a>Finanzen</a>
-        <a>Aufgaben</a>
-        <a>Dokumente</a>
-        <a>Eigentümer</a>
+        <button type="button" [class.active]="activeSection() === 'overview'" (click)="selectSection('overview')"><span>⌂</span> Übersicht</button>
+        <button type="button" [class.active]="activeSection() === 'properties'" (click)="selectSection('properties')"><span>▦</span> Immobilien</button>
+        <button type="button" [class.active]="activeSection() === 'units'" (click)="selectSection('units')"><span>□</span> Einheiten</button>
+        <button type="button" [class.active]="activeSection() === 'finances'" (click)="selectSection('finances')"><span>€</span> Finanzen</button>
+        <button type="button" [class.active]="activeSection() === 'tasks'" (click)="selectSection('tasks')"><span>✓</span> Aufgaben</button>
+        <button type="button" [class.active]="activeSection() === 'documents'" (click)="selectSection('documents')"><span>◇</span> Dokumente</button>
+        <button type="button" [class.active]="activeSection() === 'activity'" (click)="selectSection('activity')"><span>●</span> Aktivität</button>
       </nav>
-      <button class="ghost" type="button" (click)="logout()">Logout</button>
+      <div class="sidebar-footer">
+        <small>Verwaltung</small>
+        <button class="ghost" type="button" (click)="logout()">Logout</button>
+      </div>
     </aside>
 
     <section class="workspace">
       <header class="topbar">
-        <div>
-          <span>{{ dashboard()?.user?.organizationName }}</span>
-          <h1>{{ firstProperty()?.name }}</h1>
+        <div class="workspace-picker">
+          <span>Workspace</span>
+          <strong>{{ selectedProperty()?.name || 'Erste Immobilie hinzufügen' }}</strong>
         </div>
-        <div class="user-pill">
-          <strong>{{ dashboard()?.user?.fullName }}</strong>
-          <small>{{ dashboard()?.user?.email }}</small>
+        <label class="search">
+          <span>Suche</span>
+          <input type="search" placeholder="Immobilie, Stadt oder Adresse" (input)="updateSearch($event)" />
+        </label>
+        <div class="top-actions">
+          <button class="icon-button" type="button" aria-label="Benachrichtigungen">{{ dashboard()?.activity?.length || 0 }}</button>
+          <div class="user-pill">
+            <span>{{ dashboard()?.user?.fullName?.slice(0, 1) || 'U' }}</span>
+            <div>
+              <strong>{{ dashboard()?.user?.fullName }}</strong>
+              <small>{{ dashboard()?.user?.organizationName }}</small>
+            </div>
+          </div>
         </div>
       </header>
 
+      @if (error()) { <p class="message error floating">{{ error() }}</p> }
+      @if (info()) { <p class="message info floating">{{ info() }}</p> }
+
+      <section class="page-title">
+        <div>
+          <h1>Guten Morgen, {{ dashboard()?.user?.fullName?.split(' ')?.[0] || 'Team' }}.</h1>
+          <p>Aktuelle Lage für Verwaltung, Finanzen und offene Arbeit.</p>
+        </div>
+        <button class="primary-action" type="button" (click)="selectSection(hasWorkspace() ? 'tasks' : 'properties')">
+          <span>+</span> {{ hasWorkspace() ? 'Neue Aufgabe' : 'Immobilie hinzufügen' }}
+        </button>
+      </section>
+
       <section class="metrics">
         <article>
-          <span>Objekte</span>
-          <strong>{{ dashboard()?.metrics?.properties }}</strong>
-          <small>{{ dashboard()?.metrics?.units }} Einheiten im Workspace</small>
-        </article>
-        <article>
-          <span>Liquidität</span>
+          <span>WEG-Kontostand</span>
           <strong>{{ dashboard()?.metrics?.cashBalance | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</strong>
-          <small>WEG-Konto verfügbar</small>
+          <small>{{ dashboard()?.metrics?.properties }} Immobilien im Workspace</small>
         </article>
         <article>
-          <span>Rücklage</span>
+          <span>Rücklagenstand</span>
           <strong>{{ dashboard()?.metrics?.reserveBalance | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</strong>
-          <small>Planwert 78% erfüllt</small>
+          <small>{{ dashboard()?.metrics?.units }} Einheiten angelegt</small>
         </article>
-        <article class="risk">
-          <span>Offene Zahlungen</span>
+        <article>
+          <span>Offene Forderungen</span>
           <strong>{{ dashboard()?.metrics?.pendingPayments | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</strong>
-          <small>Prüfung oder Freigabe nötig</small>
+          <small>{{ openInvoices().length }} offene Rechnungsposten</small>
+        </article>
+        <article>
+          <span>Offene Aufgaben</span>
+          <strong>{{ dashboard()?.metrics?.openTasks }}</strong>
+          <small>{{ dueTasks().length }} Vorgänge im Board</small>
         </article>
       </section>
 
-      <section class="main-grid">
-        <article class="panel span-2">
+      @if (!hasWorkspace() || activeSection() === 'properties') {
+        <section class="panel setup-panel">
           <div class="panel-heading">
-            <div>
-              <span>Produktworkflow</span>
-              <h2>Aufgabensteuerung</h2>
-            </div>
+            <div><span>Onboarding</span><h2>Erste Immobilie hinzufügen</h2></div>
+            <small>{{ dashboard()?.onboarding?.completion }}% abgeschlossen</small>
           </div>
-          <form class="task-form" [formGroup]="taskForm" (ngSubmit)="addTask()">
-            <input formControlName="title" placeholder="Aufgabe" />
-            <select formControlName="priority">
-              <option value="" disabled>Priorität</option>
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-              <option value="URGENT">Urgent</option>
-            </select>
-            <input formControlName="dueDate" inputmode="numeric" placeholder="TT.MM.JJJJ" />
-            <button type="submit">Anlegen</button>
-            <textarea formControlName="description" placeholder="Beschreibung"></textarea>
+          <form class="property-form" [formGroup]="propertyForm" (ngSubmit)="createProperty()">
+            <label>Immobilie <input formControlName="name" placeholder="Musterstraße 12" /></label>
+            <label>Adresse <input formControlName="address" placeholder="Musterstraße 12" /></label>
+            <label>Stadt <input formControlName="city" placeholder="Stuttgart" /></label>
+            <label>Einheiten <input formControlName="unitCount" type="number" min="1" /></label>
+            <label>Kontostand <input formControlName="cashBalance" type="number" min="0" step="0.01" /></label>
+            <label>Rücklage <input formControlName="reserveBalance" type="number" min="0" step="0.01" /></label>
+            <button type="submit" [disabled]="loading()">Immobilie anlegen</button>
           </form>
-          <div class="list">
-            @for (task of dashboard()?.tasks; track task.id) {
-              <div class="row">
-                <div>
-                  <strong>{{ task.title }}</strong>
-                  <small>{{ task.description }}</small>
-                </div>
-                <span class="badge" [class.urgent]="task.priority === 'URGENT'">{{ task.priority }}</span>
-              </div>
-            }
-          </div>
-        </article>
+        </section>
+      }
 
-        <article class="panel">
-          <div class="panel-heading"><div><span>Banking</span><h2>Finanzfeed</h2></div></div>
-          <div class="list finance">
-            @for (item of dashboard()?.finances; track item.label) {
-              <div class="row">
-                <div>
-                  <strong>{{ item.label }}</strong>
-                  <small>{{ item.category }} · {{ item.bookedOn | date:'dd.MM.yyyy' }}</small>
-                </div>
-                <span [class.negative]="item.amount < 0">{{ item.amount | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</span>
+      @if (hasWorkspace()) {
+        <section class="content-grid">
+          @if (activeSection() === 'overview' || activeSection() === 'properties') {
+            <article class="panel portfolio">
+              <div class="panel-heading"><div><span>Portfolio</span><h2>Immobilienportfolio</h2></div></div>
+              <div class="table">
+                <div class="table-head"><span>Immobilie</span><span>Einheiten</span><span>WEG-Kontostand</span><span>Rücklagenstand</span><span>Status</span></div>
+                @for (property of filteredProperties(); track property.id) {
+                  <div class="table-row">
+                    <div class="property-name"><span class="thumb">{{ property.name.slice(0, 2).toUpperCase() }}</span><div><strong>{{ property.name }}</strong><small>{{ property.address }}, {{ property.city }}</small></div></div>
+                    <span>{{ property.unitCount }}</span>
+                    <span>{{ property.cashBalance | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</span>
+                    <span>{{ property.reserveBalance | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</span>
+                    <span class="status">{{ property.status }}</span>
+                  </div>
+                }
               </div>
-            }
-          </div>
-        </article>
+            </article>
+          }
 
-        <article class="panel">
-          <div class="panel-heading"><div><span>Eigentümer</span><h2>Einheiten</h2></div></div>
-          <div class="list">
-            @for (unit of dashboard()?.units; track unit.unitLabel) {
-              <div class="row">
-                <div><strong>{{ unit.unitLabel }}</strong><small>{{ unit.ownerName }}</small></div>
-                <span>{{ unit.shareValue | number:'1.2-2' }}</span>
+          @if (activeSection() === 'overview' || activeSection() === 'finances') {
+            <article class="panel">
+              <div class="panel-heading"><div><span>Finanzen</span><h2>Offene Rechnungen</h2></div></div>
+              <form class="compact-form" [formGroup]="financeForm" (ngSubmit)="createFinance()">
+                <input formControlName="label" placeholder="Rechnung oder Buchung" />
+                <input formControlName="amount" type="number" step="0.01" placeholder="Betrag" />
+                <input formControlName="category" placeholder="Kategorie" />
+                <input formControlName="bookedOn" type="date" />
+                <select formControlName="status"><option value="BOOKED">Gebucht</option><option value="OPEN">Offen</option><option value="REVIEW">Prüfung</option></select>
+                <button type="submit">Erfassen</button>
+              </form>
+              <div class="list finance">
+                @for (item of dashboard()?.finances; track item.label + item.bookedOn) {
+                  <div class="row">
+                    <div><strong>{{ item.label }}</strong><small>{{ item.category }} · {{ item.bookedOn | date:'dd.MM.yyyy' }} · {{ statusLabel(item.status) }}</small></div>
+                    <span [class.negative]="item.amount < 0">{{ item.amount | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</span>
+                  </div>
+                } @empty {
+                  <p class="empty">Noch keine Finanzereignisse.</p>
+                }
               </div>
-            }
-          </div>
-        </article>
+            </article>
+          }
 
-        <article class="panel activity">
-          <div class="panel-heading"><div><span>Audit Trail</span><h2>Aktivität</h2></div></div>
-          <div class="timeline">
-            @for (event of dashboard()?.activity; track event.createdAt) {
-              <div>
-                <span></span>
-                <p>{{ event.summary }}</p>
-                <small>{{ event.createdAt | date:'dd.MM.yyyy HH:mm' }}</small>
+          @if (activeSection() === 'overview' || activeSection() === 'tasks') {
+            <article class="panel">
+              <div class="panel-heading"><div><span>Aufgaben</span><h2>Instandhaltungs-Tickets</h2></div></div>
+              <form class="compact-form" [formGroup]="taskForm" (ngSubmit)="addTask()">
+                <input formControlName="title" placeholder="Aufgabe" />
+                <select formControlName="priority"><option value="LOW">Niedrig</option><option value="MEDIUM">Mittel</option><option value="HIGH">Hoch</option><option value="URGENT">Dringend</option></select>
+                <input formControlName="dueDate" type="date" />
+                <button type="submit">Anlegen</button>
+                <textarea formControlName="description" placeholder="Beschreibung"></textarea>
+              </form>
+              <div class="list">
+                @for (task of dashboard()?.tasks; track task.id) {
+                  <div class="row">
+                    <div><strong>{{ task.title }}</strong><small>{{ task.description }} @if (task.dueDate) { · {{ task.dueDate | date:'dd.MM.yyyy' }} }</small></div>
+                    <span class="badge" [class.urgent]="task.priority === 'URGENT'">{{ priorityLabel(task.priority) }}</span>
+                  </div>
+                } @empty {
+                  <p class="empty">Keine offenen Aufgaben.</p>
+                }
               </div>
-            }
-          </div>
-        </article>
-      </section>
+            </article>
+          }
+
+          @if (activeSection() === 'overview' || activeSection() === 'units') {
+            <article class="panel">
+              <div class="panel-heading"><div><span>Eigentümer</span><h2>Einheiten</h2></div></div>
+              <form class="compact-form units-form" [formGroup]="unitForm" (ngSubmit)="createUnit()">
+                <input formControlName="unitLabel" placeholder="Einheit 01" />
+                <input formControlName="ownerName" placeholder="Eigentümer" />
+                <input formControlName="shareValue" type="number" step="0.01" placeholder="MEA" />
+                <button type="submit">Anlegen</button>
+              </form>
+              <div class="list">
+                @for (unit of dashboard()?.units; track unit.unitLabel) {
+                  <div class="row"><div><strong>{{ unit.unitLabel }}</strong><small>{{ unit.ownerName }}</small></div><span>{{ unit.shareValue | number:'1.2-2' }}</span></div>
+                } @empty {
+                  <p class="empty">Noch keine Einheiten.</p>
+                }
+              </div>
+            </article>
+          }
+
+          @if (activeSection() === 'overview' || activeSection() === 'documents') {
+            <article class="panel">
+              <div class="panel-heading"><div><span>Dokumente</span><h2>Dokumentenablage</h2></div></div>
+              <form class="compact-form" [formGroup]="documentForm" (ngSubmit)="createDocument()">
+                <input formControlName="title" placeholder="Dokumenttitel" />
+                <input formControlName="documentType" placeholder="Typ" />
+                <input formControlName="fileName" placeholder="Dateiname" />
+                <input formControlName="documentDate" type="date" />
+                <button type="submit">Ablegen</button>
+              </form>
+              <div class="list">
+                @for (document of dashboard()?.documents; track document.id) {
+                  <div class="row"><div><strong>{{ document.title }}</strong><small>{{ document.fileName }} · {{ document.documentDate | date:'dd.MM.yyyy' }}</small></div><span class="file-type">{{ document.documentType }}</span></div>
+                } @empty {
+                  <p class="empty">Noch keine Dokumente.</p>
+                }
+              </div>
+            </article>
+          }
+
+          @if (activeSection() === 'overview' || activeSection() === 'activity') {
+            <aside class="panel activity">
+              <div class="panel-heading"><div><span>Audit Trail</span><h2>Aktivitäten</h2></div></div>
+              <div class="timeline">
+                @for (event of dashboard()?.activity; track event.createdAt) {
+                  <div><span></span><p>{{ event.summary }}</p><small>{{ event.createdAt | date:'dd.MM.yyyy HH:mm' }}</small></div>
+                } @empty {
+                  <p class="empty">Aktivitäten erscheinen automatisch.</p>
+                }
+              </div>
+            </aside>
+          }
+
+          <aside class="panel onboarding-card">
+            <div class="panel-heading"><div><span>Setup</span><h2>Registrierung & Onboarding</h2></div></div>
+            <div class="progress-ring"><strong>{{ dashboard()?.onboarding?.completion }}%</strong></div>
+            <ul class="checklist">
+              <li [class.done]="dashboard()?.onboarding?.accountActivated">E-Mail bestätigt</li>
+              <li [class.done]="dashboard()?.onboarding?.propertyCreated">Erste Immobilie hinzugefügt</li>
+              <li [class.done]="dashboard()?.onboarding?.unitsCreated">Einheiten angelegt</li>
+              <li [class.done]="dashboard()?.onboarding?.financeCreated">Finanzen erfasst</li>
+              <li [class.done]="dashboard()?.onboarding?.taskCreated">Aufgabe angelegt</li>
+            </ul>
+          </aside>
+        </section>
+      }
     </section>
   }
 </main>

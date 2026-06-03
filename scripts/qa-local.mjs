@@ -32,14 +32,48 @@ await page.getByRole('button', { name: 'Aktivierungslink senden' }).click();
 await page.getByRole('heading', { name: 'Passwort vergeben' }).waitFor();
 await page.getByLabel('Neues Passwort').fill(user.password);
 await page.getByRole('button', { name: 'Account aktivieren' }).click();
-await page.getByRole('heading', { name: 'Aufgabensteuerung' }).waitFor();
+await page.getByRole('heading', { name: 'Erste Immobilie hinzufügen' }).waitFor();
 
-await page.getByPlaceholder('Aufgabe').fill('Eigentümerbeschluss für Solarprüfung vorbereiten');
-await page.locator('select[formcontrolname="priority"]').selectOption('HIGH');
-await page.getByPlaceholder('TT.MM.JJJJ').fill('08.06.2026');
-await page.getByPlaceholder('Beschreibung').fill('Beschlussvorlage, Budgetrahmen und Angebote in einem Vorgang bündeln.');
+await page.getByLabel('Immobilie').fill('Musterstraße 12');
+await page.getByLabel('Adresse').fill('Musterstraße 12');
+await page.getByLabel('Stadt').fill('Stuttgart');
+await page.getByLabel('Einheiten').fill('16');
+await page.getByLabel('Kontostand').fill('125540.75');
+await page.getByLabel('Rücklage').fill('256780.20');
+await page.getByRole('button', { name: 'Immobilie anlegen' }).click();
+await page.getByRole('heading', { name: 'Immobilienportfolio' }).waitFor();
+
+await page.getByRole('button', { name: /Einheiten/ }).click();
+await page.getByPlaceholder('Einheit 01').fill('Einheit 07');
+await page.getByPlaceholder('Eigentümer').fill(user.fullName);
+await page.getByPlaceholder('MEA').fill('84.50');
 await page.getByRole('button', { name: 'Anlegen' }).click();
-await page.locator('.list .row strong', { hasText: 'Eigentümerbeschluss für Solarprüfung vorbereiten' }).first().waitFor();
+await page.getByText('Einheit 07').waitFor();
+
+await page.getByRole('button', { name: /Finanzen/ }).click();
+await page.getByPlaceholder('Rechnung oder Buchung').fill('Rechnung Hausmeisterservice');
+await page.getByPlaceholder('Betrag').fill('-1250');
+await page.getByPlaceholder('Kategorie').fill('Instandhaltung');
+await page.locator('select[formcontrolname="status"]').selectOption('OPEN');
+await page.getByRole('button', { name: 'Erfassen' }).click();
+await page.getByText('Rechnung Hausmeisterservice').waitFor();
+
+await page.getByRole('button', { name: /Dokumente/ }).click();
+await page.getByPlaceholder('Dokumenttitel').fill('Protokoll JHV 2026');
+await page.getByPlaceholder('Dateiname').fill('protokoll-jhv-2026.pdf');
+await page.getByRole('button', { name: 'Ablegen' }).click();
+await page.getByText('Protokoll JHV 2026').waitFor();
+
+await page.getByRole('button', { name: /Aufgaben/ }).click();
+await page.getByPlaceholder('Aufgabe').fill('Eigentümerversammlung vorbereiten');
+await page.locator('select[formcontrolname="priority"]').selectOption('HIGH');
+await page.locator('input[formcontrolname="dueDate"]').fill('2026-06-12');
+await page.getByPlaceholder('Beschreibung').fill('Einladungspaket finalisieren und Beschlüsse vorbereiten.');
+await page.getByRole('button', { name: 'Anlegen' }).click();
+await page.getByText('Eigentümerversammlung vorbereiten').waitFor();
+
+await page.getByRole('button', { name: /Übersicht/ }).click();
+await page.getByText('125.540,75').waitFor();
 await page.screenshot({ path: fileURLToPath(new URL('realestate-dashboard-desktop.png', outputDir)), fullPage: true });
 
 const token = await page.evaluate(() => localStorage.getItem('realestate.token'));
@@ -56,7 +90,7 @@ await mobile.addInitScript((accessToken) => {
 }, token);
 const mobilePage = await mobile.newPage();
 await mobilePage.goto(baseUrl, { waitUntil: 'networkidle' });
-await mobilePage.getByRole('heading', { name: 'Aufgabensteuerung' }).waitFor();
+await mobilePage.getByRole('heading', { name: 'Immobilienportfolio' }).waitFor();
 await mobilePage.screenshot({ path: fileURLToPath(new URL('realestate-dashboard-mobile.png', outputDir)), fullPage: true });
 await mobile.close();
 await browser.close();

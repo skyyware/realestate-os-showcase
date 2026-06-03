@@ -23,7 +23,7 @@ nicht direkt aus Entities gespeist, sondern über DTOs/Records in Services.
 
 ## Identity
 
-Die Demo nutzt eine app-native Registrierung mit einmaligem Token, BCrypt und
+Die Anwendung nutzt eine app-native Registrierung mit einmaligem Token, BCrypt und
 kurzlebigem HMAC-JWT. Das macht die Anwendung lokal und auf Stage direkt
 testbar. Die Boundary ist so gehalten, dass sie in einer internen Übernahme
 gegen Keycloak/OIDC ausgetauscht werden kann:

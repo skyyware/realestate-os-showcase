@@ -15,13 +15,27 @@ export class App implements OnInit {
   private readonly fb = inject(FormBuilder);
 
   protected readonly mode = signal<'register' | 'login' | 'password' | 'dashboard'>('register');
+  protected readonly activeSection = signal<Section>('overview');
   protected readonly loading = signal(false);
   protected readonly error = signal('');
   protected readonly info = signal('');
   protected readonly dashboard = signal<Dashboard | null>(null);
   protected readonly registrationPreview = signal<RegistrationPreview | null>(null);
   protected readonly setupToken = signal('');
-  protected readonly firstProperty = computed(() => this.dashboard()?.properties[0]);
+  protected readonly searchTerm = signal('');
+
+  protected readonly selectedProperty = computed(() => this.dashboard()?.properties.find(item => item.id === this.dashboard()?.selectedPropertyId) ?? this.dashboard()?.properties[0]);
+  protected readonly hasWorkspace = computed(() => (this.dashboard()?.properties.length ?? 0) > 0);
+  protected readonly filteredProperties = computed(() => {
+    const term = this.searchTerm().trim().toLowerCase();
+    const properties = this.dashboard()?.properties ?? [];
+    if (!term) return properties;
+    return properties.filter(property =>
+      `${property.name} ${property.address} ${property.city}`.toLowerCase().includes(term)
+    );
+  });
+  protected readonly openInvoices = computed(() => (this.dashboard()?.finances ?? []).filter(item => item.amount < 0));
+  protected readonly dueTasks = computed(() => (this.dashboard()?.tasks ?? []).filter(task => task.status !== 'DONE'));
 
   protected readonly registerForm = this.fb.nonNullable.group({
     fullName: ['', [Validators.required, Validators.minLength(2)]],
@@ -38,14 +52,41 @@ export class App implements OnInit {
     password: ['', [Validators.required, Validators.minLength(10)]]
   });
 
+  protected readonly propertyForm = this.fb.nonNullable.group({
+    name: ['', [Validators.required, Validators.maxLength(180)]],
+    address: ['', [Validators.required, Validators.maxLength(240)]],
+    city: ['', [Validators.required, Validators.maxLength(120)]],
+    unitCount: [1, [Validators.required, Validators.min(1)]],
+    cashBalance: [0, [Validators.required, Validators.min(0)]],
+    reserveBalance: [0, [Validators.required, Validators.min(0)]]
+  });
+
+  protected readonly unitForm = this.fb.nonNullable.group({
+    ownerName: ['', [Validators.required, Validators.maxLength(180)]],
+    unitLabel: ['', [Validators.required, Validators.maxLength(80)]],
+    shareValue: [0, [Validators.required, Validators.min(0)]]
+  });
+
   protected readonly taskForm = this.fb.nonNullable.group({
     title: ['', [Validators.required, Validators.maxLength(180)]],
-    description: ['', [Validators.required]],
-    priority: ['' as TaskPriority | '', [Validators.required]],
-    dueDate: ['', [
-      Validators.required,
-      Validators.pattern(/^\d{2}\.\d{2}\.\d{4}$/)
-    ]]
+    description: ['', [Validators.required, Validators.maxLength(1000)]],
+    priority: ['MEDIUM' as TaskPriority, [Validators.required]],
+    dueDate: ['', [Validators.required]]
+  });
+
+  protected readonly financeForm = this.fb.nonNullable.group({
+    label: ['', [Validators.required, Validators.maxLength(180)]],
+    amount: [0, [Validators.required]],
+    category: ['Hausgeld', [Validators.required, Validators.maxLength(80)]],
+    bookedOn: [this.today(), [Validators.required]],
+    status: ['BOOKED', [Validators.required, Validators.maxLength(32)]]
+  });
+
+  protected readonly documentForm = this.fb.nonNullable.group({
+    title: ['', [Validators.required, Validators.maxLength(180)]],
+    documentType: ['PDF', [Validators.required, Validators.maxLength(80)]],
+    fileName: ['', [Validators.required, Validators.maxLength(240)]],
+    documentDate: [this.today(), [Validators.required]]
   });
 
   ngOnInit(): void {
@@ -82,7 +123,7 @@ export class App implements OnInit {
           this.loading.set(false);
           this.info.set(result.emailSent
             ? 'Aktivierungslink wurde per E-Mail verschickt.'
-            : `Lokaler Mailversand ist deaktiviert. Demo-Link: ${result.localSetupLink}`);
+            : `Lokaler Mailversand ist deaktiviert. Setup-Link: ${result.localSetupLink}`);
           if (result.localSetupLink) {
             const token = new URL(result.localSetupLink).searchParams.get('token') ?? '';
             this.setupToken.set(token);
@@ -120,34 +161,90 @@ export class App implements OnInit {
     }).subscribe({ next: session => this.acceptSession(session), error: error => this.fail(error) });
   }
 
+  protected createProperty(): void {
+    if (this.propertyForm.invalid) return;
+    this.submitDashboardRequest('properties', this.propertyForm.getRawValue(), 'Immobilie wurde angelegt.');
+  }
+
+  protected createUnit(): void {
+    if (this.unitForm.invalid) return;
+    this.submitDashboardRequest('units', { ...this.unitForm.getRawValue(), propertyId: this.selectedProperty()?.id }, 'Einheit wurde angelegt.');
+  }
+
   protected addTask(): void {
     if (this.taskForm.invalid) return;
-    this.begin();
-    const formValue = this.taskForm.getRawValue();
-    this.http.post<Dashboard>(`${API_BASE_URL}/workspace/tasks`, {
-      ...formValue,
-      dueDate: this.toIsoDate(formValue.dueDate)
-    })
-      .subscribe({
-        next: dashboard => {
-          this.loading.set(false);
-          this.dashboard.set(dashboard);
-          this.info.set('Aufgabe wurde erstellt und im Aktivitätsfeed protokolliert.');
-        },
-        error: error => this.fail(error)
-      });
+    this.submitDashboardRequest('tasks', { ...this.taskForm.getRawValue(), propertyId: this.selectedProperty()?.id }, 'Aufgabe wurde erstellt und protokolliert.');
+  }
+
+  protected createFinance(): void {
+    if (this.financeForm.invalid) return;
+    this.submitDashboardRequest('finances', { ...this.financeForm.getRawValue(), propertyId: this.selectedProperty()?.id }, 'Finanzereignis wurde erfasst.');
+  }
+
+  protected createDocument(): void {
+    if (this.documentForm.invalid) return;
+    this.submitDashboardRequest('documents', { ...this.documentForm.getRawValue(), propertyId: this.selectedProperty()?.id }, 'Dokument wurde abgelegt.');
   }
 
   protected logout(): void {
     localStorage.removeItem('realestate.token');
     this.dashboard.set(null);
     this.mode.set('login');
+    history.replaceState({}, '', '/');
   }
 
   protected switchMode(mode: 'register' | 'login'): void {
     this.error.set('');
     this.info.set('');
     this.mode.set(mode);
+  }
+
+  protected selectSection(section: Section): void {
+    this.activeSection.set(section);
+    this.error.set('');
+    this.info.set('');
+  }
+
+  protected updateSearch(value: Event): void {
+    this.searchTerm.set((value.target as HTMLInputElement).value);
+  }
+
+  protected priorityLabel(priority: string): string {
+    return {
+      LOW: 'Niedrig',
+      MEDIUM: 'Mittel',
+      HIGH: 'Hoch',
+      URGENT: 'Dringend'
+    }[priority] ?? priority;
+  }
+
+  protected statusLabel(status: string): string {
+    return {
+      BOOKED: 'Gebucht',
+      REVIEW: 'Prüfung',
+      OPEN: 'Offen',
+      OPEN_TASK: 'Offen',
+      IN_REVIEW: 'In Prüfung',
+      DONE: 'Erledigt'
+    }[status] ?? status;
+  }
+
+  private submitDashboardRequest(path: 'properties' | 'units' | 'tasks' | 'finances' | 'documents', payload: Record<string, unknown>, success: string): void {
+    this.begin();
+    this.http.post<Dashboard>(`${API_BASE_URL}/workspace/${path}`, payload)
+      .subscribe({
+        next: dashboard => {
+          this.loading.set(false);
+          this.dashboard.set(dashboard);
+          this.info.set(success);
+          if (path === 'properties') this.propertyForm.reset({ name: '', address: '', city: '', unitCount: 1, cashBalance: 0, reserveBalance: 0 });
+          if (path === 'units') this.unitForm.reset({ ownerName: '', unitLabel: '', shareValue: 0 });
+          if (path === 'tasks') this.taskForm.reset({ title: '', description: '', priority: 'MEDIUM', dueDate: '' });
+          if (path === 'finances') this.financeForm.reset({ label: '', amount: 0, category: 'Hausgeld', bookedOn: this.today(), status: 'BOOKED' });
+          if (path === 'documents') this.documentForm.reset({ title: '', documentType: 'PDF', fileName: '', documentDate: this.today() });
+        },
+        error: error => this.fail(error)
+      });
   }
 
   private previewRegistration(token: string): void {
@@ -169,6 +266,7 @@ export class App implements OnInit {
     this.loading.set(false);
     this.info.set(`Willkommen, ${session.user.fullName}.`);
     this.mode.set('dashboard');
+    this.activeSection.set('overview');
     history.replaceState({}, '', '/');
     this.loadDashboard();
   }
@@ -182,11 +280,6 @@ export class App implements OnInit {
   private fail(error: { error?: { message?: string } }): void {
     this.loading.set(false);
     this.error.set(error.error?.message ?? 'Der Vorgang konnte nicht abgeschlossen werden.');
-  }
-
-  private toIsoDate(value: string): string {
-    const match = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(value);
-    return match ? `${match[3]}-${match[2]}-${match[1]}` : value;
   }
 
   private normalizeEmail(email: string): string {
@@ -204,8 +297,13 @@ export class App implements OnInit {
     const typo = Object.keys(suffixFixes).find(suffix => email.endsWith(suffix));
     return typo ? email.slice(0, -typo.length) + suffixFixes[typo] : '';
   }
+
+  private today(): string {
+    return new Date().toISOString().slice(0, 10);
+  }
 }
 
+type Section = 'overview' | 'properties' | 'units' | 'finances' | 'tasks' | 'documents' | 'activity';
 type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
 interface RegistrationResult {
@@ -231,6 +329,7 @@ interface AuthSession {
 
 interface Dashboard {
   user: { email: string; fullName: string; organizationName: string };
+  selectedPropertyId?: string;
   properties: Array<{
     id: string;
     name: string;
@@ -239,6 +338,7 @@ interface Dashboard {
     unitCount: number;
     cashBalance: number;
     reserveBalance: number;
+    status: string;
   }>;
   metrics: {
     properties: number;
@@ -246,9 +346,20 @@ interface Dashboard {
     cashBalance: number;
     reserveBalance: number;
     pendingPayments: number;
+    openTasks: number;
+    onboardingCompletion: number;
   };
   units: Array<{ ownerName: string; unitLabel: string; shareValue: number }>;
   tasks: Array<{ id: string; title: string; description: string; status: string; priority: string; dueDate?: string }>;
   finances: Array<{ label: string; amount: number; category: string; bookedOn: string; status: string }>;
+  documents: Array<{ id: string; title: string; documentType: string; fileName: string; documentDate: string }>;
   activity: Array<{ eventType: string; summary: string; createdAt: string }>;
+  onboarding: {
+    completion: number;
+    accountActivated: boolean;
+    propertyCreated: boolean;
+    unitsCreated: boolean;
+    financeCreated: boolean;
+    taskCreated: boolean;
+  };
 }
