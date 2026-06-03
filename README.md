@@ -16,6 +16,8 @@ Eine shipbare Product-Engineering-Codebasis für moderne digitale WEG-Verwaltung
 - Keycloak-ready Identity Boundary via `docker-compose --profile identity`
 - Onboarding mit Registrierung, E-Mail-Link, Passwortvergabe und leerem Workspace
 - Produktflows für Immobilien, Einheiten, Finanzen, Aufgaben, Dokumente und Aktivität
+- Operatives Command Center mit priorisierten nächsten Schritten je Immobilie
+- Aufgaben-Lifecycle von offen über Prüfung bis erledigt mit Audit-Trail
 
 ## Lokal starten
 
@@ -60,7 +62,9 @@ npm run qa:local
 ```
 
 Der Smoke registriert einen frischen lokalen Nutzer, setzt ein Passwort, baut
-einen Workspace ohne Seed-Daten auf und schreibt Screenshots nach `output/qa`.
+einen Workspace ohne Seed-Daten auf, prüft die Empfehlungen, schließt eine
+Aufgabe ab, wechselt zwischen zwei Immobilien und schreibt Screenshots nach
+`output/qa`.
 
 ## Architektur
 

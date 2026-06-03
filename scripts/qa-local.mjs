@@ -45,33 +45,35 @@ await page.getByLabel('Stadt').fill('Stuttgart');
 await page.getByLabel('Einheiten').fill('16');
 await page.getByLabel('Kontostand').fill('125540.75');
 await page.getByLabel('Rücklage').fill('256780.20');
-await page.getByRole('button', { name: 'Immobilie anlegen' }).click();
+await page.getByRole('button', { name: 'Immobilie anlegen', exact: true }).click();
 await page.getByRole('heading', { name: 'Immobilienportfolio' }).waitFor();
+await page.getByRole('heading', { name: 'Heute entscheiden' }).waitFor();
+await page.getByText('Eigentümerstruktur fehlt').waitFor();
 
-await page.getByRole('button', { name: /Einheiten/ }).click();
+await page.getByRole('button', { name: 'Einheiten', exact: true }).click();
 await page.getByPlaceholder('Einheit 01').fill('Einheit 07');
 await page.getByPlaceholder('Eigentümer').fill(user.fullName);
 await page.getByPlaceholder('MEA').fill('84.50');
-await page.getByRole('button', { name: 'Anlegen' }).click();
+await page.locator('form.units-form').getByRole('button', { name: 'Anlegen', exact: true }).click();
 await page.getByText('Einheit 07').waitFor();
 
-await page.getByRole('button', { name: /Finanzen/ }).click();
+await page.getByRole('button', { name: 'Finanzen', exact: true }).click();
 await page.getByPlaceholder('Rechnung oder Buchung').fill('Rechnung Hausmeisterservice');
 await page.getByPlaceholder('Betrag').fill('-1250');
 await page.getByPlaceholder('Kategorie').fill('Instandhaltung');
 await page.locator('input[formcontrolname="bookedOn"]').fill('05.06.2026');
 await page.locator('select[formcontrolname="status"]').selectOption('OPEN');
-await page.getByRole('button', { name: 'Erfassen' }).click();
+await page.getByRole('button', { name: 'Erfassen', exact: true }).click();
 await page.getByText('Rechnung Hausmeisterservice').waitFor();
 
-await page.getByRole('button', { name: /Dokumente/ }).click();
+await page.getByRole('button', { name: 'Dokumente', exact: true }).click();
 await page.getByPlaceholder('Dokumenttitel').fill('Protokoll JHV 2026');
 await page.getByPlaceholder('Dateiname').fill('protokoll-jhv-2026.pdf');
 await page.locator('input[formcontrolname="documentDate"]').fill('03.06.2026');
-await page.getByRole('button', { name: 'Ablegen' }).click();
+await page.getByRole('button', { name: 'Ablegen', exact: true }).click();
 await page.getByText('Protokoll JHV 2026').waitFor();
 
-await page.getByRole('button', { name: /Aufgaben/ }).click();
+await page.getByRole('button', { name: 'Aufgaben', exact: true }).click();
 await page.getByPlaceholder('Aufgabe').fill('Eigentümerversammlung vorbereiten');
 await page.locator('select[formcontrolname="priority"]').selectOption('HIGH');
 if (await page.locator('input[formcontrolname="dueDate"]').getAttribute('type') === 'date') {
@@ -79,25 +81,33 @@ if (await page.locator('input[formcontrolname="dueDate"]').getAttribute('type') 
 }
 await page.locator('input[formcontrolname="dueDate"]').fill('12.06.2026');
 await page.getByPlaceholder('Beschreibung').fill('Einladungspaket finalisieren und Beschlüsse vorbereiten.');
-await page.getByRole('button', { name: 'Anlegen' }).click();
+await page.locator('article').filter({ hasText: 'Instandhaltungs-Tickets' }).getByRole('button', { name: 'Anlegen', exact: true }).click();
 await page.getByText('Eigentümerversammlung vorbereiten').waitFor();
+await page.getByText('Nächste Aufgabe steuern').waitFor();
+let taskRow = page.locator('.task-row').filter({ hasText: 'Eigentümerversammlung vorbereiten' });
+await taskRow.getByRole('button', { name: 'In Prüfung' }).click();
+await page.getByText('Aufgabe ist in Prüfung.').waitFor();
+taskRow = page.locator('.task-row').filter({ hasText: 'Eigentümerversammlung vorbereiten' });
+await taskRow.getByRole('button', { name: 'Erledigen' }).click();
+await page.getByText('Aufgabe erledigt.').waitFor();
+await page.getByText('0 Vorgänge im Board').waitFor();
 
-await page.getByRole('button', { name: /Immobilien/ }).click();
+await page.getByRole('button', { name: 'Immobilien', exact: true }).click();
 await page.getByLabel('Immobilie').fill('Neckarblick 4');
 await page.getByLabel('Adresse').fill('Neckarblick 4');
 await page.getByLabel('Stadt').fill('Stuttgart');
 await page.getByLabel('Einheiten').fill('8');
 await page.getByLabel('Kontostand').fill('42000');
 await page.getByLabel('Rücklage').fill('88000');
-await page.getByRole('button', { name: 'Immobilie anlegen' }).click();
+await page.getByRole('button', { name: 'Immobilie anlegen', exact: true }).click();
 await page.getByRole('combobox', { name: 'Workspace auswählen' }).selectOption({ label: 'Neckarblick 4 · Stuttgart' });
 
-await page.getByRole('button', { name: /Einheiten/ }).click();
+await page.getByRole('button', { name: 'Einheiten', exact: true }).click();
 await page.getByText('Noch keine Einheiten.').waitFor();
 await page.getByPlaceholder('Einheit 01').fill('Einheit 02');
 await page.getByPlaceholder('Eigentümer').fill('Beirat Stuttgart');
 await page.getByPlaceholder('MEA').fill('92.00');
-await page.getByRole('button', { name: 'Anlegen' }).click();
+await page.locator('form.units-form').getByRole('button', { name: 'Anlegen', exact: true }).click();
 await page.getByText('Einheit 02').waitFor();
 await Promise.all([
   page.waitForResponse(response => response.url().includes('/api/workspace/dashboard') && response.status() === 200),
@@ -105,7 +115,7 @@ await Promise.all([
 ]);
 await page.getByText('Einheit 07').waitFor();
 
-await page.getByRole('button', { name: /Übersicht/ }).click();
+await page.getByRole('button', { name: 'Übersicht', exact: true }).click();
 await page.getByText('125.540,75').waitFor();
 await page.screenshot({ path: fileURLToPath(new URL('realestate-dashboard-desktop.png', outputDir)), fullPage: true });
 

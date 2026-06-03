@@ -243,6 +243,23 @@ export class App implements OnInit, OnDestroy {
     this.loadDashboard(propertyId);
   }
 
+  protected openInsight(insight: InsightView): void {
+    this.selectSection(insight.actionSection);
+  }
+
+  protected updateTaskStatus(task: WorkTaskView, status: TaskStatus): void {
+    this.begin();
+    this.http.patch<Dashboard>(`${API_BASE_URL}/workspace/tasks/${task.id}/status`, { status })
+      .subscribe({
+        next: dashboard => {
+          this.loading.set(false);
+          this.applyDashboard(dashboard);
+          this.info.set(status === 'DONE' ? 'Aufgabe erledigt.' : 'Aufgabe ist in Prüfung.');
+        },
+        error: error => this.fail(error)
+      });
+  }
+
   protected priorityLabel(priority: string): string {
     return {
       LOW: 'Niedrig',
@@ -261,6 +278,15 @@ export class App implements OnInit, OnDestroy {
       IN_REVIEW: 'In Prüfung',
       DONE: 'Erledigt'
     }[status] ?? status;
+  }
+
+  protected insightSeverityLabel(severity: string): string {
+    return {
+      HIGH: 'Priorität',
+      MEDIUM: 'Nächster Schritt',
+      LOW: 'Verbesserung',
+      GOOD: 'Stabil'
+    }[severity] ?? severity;
   }
 
   private submitDashboardRequest(path: 'properties' | 'units' | 'tasks' | 'finances' | 'documents', payload: Record<string, unknown>, success: string): void {
@@ -392,6 +418,8 @@ function germanDateValidator(control: AbstractControl): ValidationErrors | null 
 
 type Section = 'overview' | 'properties' | 'units' | 'finances' | 'tasks' | 'documents' | 'activity';
 type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+type TaskStatus = 'OPEN' | 'IN_REVIEW' | 'DONE';
+type InsightSeverity = 'HIGH' | 'MEDIUM' | 'LOW' | 'GOOD';
 
 interface RegistrationResult {
   emailSent: boolean;
@@ -437,10 +465,11 @@ interface Dashboard {
     onboardingCompletion: number;
   };
   units: Array<{ ownerName: string; unitLabel: string; shareValue: number }>;
-  tasks: Array<{ id: string; title: string; description: string; status: string; priority: string; dueDate?: string }>;
+  tasks: WorkTaskView[];
   finances: Array<{ label: string; amount: number; category: string; bookedOn: string; status: string }>;
   documents: Array<{ id: string; title: string; documentType: string; fileName: string; documentDate: string }>;
   activity: Array<{ eventType: string; summary: string; createdAt: string }>;
+  insights: InsightView[];
   onboarding: {
     completion: number;
     accountActivated: boolean;
@@ -449,4 +478,21 @@ interface Dashboard {
     financeCreated: boolean;
     taskCreated: boolean;
   };
+}
+
+interface WorkTaskView {
+  id: string;
+  title: string;
+  description: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate?: string;
+}
+
+interface InsightView {
+  severity: InsightSeverity;
+  title: string;
+  description: string;
+  actionSection: Section;
+  actionLabel: string;
 }

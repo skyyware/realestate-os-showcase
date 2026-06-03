@@ -187,6 +187,34 @@
         </article>
       </section>
 
+      @if (dashboard()?.insights?.length) {
+        <section class="command-center">
+          <div class="command-copy">
+            <span>Betriebslage</span>
+            <h2>Heute entscheiden</h2>
+            <p>Die wichtigsten nächsten Schritte für den ausgewählten Workspace.</p>
+          </div>
+          <div class="insight-list">
+            @for (insight of dashboard()?.insights ?? []; track insight.title) {
+              <button
+                class="insight-action"
+                type="button"
+                [class.high]="insight.severity === 'HIGH'"
+                [class.medium]="insight.severity === 'MEDIUM'"
+                [class.low]="insight.severity === 'LOW'"
+                [class.good]="insight.severity === 'GOOD'"
+                (click)="openInsight(insight)"
+              >
+                <span>{{ insightSeverityLabel(insight.severity) }}</span>
+                <strong>{{ insight.title }}</strong>
+                <small>{{ insight.description }}</small>
+                <em>{{ insight.actionLabel }}</em>
+              </button>
+            }
+          </div>
+        </section>
+      }
+
       @if (!hasWorkspace() || activeSection() === 'properties') {
         <section class="panel setup-panel">
           <div class="panel-heading">
@@ -261,9 +289,20 @@
               </form>
               <div class="list">
                 @for (task of dashboard()?.tasks; track task.id) {
-                  <div class="row">
-                    <div><strong>{{ task.title }}</strong><small>{{ task.description }} @if (task.dueDate) { · {{ task.dueDate | date:'dd.MM.yyyy' }} }</small></div>
-                    <span class="badge" [class.urgent]="task.priority === 'URGENT'">{{ priorityLabel(task.priority) }}</span>
+                  <div class="row task-row" [class.done]="task.status === 'DONE'">
+                    <div>
+                      <strong>{{ task.title }}</strong>
+                      <small>{{ task.description }} @if (task.dueDate) { · {{ task.dueDate | date:'dd.MM.yyyy' }} } · {{ statusLabel(task.status) }}</small>
+                    </div>
+                    <div class="task-controls">
+                      <span class="badge" [class.urgent]="task.priority === 'URGENT'">{{ priorityLabel(task.priority) }}</span>
+                      @if (task.status !== 'IN_REVIEW' && task.status !== 'DONE') {
+                        <button class="small-action secondary-action" type="button" [disabled]="loading()" (click)="updateTaskStatus(task, 'IN_REVIEW')">In Prüfung</button>
+                      }
+                      @if (task.status !== 'DONE') {
+                        <button class="small-action" type="button" [disabled]="loading()" (click)="updateTaskStatus(task, 'DONE')">Erledigen</button>
+                      }
+                    </div>
                   </div>
                 } @empty {
                   <p class="empty">Keine offenen Aufgaben.</p>

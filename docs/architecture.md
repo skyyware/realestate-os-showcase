@@ -21,6 +21,18 @@ Das Backend ist bewusst modular geschnitten:
 Die Module enthalten jeweils ihre JPA-Entities und Repositories. Die API wird
 nicht direkt aus Entities gespeist, sondern über DTOs/Records in Services.
 
+## Workspace Intelligence
+
+Das Dashboard liefert nicht nur Rohlisten, sondern verdichtete Arbeitssignale:
+
+- `PortfolioMetrics` fasst Kontostand, Rücklage, Forderungen und offene Aufgaben zusammen.
+- `InsightView` erzeugt pro ausgewählter Immobilie priorisierte nächste Schritte.
+- Task-Statuswechsel werden als Command verarbeitet und landen im Audit-Trail.
+
+Damit bleibt das Frontend dünn: Es rendert Handlungsvorschläge, springt in den
+passenden Arbeitsbereich und aktualisiert den Workspace nach jeder Aktion aus
+einer konsistenten Backend-Sicht.
+
 ## Identity
 
 Die Anwendung nutzt eine app-native Registrierung mit einmaligem Token, BCrypt und

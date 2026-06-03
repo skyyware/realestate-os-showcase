@@ -13,6 +13,7 @@ import com.skyyware.realestate.property.OwnerUnitRepository;
 import com.skyyware.realestate.property.PropertyAsset;
 import com.skyyware.realestate.property.PropertyAssetRepository;
 import com.skyyware.realestate.task.TaskPriority;
+import com.skyyware.realestate.task.TaskStatus;
 import com.skyyware.realestate.task.WorkTask;
 import com.skyyware.realestate.task.WorkTaskRepository;
 import java.math.BigDecimal;
@@ -72,6 +73,7 @@ public class WorkspaceService {
                     List.of(),
                     List.of(),
                     activityEvents.stream().map(WorkspaceService::toActivity).toList(),
+                    List.of(new InsightView("HIGH", "Immobilie anlegen", "Lege die erste WEG mit Kontostand, Rücklage und Einheiten an.", "properties", "Immobilie starten")),
                     new OnboardingView(20, true, false, false, false, false)
             );
         }
@@ -87,6 +89,7 @@ public class WorkspaceService {
                 .filter(amount -> amount.signum() < 0)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .abs();
+        int openTaskCount = (int) workTasks.stream().filter(task -> task.status() != TaskStatus.DONE).count();
 
         OnboardingView onboarding = onboarding(!assets.isEmpty(), !ownerUnits.isEmpty(), !financeEvents.isEmpty(), !workTasks.isEmpty());
         return new DashboardView(
@@ -99,7 +102,7 @@ public class WorkspaceService {
                         selected.cashBalance(),
                         selected.reserveBalance(),
                         pendingPayments,
-                        workTasks.size(),
+                        openTaskCount,
                         onboarding.completion()
                 ),
                 ownerUnits.stream().map(WorkspaceService::toUnit).toList(),
@@ -107,6 +110,7 @@ public class WorkspaceService {
                 financeEvents.stream().map(WorkspaceService::toFinance).toList(),
                 documentViews.stream().map(WorkspaceService::toDocument).toList(),
                 activityEvents.stream().map(WorkspaceService::toActivity).toList(),
+                insights(ownerUnits, workTasks, financeEvents, documentViews, pendingPayments),
                 onboarding
         );
     }
@@ -142,6 +146,19 @@ public class WorkspaceService {
         PropertyAsset property = propertyFor(user, command.propertyId());
         tasks.save(new WorkTask(property, command.title(), command.description(), command.priority(), command.dueDate()));
         activities.save(new ActivityEvent(user, property, "TASK", "Neue Aufgabe erstellt: " + command.title()));
+        return dashboard(userId, property.id());
+    }
+
+    @Transactional
+    public DashboardView updateTaskStatus(UUID userId, UUID taskId, TaskStatus status) {
+        AppUser user = user(userId);
+        WorkTask task = tasks.findById(taskId).orElseThrow(() -> new IllegalArgumentException("Aufgabe nicht gefunden."));
+        PropertyAsset property = task.property();
+        if (!property.owner().id().equals(user.id())) {
+            throw new IllegalArgumentException("Aufgabe gehört nicht zu diesem Workspace.");
+        }
+        task.transitionTo(status);
+        activities.save(new ActivityEvent(user, property, "TASK", "Aufgabe aktualisiert: " + task.title() + " ist " + taskStatusLabel(status) + "."));
         return dashboard(userId, property.id());
     }
 
@@ -185,6 +202,44 @@ public class WorkspaceService {
         return new OnboardingView(completed * 20, true, hasProperty, hasUnits, hasFinance, hasTasks);
     }
 
+    private static List<InsightView> insights(
+            List<OwnerUnit> ownerUnits,
+            List<WorkTask> workTasks,
+            List<FinanceEvent> financeEvents,
+            List<PropertyDocument> documents,
+            BigDecimal pendingPayments
+    ) {
+        List<InsightView> result = new java.util.ArrayList<>();
+        if (ownerUnits.isEmpty()) {
+            result.add(new InsightView("HIGH", "Eigentümerstruktur fehlt", "Einheiten und Miteigentumsanteile sind die Grundlage für Umlagen und Beschlüsse.", "units", "Einheiten anlegen"));
+        }
+        if (pendingPayments.signum() > 0) {
+            result.add(new InsightView("HIGH", "Offene Forderungen klären", "Negative Buchungen sollten geprüft, gebucht oder aktiv nachverfolgt werden.", "finances", "Finanzen prüfen"));
+        }
+        boolean hasOpenTask = workTasks.stream().anyMatch(task -> task.status() != TaskStatus.DONE);
+        if (hasOpenTask) {
+            result.add(new InsightView("MEDIUM", "Nächste Aufgabe steuern", "Offene Vorgänge brauchen einen klaren Status, damit Beirat und Eigentümer folgen können.", "tasks", "Aufgaben öffnen"));
+        }
+        if (financeEvents.isEmpty()) {
+            result.add(new InsightView("MEDIUM", "Finanzlage erfassen", "Kontostand und Rücklage werden wertvoller, sobald die ersten Buchungen im Verlauf sichtbar sind.", "finances", "Buchung erfassen"));
+        }
+        if (documents.isEmpty()) {
+            result.add(new InsightView("LOW", "Beschlüsse dokumentieren", "Protokolle, Wirtschaftspläne und Rechnungen sollten direkt am Objekt auffindbar sein.", "documents", "Dokument ablegen"));
+        }
+        if (result.isEmpty()) {
+            result.add(new InsightView("GOOD", "Workspace ist operativ sauber", "Die wichtigsten Daten liegen vor. Nächster Hebel: regelmäßige Zahlungs- und Aufgabenprüfung.", "activity", "Audit ansehen"));
+        }
+        return result.stream().limit(3).toList();
+    }
+
+    private static String taskStatusLabel(TaskStatus status) {
+        return switch (status) {
+            case OPEN -> "offen";
+            case IN_REVIEW -> "in Prüfung";
+            case DONE -> "erledigt";
+        };
+    }
+
     private static PropertyView toProperty(PropertyAsset property) {
         return new PropertyView(property.id(), property.name(), property.address(), property.city(), property.unitCount(), property.cashBalance(), property.reserveBalance(), "Aktiv");
     }
@@ -219,6 +274,7 @@ public class WorkspaceService {
             List<FinanceView> finances,
             List<DocumentView> documents,
             List<ActivityView> activity,
+            List<InsightView> insights,
             OnboardingView onboarding
     ) {
     }
@@ -248,6 +304,9 @@ public class WorkspaceService {
     }
 
     public record ActivityView(String eventType, String summary, Instant createdAt) {
+    }
+
+    public record InsightView(String severity, String title, String description, String actionSection, String actionLabel) {
     }
 
     public record OnboardingView(int completion, boolean accountActivated, boolean propertyCreated, boolean unitsCreated, boolean financeCreated, boolean taskCreated) {

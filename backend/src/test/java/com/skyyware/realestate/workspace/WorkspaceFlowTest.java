@@ -6,6 +6,7 @@ import com.skyyware.realestate.identity.AppUser;
 import com.skyyware.realestate.identity.AppUserRepository;
 import com.skyyware.realestate.identity.AuthService;
 import com.skyyware.realestate.task.TaskPriority;
+import com.skyyware.realestate.task.TaskStatus;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
@@ -83,7 +84,28 @@ class WorkspaceFlowTest {
         assertThat(complete.documents()).hasSize(1);
         assertThat(complete.tasks()).hasSize(1);
         assertThat(complete.metrics().pendingPayments()).isEqualByComparingTo("1250.00");
+        assertThat(complete.metrics().openTasks()).isEqualTo(1);
         assertThat(complete.onboarding().completion()).isEqualTo(100);
+        assertThat(complete.insights()).extracting(WorkspaceService.InsightView::title)
+                .contains("Offene Forderungen klären", "Nächste Aufgabe steuern");
+
+        WorkspaceService.DashboardView inReview = workspaceService.updateTaskStatus(
+                user.id(),
+                complete.tasks().getFirst().id(),
+                TaskStatus.IN_REVIEW
+        );
+        assertThat(inReview.tasks().getFirst().status()).isEqualTo("IN_REVIEW");
+        assertThat(inReview.metrics().openTasks()).isEqualTo(1);
+
+        WorkspaceService.DashboardView taskDone = workspaceService.updateTaskStatus(
+                user.id(),
+                complete.tasks().getFirst().id(),
+                TaskStatus.DONE
+        );
+        assertThat(taskDone.tasks().getFirst().status()).isEqualTo("DONE");
+        assertThat(taskDone.metrics().openTasks()).isZero();
+        assertThat(taskDone.insights()).extracting(WorkspaceService.InsightView::title)
+                .doesNotContain("Nächste Aufgabe steuern");
 
         WorkspaceService.DashboardView secondProperty = workspaceService.createProperty(user.id(), new WorkspaceService.CreatePropertyCommand(
                 "Neckarblick 4",

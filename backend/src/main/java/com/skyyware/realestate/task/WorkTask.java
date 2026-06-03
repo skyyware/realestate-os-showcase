@@ -61,6 +61,10 @@ public class WorkTask {
         return id;
     }
 
+    public PropertyAsset property() {
+        return property;
+    }
+
     public String title() {
         return title;
     }
@@ -79,5 +83,9 @@ public class WorkTask {
 
     public LocalDate dueDate() {
         return dueDate;
+    }
+
+    public void transitionTo(TaskStatus status) {
+        this.status = status;
     }
 }

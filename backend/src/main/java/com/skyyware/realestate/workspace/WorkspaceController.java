@@ -2,6 +2,7 @@ package com.skyyware.realestate.workspace;
 
 import com.skyyware.realestate.security.CurrentUser;
 import com.skyyware.realestate.task.TaskPriority;
+import com.skyyware.realestate.task.TaskStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
@@ -12,6 +13,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -65,6 +68,11 @@ public class WorkspaceController {
         ));
     }
 
+    @PatchMapping("/tasks/{taskId}/status")
+    WorkspaceService.DashboardView updateTaskStatus(@PathVariable UUID taskId, @Valid @RequestBody UpdateTaskStatusRequest request) {
+        return workspaceService.updateTaskStatus(CurrentUser.require().userId(), taskId, request.status());
+    }
+
     @PostMapping("/finances")
     WorkspaceService.DashboardView createFinance(@Valid @RequestBody CreateFinanceRequest request) {
         return workspaceService.createFinance(CurrentUser.require().userId(), new WorkspaceService.CreateFinanceCommand(
@@ -113,6 +121,9 @@ public class WorkspaceController {
             @NotNull TaskPriority priority,
             LocalDate dueDate
     ) {
+    }
+
+    public record UpdateTaskStatusRequest(@NotNull TaskStatus status) {
     }
 
     public record CreateFinanceRequest(

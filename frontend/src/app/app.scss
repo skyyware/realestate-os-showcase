@@ -493,6 +493,102 @@ button:disabled {
   font-size: 1.8rem;
 }
 
+.command-center {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: stretch;
+  margin: 0 0 18px;
+  padding: 20px;
+  border: 1px solid #d7e6f0;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ffffff, #eef9f6);
+  box-shadow: 0 18px 42px rgb(8 32 79 / 5%);
+}
+
+.command-copy span,
+.insight-action span {
+  display: block;
+  margin-bottom: 7px;
+  color: #008765;
+  font-size: 0.74rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.command-copy h2 {
+  margin: 0 0 8px;
+  font-size: 1.65rem;
+  line-height: 1.08;
+}
+
+.command-copy p {
+  max-width: 320px;
+  margin: 0;
+  color: #607087;
+  line-height: 1.45;
+}
+
+.insight-list {
+  display: flex;
+  gap: 12px;
+}
+
+.insight-action {
+  display: grid;
+  align-content: start;
+  flex: 1 1 220px;
+  min-height: 156px;
+  width: 100%;
+  padding: 16px;
+  color: #071b46;
+  background: rgb(255 255 255 / 82%);
+  border: 1px solid #d7e6f0;
+  box-shadow: none;
+  text-align: left;
+}
+
+.insight-action.high {
+  border-left: 4px solid #d86c00;
+}
+
+.insight-action.medium {
+  border-left: 4px solid #0877d8;
+}
+
+.insight-action.low {
+  border-left: 4px solid #008765;
+}
+
+.insight-action.good {
+  border-left: 4px solid #00a870;
+}
+
+.insight-action strong,
+.insight-action small,
+.insight-action em {
+  display: block;
+}
+
+.insight-action strong {
+  margin-bottom: 6px;
+  font-size: 1.02rem;
+  line-height: 1.18;
+}
+
+.insight-action small {
+  color: #607087;
+  line-height: 1.35;
+}
+
+.insight-action em {
+  margin-top: 12px;
+  color: #008765;
+  font-style: normal;
+  font-weight: 850;
+}
+
 .content-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 410px);
@@ -653,6 +749,29 @@ button.table-row.selected {
   margin-top: 4px;
 }
 
+.task-row.done {
+  opacity: 0.82;
+}
+
+.task-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  min-width: 210px;
+}
+
+.small-action {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 0.75rem;
+}
+
+.secondary-action {
+  color: #071b46;
+  background: #e8f1ff;
+}
+
 .negative {
   color: #bd5b00;
   font-weight: 850;
@@ -754,9 +873,14 @@ button.table-row.selected {
 @media (max-width: 1180px) {
   .topbar,
   .metrics,
+  .command-center,
   .content-grid,
   .auth-shell {
     grid-template-columns: 1fr;
+  }
+
+  .insight-list {
+    flex-direction: column;
   }
 
   .sidebar {
@@ -808,8 +932,14 @@ button.table-row.selected {
   .sidebar nav,
   .property-form,
   .compact-form,
-  .units-form {
+  .units-form,
+  .task-controls {
     grid-template-columns: 1fr;
+  }
+
+  .task-controls {
+    justify-content: flex-start;
+    min-width: 0;
   }
 
   .content-grid > .panel:not(.portfolio):not(.setup-panel) .compact-form {
