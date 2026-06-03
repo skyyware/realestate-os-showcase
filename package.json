@@ -1,0 +1,18 @@
+{
+  "name": "realestate-os-showcase",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Senior product engineering showcase for dotega: Spring Boot, Angular, PostgreSQL and SMTP onboarding.",
+  "scripts": {
+    "backend:test": "cd backend && ./mvnw test",
+    "backend:package": "cd backend && ./mvnw -DskipTests package",
+    "frontend:build": "cd frontend && npm run build",
+    "qa:local": "node scripts/qa-local.mjs",
+    "application:pdf": "node scripts/render-application-pdf.mjs",
+    "ci": "npm run backend:test && npm run frontend:build && npm run application:pdf"
+  },
+  "devDependencies": {
+    "playwright": "^1.53.0"
+  }
+}

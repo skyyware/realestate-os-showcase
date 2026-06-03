@@ -1,0 +1,203 @@
+<main class="shell" [class.auth-shell]="mode() !== 'dashboard'">
+  @if (mode() !== 'dashboard') {
+    <section class="auth-panel">
+      <div class="brand">
+        <span class="brand-mark">RE</span>
+        <div>
+          <strong>RealEstate OS</strong>
+          <small>Product Engineering Showcase</small>
+        </div>
+      </div>
+      <h1>WEG-Verwaltung, die Eigentümer sofort verstehen.</h1>
+      <p>
+        Ein digitaler Arbeitsraum für Selbstverwaltung, Finanzen, Aufgaben und transparente
+        Entscheidungen in Eigentümergemeinschaften.
+      </p>
+      <ul>
+        <li>Ein gemeinsamer Überblick für Konto, Rücklage und offene Zahlungen</li>
+        <li>Aufgaben und Beschlüsse mit nachvollziehbarem Aktivitätsfeed</li>
+        <li>Onboarding per E-Mail-Link mit sicherer Passwortvergabe</li>
+      </ul>
+      <figure class="product-visual">
+        <img src="realestate-os-dashboard-concept.png" alt="RealEstate OS Dashboard mit Immobilienkennzahlen, Aufgaben und Finanzübersicht" />
+      </figure>
+    </section>
+
+    <section class="auth-card">
+      @if (mode() === 'register') {
+        <div class="card-heading">
+          <p>Account erstellen</p>
+          <h2>Demo-Zugang anfordern</h2>
+        </div>
+        <form [formGroup]="registerForm" (ngSubmit)="register()">
+          <label>Name <input formControlName="fullName" autocomplete="name" /></label>
+          <label>E-Mail <input formControlName="email" type="email" autocomplete="email" /></label>
+          <label>Organisation <input formControlName="organizationName" autocomplete="organization" /></label>
+          <button type="submit" [disabled]="loading()">Aktivierungslink senden</button>
+        </form>
+        <button class="link" type="button" (click)="switchMode('login')">Ich habe bereits einen Zugang</button>
+      }
+
+      @if (mode() === 'login') {
+        <div class="card-heading">
+          <p>Willkommen zurück</p>
+          <h2>Einloggen</h2>
+        </div>
+        <form [formGroup]="loginForm" (ngSubmit)="login()">
+          <label>E-Mail <input formControlName="email" type="email" autocomplete="email" /></label>
+          <label>Passwort <input formControlName="password" type="password" autocomplete="current-password" /></label>
+          <button type="submit" [disabled]="loading()">Dashboard öffnen</button>
+        </form>
+        <button class="link" type="button" (click)="switchMode('register')">Neuen Zugang erstellen</button>
+      }
+
+      @if (mode() === 'password') {
+        <div class="card-heading">
+          <p>Aktivierung</p>
+          <h2>Passwort vergeben</h2>
+        </div>
+        @if (registrationPreview()) {
+          <div class="preview">
+            <strong>{{ registrationPreview()?.fullName }}</strong>
+            <span>{{ registrationPreview()?.email }}</span>
+            <span>{{ registrationPreview()?.organizationName }}</span>
+          </div>
+        }
+        <form [formGroup]="passwordForm" (ngSubmit)="setPassword()">
+          <label>Neues Passwort <input formControlName="password" type="password" autocomplete="new-password" /></label>
+          <button type="submit" [disabled]="loading()">Account aktivieren</button>
+        </form>
+      }
+
+      @if (error()) { <p class="message error">{{ error() }}</p> }
+      @if (info()) { <p class="message info">{{ info() }}</p> }
+    </section>
+  }
+
+  @if (mode() === 'dashboard' && dashboard()) {
+    <aside class="sidebar">
+      <div class="brand compact">
+        <span class="brand-mark">RE</span>
+        <strong>RealEstate OS</strong>
+      </div>
+      <nav>
+        <a class="active">Übersicht</a>
+        <a>Finanzen</a>
+        <a>Aufgaben</a>
+        <a>Dokumente</a>
+        <a>Eigentümer</a>
+      </nav>
+      <button class="ghost" type="button" (click)="logout()">Logout</button>
+    </aside>
+
+    <section class="workspace">
+      <header class="topbar">
+        <div>
+          <span>{{ dashboard()?.user?.organizationName }}</span>
+          <h1>{{ firstProperty()?.name }}</h1>
+        </div>
+        <div class="user-pill">
+          <strong>{{ dashboard()?.user?.fullName }}</strong>
+          <small>{{ dashboard()?.user?.email }}</small>
+        </div>
+      </header>
+
+      <section class="metrics">
+        <article>
+          <span>Objekte</span>
+          <strong>{{ dashboard()?.metrics?.properties }}</strong>
+          <small>{{ dashboard()?.metrics?.units }} Einheiten im Workspace</small>
+        </article>
+        <article>
+          <span>Liquidität</span>
+          <strong>{{ dashboard()?.metrics?.cashBalance | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</strong>
+          <small>WEG-Konto verfügbar</small>
+        </article>
+        <article>
+          <span>Rücklage</span>
+          <strong>{{ dashboard()?.metrics?.reserveBalance | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</strong>
+          <small>Planwert 78% erfüllt</small>
+        </article>
+        <article class="risk">
+          <span>Offene Zahlungen</span>
+          <strong>{{ dashboard()?.metrics?.pendingPayments | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</strong>
+          <small>Prüfung oder Freigabe nötig</small>
+        </article>
+      </section>
+
+      <section class="main-grid">
+        <article class="panel span-2">
+          <div class="panel-heading">
+            <div>
+              <span>Produktworkflow</span>
+              <h2>Aufgabensteuerung</h2>
+            </div>
+          </div>
+          <form class="task-form" [formGroup]="taskForm" (ngSubmit)="addTask()">
+            <input formControlName="title" placeholder="Aufgabe" />
+            <select formControlName="priority">
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+              <option value="URGENT">Urgent</option>
+            </select>
+            <input formControlName="dueDate" inputmode="numeric" placeholder="TT.MM.JJJJ" />
+            <button type="submit">Anlegen</button>
+            <textarea formControlName="description" placeholder="Beschreibung"></textarea>
+          </form>
+          <div class="list">
+            @for (task of dashboard()?.tasks; track task.id) {
+              <div class="row">
+                <div>
+                  <strong>{{ task.title }}</strong>
+                  <small>{{ task.description }}</small>
+                </div>
+                <span class="badge" [class.urgent]="task.priority === 'URGENT'">{{ task.priority }}</span>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-heading"><div><span>Banking</span><h2>Finanzfeed</h2></div></div>
+          <div class="list finance">
+            @for (item of dashboard()?.finances; track item.label) {
+              <div class="row">
+                <div>
+                  <strong>{{ item.label }}</strong>
+                  <small>{{ item.category }} · {{ item.bookedOn | date:'dd.MM.yyyy' }}</small>
+                </div>
+                <span [class.negative]="item.amount < 0">{{ item.amount | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</span>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-heading"><div><span>Eigentümer</span><h2>Einheiten</h2></div></div>
+          <div class="list">
+            @for (unit of dashboard()?.units; track unit.unitLabel) {
+              <div class="row">
+                <div><strong>{{ unit.unitLabel }}</strong><small>{{ unit.ownerName }}</small></div>
+                <span>{{ unit.shareValue | number:'1.2-2' }}</span>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel activity">
+          <div class="panel-heading"><div><span>Audit Trail</span><h2>Aktivität</h2></div></div>
+          <div class="timeline">
+            @for (event of dashboard()?.activity; track event.createdAt) {
+              <div>
+                <span></span>
+                <p>{{ event.summary }}</p>
+                <small>{{ event.createdAt | date:'dd.MM.yyyy HH:mm' }}</small>
+              </div>
+            }
+          </div>
+        </article>
+      </section>
+    </section>
+  }
+</main>
