@@ -1,6 +1,7 @@
 package com.skyyware.realestate.workspace;
 
 import com.skyyware.realestate.security.CurrentUser;
+import com.skyyware.realestate.decision.DecisionStatus;
 import com.skyyware.realestate.task.TaskPriority;
 import com.skyyware.realestate.task.TaskStatus;
 import jakarta.validation.Valid;
@@ -96,6 +97,26 @@ public class WorkspaceController {
         ));
     }
 
+    @PostMapping("/decisions")
+    WorkspaceService.DashboardView createDecision(@Valid @RequestBody CreateDecisionRequest request) {
+        return workspaceService.createDecision(CurrentUser.require().userId(), new WorkspaceService.CreateDecisionCommand(
+                request.propertyId(),
+                request.title(),
+                request.resolutionText(),
+                request.meetingDate(),
+                request.meetingLocation(),
+                request.status(),
+                request.yesVotes(),
+                request.noVotes(),
+                request.abstentions()
+        ));
+    }
+
+    @PatchMapping("/decisions/{decisionId}/status")
+    WorkspaceService.DashboardView updateDecisionStatus(@PathVariable UUID decisionId, @Valid @RequestBody UpdateDecisionStatusRequest request) {
+        return workspaceService.updateDecisionStatus(CurrentUser.require().userId(), decisionId, request.status());
+    }
+
     public record CreatePropertyRequest(
             @NotBlank @Size(max = 180) String name,
             @NotBlank @Size(max = 240) String address,
@@ -143,5 +164,21 @@ public class WorkspaceController {
             @NotBlank @Size(max = 240) String fileName,
             @NotNull LocalDate documentDate
     ) {
+    }
+
+    public record CreateDecisionRequest(
+            UUID propertyId,
+            @NotBlank @Size(max = 180) String title,
+            @NotBlank @Size(max = 1600) String resolutionText,
+            @NotNull LocalDate meetingDate,
+            @NotBlank @Size(max = 180) String meetingLocation,
+            @NotNull DecisionStatus status,
+            @Min(0) int yesVotes,
+            @Min(0) int noVotes,
+            @Min(0) int abstentions
+    ) {
+    }
+
+    public record UpdateDecisionStatusRequest(@NotNull DecisionStatus status) {
     }
 }

@@ -110,6 +110,10 @@
           <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h4M10 12h5M10 16h5"/></svg></span>
           Dokumente
         </button>
+        <button type="button" [class.active]="activeSection() === 'decisions'" (click)="selectSection('decisions')">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v4H7z"/><path d="M5 8h14v12H5z"/><path d="m8.5 14 2 2 5-5"/></svg></span>
+          Beschlüsse
+        </button>
         <button type="button" [class.active]="activeSection() === 'activity'" (click)="selectSection('activity')">
           <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h4M5 12h9M5 17h6"/><path d="M17 8.5v5l3 2"/></svg></span>
           Aktivität
@@ -353,6 +357,55 @@
             </article>
           }
 
+          @if (activeSection() === 'overview' || activeSection() === 'decisions') {
+            <article class="panel decisions-panel">
+              <div class="panel-heading">
+                <div><span>Beschlüsse</span><h2>Beschluss-Sammlung</h2></div>
+                <small>{{ openDecisions().length }} offen in Umsetzung</small>
+              </div>
+              <form class="compact-form decision-form" [formGroup]="decisionForm" (ngSubmit)="createDecision()">
+                <input formControlName="title" placeholder="Beschlusstitel" />
+                <input formControlName="meetingDate" inputmode="numeric" placeholder="TT.MM.JJJJ" aria-label="Beschlussdatum" />
+                <input formControlName="meetingLocation" placeholder="Ort oder Format" />
+                <select formControlName="status">
+                  <option value="DRAFT">Entwurf</option>
+                  <option value="PASSED">Beschlossen</option>
+                  <option value="REJECTED">Abgelehnt</option>
+                  <option value="IMPLEMENTED">Umgesetzt</option>
+                </select>
+                <input formControlName="yesVotes" type="number" min="0" placeholder="Ja" aria-label="Ja-Stimmen" />
+                <input formControlName="noVotes" type="number" min="0" placeholder="Nein" aria-label="Nein-Stimmen" />
+                <input formControlName="abstentions" type="number" min="0" placeholder="Enthaltungen" aria-label="Enthaltungen" />
+                <button type="submit">Eintragen</button>
+                <textarea formControlName="resolutionText" placeholder="Wortlaut des Beschlusses"></textarea>
+              </form>
+              <div class="list">
+                @for (decision of dashboard()?.decisions; track decision.id) {
+                  <div class="row decision-row" [class.done]="decision.status === 'IMPLEMENTED'">
+                    <div>
+                      <strong>{{ decision.title }}</strong>
+                      <small>{{ decision.meetingDate | date:'dd.MM.yyyy' }} · {{ decision.meetingLocation }} · {{ statusLabel(decision.status) }}</small>
+                      <p>{{ decision.resolutionText }}</p>
+                      <div class="vote-strip">
+                        <span>Ja {{ decision.yesVotes }}</span>
+                        <span>Nein {{ decision.noVotes }}</span>
+                        <span>Enthalten {{ decision.abstentions }}</span>
+                      </div>
+                    </div>
+                    <div class="task-controls">
+                      <span class="badge" [class.urgent]="decision.status === 'DRAFT'">{{ statusLabel(decision.status) }}</span>
+                      @if (decision.status !== 'IMPLEMENTED' && decision.status !== 'REJECTED') {
+                        <button class="small-action" type="button" [disabled]="loading()" (click)="updateDecisionStatus(decision, 'IMPLEMENTED')">Umgesetzt</button>
+                      }
+                    </div>
+                  </div>
+                } @empty {
+                  <p class="empty">Noch keine Beschlüsse in der Sammlung.</p>
+                }
+              </div>
+            </article>
+          }
+
           @if (activeSection() === 'overview' || activeSection() === 'activity') {
             <aside class="panel activity">
               <div class="panel-heading"><div><span>Audit Trail</span><h2>Aktivitäten</h2></div></div>
@@ -375,6 +428,7 @@
               <li [class.done]="dashboard()?.onboarding?.unitsCreated">Einheiten angelegt</li>
               <li [class.done]="dashboard()?.onboarding?.financeCreated">Finanzen erfasst</li>
               <li [class.done]="dashboard()?.onboarding?.taskCreated">Aufgabe angelegt</li>
+              <li [class.done]="dashboard()?.onboarding?.decisionCreated">Beschluss-Sammlung gestartet</li>
             </ul>
           </aside>
         </section>

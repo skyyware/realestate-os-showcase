@@ -42,6 +42,23 @@ priorisiertes Command Center. Der leere Workspace bleibt absichtlich leer:
 Nutzer legen Immobilie, Einheiten, Finanzen, Aufgaben und Dokumente selbst an,
 damit keine Demodaten mit echten Entscheidungsdaten verwechselt werden.
 
+## WEG Product Fit
+
+Der nächste produktive Kern ist die Beschluss-Sammlung: Eigentümergemeinschaften
+brauchen nachvollziehbare Entscheidungen mit Datum, Ort, Wortlaut,
+Abstimmungsergebnis und späterer Umsetzung. RealEstate OS bildet diesen Weg als
+eigenen Vertical Slice ab:
+
+- Beschluss erfassen und der ausgewählten Immobilie zuordnen
+- Status von Entwurf über beschlossen/abgelehnt bis umgesetzt führen
+- Abstimmzahlen getrennt erfassen
+- Audit-Trail bei Erfassung und Statuswechsel schreiben
+- Command Center warnt, wenn eine Beschluss-Sammlung fehlt oder beschlossene
+  Punkte noch nicht umgesetzt sind
+
+Damit rückt die App näher an den Kern realer WEG-Verwaltung: nicht nur Daten
+ablegen, sondern Entscheidungen sauber dokumentieren und in Arbeit übersetzen.
+
 ## Identity
 
 Die Anwendung nutzt eine app-native Registrierung mit einmaligem Token, BCrypt und

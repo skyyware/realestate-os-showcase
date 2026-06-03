@@ -2,6 +2,9 @@ package com.skyyware.realestate.workspace;
 
 import com.skyyware.realestate.activity.ActivityEvent;
 import com.skyyware.realestate.activity.ActivityEventRepository;
+import com.skyyware.realestate.decision.CommunityDecision;
+import com.skyyware.realestate.decision.CommunityDecisionRepository;
+import com.skyyware.realestate.decision.DecisionStatus;
 import com.skyyware.realestate.document.PropertyDocument;
 import com.skyyware.realestate.document.PropertyDocumentRepository;
 import com.skyyware.realestate.finance.FinanceEvent;
@@ -33,6 +36,7 @@ public class WorkspaceService {
     private final FinanceEventRepository finances;
     private final ActivityEventRepository activities;
     private final PropertyDocumentRepository documents;
+    private final CommunityDecisionRepository decisions;
 
     public WorkspaceService(
             AppUserRepository users,
@@ -41,7 +45,8 @@ public class WorkspaceService {
             WorkTaskRepository tasks,
             FinanceEventRepository finances,
             ActivityEventRepository activities,
-            PropertyDocumentRepository documents
+            PropertyDocumentRepository documents,
+            CommunityDecisionRepository decisions
     ) {
         this.users = users;
         this.properties = properties;
@@ -50,6 +55,7 @@ public class WorkspaceService {
         this.finances = finances;
         this.activities = activities;
         this.documents = documents;
+        this.decisions = decisions;
     }
 
     @Transactional(readOnly = true)
@@ -72,9 +78,10 @@ public class WorkspaceService {
                     List.of(),
                     List.of(),
                     List.of(),
+                    List.of(),
                     activityEvents.stream().map(WorkspaceService::toActivity).toList(),
                     List.of(new InsightView("HIGH", "Immobilie anlegen", "Lege die erste WEG mit Kontostand, Rücklage und Einheiten an.", "properties", "Immobilie starten")),
-                    new OnboardingView(20, true, false, false, false, false)
+                    new OnboardingView(17, true, false, false, false, false, false)
             );
         }
 
@@ -83,6 +90,7 @@ public class WorkspaceService {
         List<WorkTask> workTasks = tasks.findTop8ByPropertyOrderByCreatedAtDesc(selected);
         List<FinanceEvent> financeEvents = finances.findTop8ByPropertyOrderByBookedOnDesc(selected);
         List<PropertyDocument> documentViews = documents.findTop8ByPropertyOrderByDocumentDateDesc(selected);
+        List<CommunityDecision> communityDecisions = decisions.findTop8ByPropertyOrderByMeetingDateDesc(selected);
 
         BigDecimal pendingPayments = financeEvents.stream()
                 .map(FinanceEvent::amount)
@@ -91,7 +99,7 @@ public class WorkspaceService {
                 .abs();
         int openTaskCount = (int) workTasks.stream().filter(task -> task.status() != TaskStatus.DONE).count();
 
-        OnboardingView onboarding = onboarding(!assets.isEmpty(), !ownerUnits.isEmpty(), !financeEvents.isEmpty(), !workTasks.isEmpty());
+        OnboardingView onboarding = onboarding(!assets.isEmpty(), !ownerUnits.isEmpty(), !financeEvents.isEmpty(), !workTasks.isEmpty(), !communityDecisions.isEmpty());
         return new DashboardView(
                 new UserView(user.email(), user.fullName(), user.organizationName()),
                 selected.id(),
@@ -109,8 +117,9 @@ public class WorkspaceService {
                 workTasks.stream().map(WorkspaceService::toTask).toList(),
                 financeEvents.stream().map(WorkspaceService::toFinance).toList(),
                 documentViews.stream().map(WorkspaceService::toDocument).toList(),
+                communityDecisions.stream().map(WorkspaceService::toDecision).toList(),
                 activityEvents.stream().map(WorkspaceService::toActivity).toList(),
-                insights(ownerUnits, workTasks, financeEvents, documentViews, pendingPayments),
+                insights(ownerUnits, workTasks, financeEvents, documentViews, communityDecisions, pendingPayments),
                 onboarding
         );
     }
@@ -180,6 +189,38 @@ public class WorkspaceService {
         return dashboard(userId, property.id());
     }
 
+    @Transactional
+    public DashboardView createDecision(UUID userId, CreateDecisionCommand command) {
+        AppUser user = user(userId);
+        PropertyAsset property = propertyFor(user, command.propertyId());
+        CommunityDecision decision = decisions.save(new CommunityDecision(
+                property,
+                command.title(),
+                command.resolutionText(),
+                command.meetingDate(),
+                command.meetingLocation(),
+                command.status(),
+                command.yesVotes(),
+                command.noVotes(),
+                command.abstentions()
+        ));
+        activities.save(new ActivityEvent(user, property, "DECISION", "Beschluss dokumentiert: " + decision.title()));
+        return dashboard(userId, property.id());
+    }
+
+    @Transactional
+    public DashboardView updateDecisionStatus(UUID userId, UUID decisionId, DecisionStatus status) {
+        AppUser user = user(userId);
+        CommunityDecision decision = decisions.findById(decisionId).orElseThrow(() -> new IllegalArgumentException("Beschluss nicht gefunden."));
+        PropertyAsset property = decision.property();
+        if (!property.owner().id().equals(user.id())) {
+            throw new IllegalArgumentException("Beschluss gehört nicht zu diesem Workspace.");
+        }
+        decision.transitionTo(status);
+        activities.save(new ActivityEvent(user, property, "DECISION", "Beschluss aktualisiert: " + decision.title() + " ist " + decisionStatusLabel(status) + "."));
+        return dashboard(userId, property.id());
+    }
+
     private AppUser user(UUID userId) {
         return users.findById(userId).orElseThrow(() -> new IllegalArgumentException("Nutzer nicht gefunden."));
     }
@@ -197,9 +238,9 @@ public class WorkspaceService {
                 .orElseThrow(() -> new IllegalArgumentException("Bitte zuerst eine Immobilie hinzufügen."));
     }
 
-    private static OnboardingView onboarding(boolean hasProperty, boolean hasUnits, boolean hasFinance, boolean hasTasks) {
-        int completed = 1 + (hasProperty ? 1 : 0) + (hasUnits ? 1 : 0) + (hasFinance ? 1 : 0) + (hasTasks ? 1 : 0);
-        return new OnboardingView(completed * 20, true, hasProperty, hasUnits, hasFinance, hasTasks);
+    private static OnboardingView onboarding(boolean hasProperty, boolean hasUnits, boolean hasFinance, boolean hasTasks, boolean hasDecisions) {
+        int completed = 1 + (hasProperty ? 1 : 0) + (hasUnits ? 1 : 0) + (hasFinance ? 1 : 0) + (hasTasks ? 1 : 0) + (hasDecisions ? 1 : 0);
+        return new OnboardingView(Math.round(completed * 100f / 6f), true, hasProperty, hasUnits, hasFinance, hasTasks, hasDecisions);
     }
 
     private static List<InsightView> insights(
@@ -207,6 +248,7 @@ public class WorkspaceService {
             List<WorkTask> workTasks,
             List<FinanceEvent> financeEvents,
             List<PropertyDocument> documents,
+            List<CommunityDecision> decisions,
             BigDecimal pendingPayments
     ) {
         List<InsightView> result = new java.util.ArrayList<>();
@@ -217,8 +259,14 @@ public class WorkspaceService {
             result.add(new InsightView("HIGH", "Offene Forderungen klären", "Negative Buchungen sollten geprüft, gebucht oder aktiv nachverfolgt werden.", "finances", "Finanzen prüfen"));
         }
         boolean hasOpenTask = workTasks.stream().anyMatch(task -> task.status() != TaskStatus.DONE);
+        boolean hasOpenDecision = decisions.stream().anyMatch(decision -> decision.status() == DecisionStatus.PASSED || decision.status() == DecisionStatus.DRAFT);
         if (hasOpenTask) {
             result.add(new InsightView("MEDIUM", "Nächste Aufgabe steuern", "Offene Vorgänge brauchen einen klaren Status, damit Beirat und Eigentümer folgen können.", "tasks", "Aufgaben öffnen"));
+        }
+        if (decisions.isEmpty()) {
+            result.add(new InsightView("MEDIUM", "Beschluss-Sammlung starten", "Gefasste Beschlüsse brauchen Datum, Ort, Wortlaut und Abstimmungsergebnis.", "decisions", "Beschluss erfassen"));
+        } else if (hasOpenDecision) {
+            result.add(new InsightView("MEDIUM", "Beschluss umsetzen", "Gefasste Beschlüsse sollten nachvollziehbar in operative Umsetzung übergehen.", "decisions", "Beschlüsse prüfen"));
         }
         if (financeEvents.isEmpty()) {
             result.add(new InsightView("MEDIUM", "Finanzlage erfassen", "Kontostand und Rücklage werden wertvoller, sobald die ersten Buchungen im Verlauf sichtbar sind.", "finances", "Buchung erfassen"));
@@ -237,6 +285,15 @@ public class WorkspaceService {
             case OPEN -> "offen";
             case IN_REVIEW -> "in Prüfung";
             case DONE -> "erledigt";
+        };
+    }
+
+    private static String decisionStatusLabel(DecisionStatus status) {
+        return switch (status) {
+            case DRAFT -> "in Vorbereitung";
+            case PASSED -> "beschlossen";
+            case REJECTED -> "abgelehnt";
+            case IMPLEMENTED -> "umgesetzt";
         };
     }
 
@@ -260,6 +317,20 @@ public class WorkspaceService {
         return new DocumentView(document.id(), document.title(), document.documentType(), document.fileName(), document.documentDate());
     }
 
+    private static DecisionView toDecision(CommunityDecision decision) {
+        return new DecisionView(
+                decision.id(),
+                decision.title(),
+                decision.resolutionText(),
+                decision.meetingDate(),
+                decision.meetingLocation(),
+                decision.status().name(),
+                decision.yesVotes(),
+                decision.noVotes(),
+                decision.abstentions()
+        );
+    }
+
     private static ActivityView toActivity(ActivityEvent event) {
         return new ActivityView(event.eventType(), event.summary(), event.createdAt());
     }
@@ -273,6 +344,7 @@ public class WorkspaceService {
             List<TaskView> tasks,
             List<FinanceView> finances,
             List<DocumentView> documents,
+            List<DecisionView> decisions,
             List<ActivityView> activity,
             List<InsightView> insights,
             OnboardingView onboarding
@@ -303,13 +375,16 @@ public class WorkspaceService {
     public record DocumentView(UUID id, String title, String documentType, String fileName, LocalDate documentDate) {
     }
 
+    public record DecisionView(UUID id, String title, String resolutionText, LocalDate meetingDate, String meetingLocation, String status, int yesVotes, int noVotes, int abstentions) {
+    }
+
     public record ActivityView(String eventType, String summary, Instant createdAt) {
     }
 
     public record InsightView(String severity, String title, String description, String actionSection, String actionLabel) {
     }
 
-    public record OnboardingView(int completion, boolean accountActivated, boolean propertyCreated, boolean unitsCreated, boolean financeCreated, boolean taskCreated) {
+    public record OnboardingView(int completion, boolean accountActivated, boolean propertyCreated, boolean unitsCreated, boolean financeCreated, boolean taskCreated, boolean decisionCreated) {
     }
 
     public record CreatePropertyCommand(String name, String address, String city, int unitCount, BigDecimal cashBalance, BigDecimal reserveBalance) {
@@ -325,5 +400,8 @@ public class WorkspaceService {
     }
 
     public record CreateDocumentCommand(UUID propertyId, String title, String documentType, String fileName, LocalDate documentDate) {
+    }
+
+    public record CreateDecisionCommand(UUID propertyId, String title, String resolutionText, LocalDate meetingDate, String meetingLocation, DecisionStatus status, int yesVotes, int noVotes, int abstentions) {
     }
 }

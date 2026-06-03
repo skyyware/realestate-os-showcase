@@ -687,7 +687,8 @@ button:disabled {
 }
 
 .portfolio,
-.setup-panel {
+.setup-panel,
+.decisions-panel {
   grid-column: 1 / -1;
 }
 
@@ -715,6 +716,10 @@ button:disabled {
 
 .units-form {
   grid-template-columns: 1fr 1fr 120px auto;
+}
+
+.decision-form {
+  grid-template-columns: minmax(180px, 1.2fr) 130px minmax(150px, 0.8fr) 140px repeat(3, 92px) auto;
 }
 
 .table {
@@ -843,6 +848,39 @@ button.table-row.selected {
 
 .task-row.done {
   opacity: 0.82;
+}
+
+.decision-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+}
+
+.decision-row.done {
+  background: #f1fbf7;
+}
+
+.decision-row p {
+  max-width: 760px;
+  margin: 8px 0 0;
+  color: #31415a;
+  line-height: 1.45;
+}
+
+.vote-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.vote-strip span {
+  border-radius: 999px;
+  padding: 5px 9px;
+  color: #0b624d;
+  background: #e4f7ef;
+  font-size: 0.74rem;
+  font-weight: 850;
 }
 
 .task-controls {
@@ -1052,6 +1090,10 @@ button.table-row.selected {
   .task-controls {
     justify-content: flex-start;
     min-width: 0;
+  }
+
+  .decision-row {
+    grid-template-columns: 1fr;
   }
 
   .content-grid > .panel:not(.portfolio):not(.setup-panel) .compact-form {

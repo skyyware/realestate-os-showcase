@@ -73,6 +73,20 @@ await page.locator('input[formcontrolname="documentDate"]').fill('03.06.2026');
 await page.getByRole('button', { name: 'Ablegen', exact: true }).click();
 await page.getByText('Protokoll JHV 2026').waitFor();
 
+await page.getByRole('button', { name: 'Beschlüsse', exact: true }).click();
+await page.getByPlaceholder('Beschlusstitel').fill('Sanierung Treppenhaus beauftragen');
+await page.locator('input[formcontrolname="meetingDate"]').fill('03.06.2026');
+await page.getByPlaceholder('Ort oder Format').fill('Eigentümerversammlung');
+await page.getByLabel('Ja-Stimmen').fill('14');
+await page.getByLabel('Nein-Stimmen').fill('1');
+await page.getByLabel('Enthaltungen').fill('1');
+await page.getByPlaceholder('Wortlaut des Beschlusses').fill('Die Eigentümergemeinschaft beschließt, die Sanierung des Treppenhauses auf Basis des Angebots Nr. 24-118 zu beauftragen.');
+await page.getByRole('button', { name: 'Eintragen', exact: true }).click();
+await page.getByText('Sanierung Treppenhaus beauftragen').waitFor();
+await page.getByText('Beschluss umsetzen').waitFor();
+await page.locator('.decision-row').filter({ hasText: 'Sanierung Treppenhaus beauftragen' }).getByRole('button', { name: 'Umgesetzt' }).click();
+await page.getByText('Beschluss als umgesetzt markiert.').waitFor();
+
 await page.getByRole('button', { name: 'Aufgaben', exact: true }).click();
 await page.getByRole('textbox', { name: 'Aufgabe' }).fill('Eigentümerversammlung vorbereiten');
 await page.locator('select[formcontrolname="priority"]').selectOption('HIGH');

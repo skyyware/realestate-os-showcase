@@ -43,6 +43,7 @@ export class App implements OnInit, OnDestroy {
   });
   protected readonly openInvoices = computed(() => (this.dashboard()?.finances ?? []).filter(item => item.amount < 0));
   protected readonly dueTasks = computed(() => (this.dashboard()?.tasks ?? []).filter(task => task.status !== 'DONE'));
+  protected readonly openDecisions = computed(() => (this.dashboard()?.decisions ?? []).filter(decision => decision.status !== 'IMPLEMENTED' && decision.status !== 'REJECTED'));
 
   protected readonly registerForm = this.fb.nonNullable.group({
     fullName: ['', [Validators.required, Validators.minLength(2)]],
@@ -94,6 +95,17 @@ export class App implements OnInit, OnDestroy {
     documentType: ['PDF', [Validators.required, Validators.maxLength(80)]],
     fileName: ['', [Validators.required, Validators.maxLength(240)]],
     documentDate: [this.today(), [Validators.required, germanDateValidator]]
+  });
+
+  protected readonly decisionForm = this.fb.nonNullable.group({
+    title: ['', [Validators.required, Validators.maxLength(180)]],
+    resolutionText: ['', [Validators.required, Validators.maxLength(1600)]],
+    meetingDate: [this.today(), [Validators.required, germanDateValidator]],
+    meetingLocation: ['Eigentümerversammlung', [Validators.required, Validators.maxLength(180)]],
+    status: ['PASSED' as DecisionStatus, [Validators.required]],
+    yesVotes: [0, [Validators.required, Validators.min(0)]],
+    noVotes: [0, [Validators.required, Validators.min(0)]],
+    abstentions: [0, [Validators.required, Validators.min(0)]]
   });
 
   ngOnInit(): void {
@@ -209,6 +221,14 @@ export class App implements OnInit, OnDestroy {
     this.submitDashboardRequest('documents', { ...formValue, documentDate: this.toIsoDate(formValue.documentDate), propertyId }, 'Dokument wurde abgelegt.');
   }
 
+  protected createDecision(): void {
+    if (this.decisionForm.invalid) return;
+    const propertyId = this.requireSelectedPropertyId();
+    if (!propertyId) return;
+    const formValue = this.decisionForm.getRawValue();
+    this.submitDashboardRequest('decisions', { ...formValue, meetingDate: this.toIsoDate(formValue.meetingDate), propertyId }, 'Beschluss wurde in die Sammlung aufgenommen.');
+  }
+
   protected logout(): void {
     localStorage.removeItem('realestate.token');
     this.dashboard.set(null);
@@ -260,6 +280,19 @@ export class App implements OnInit, OnDestroy {
       });
   }
 
+  protected updateDecisionStatus(decision: DecisionView, status: DecisionStatus): void {
+    this.begin();
+    this.http.patch<Dashboard>(`${API_BASE_URL}/workspace/decisions/${decision.id}/status`, { status })
+      .subscribe({
+        next: dashboard => {
+          this.loading.set(false);
+          this.applyDashboard(dashboard);
+          this.info.set(status === 'IMPLEMENTED' ? 'Beschluss als umgesetzt markiert.' : 'Beschlussstatus aktualisiert.');
+        },
+        error: error => this.fail(error)
+      });
+  }
+
   protected priorityLabel(priority: string): string {
     return {
       LOW: 'Niedrig',
@@ -276,7 +309,11 @@ export class App implements OnInit, OnDestroy {
       OPEN: 'Offen',
       OPEN_TASK: 'Offen',
       IN_REVIEW: 'In Prüfung',
-      DONE: 'Erledigt'
+      DONE: 'Erledigt',
+      DRAFT: 'Entwurf',
+      PASSED: 'Beschlossen',
+      REJECTED: 'Abgelehnt',
+      IMPLEMENTED: 'Umgesetzt'
     }[status] ?? status;
   }
 
@@ -289,7 +326,7 @@ export class App implements OnInit, OnDestroy {
     }[severity] ?? severity;
   }
 
-  private submitDashboardRequest(path: 'properties' | 'units' | 'tasks' | 'finances' | 'documents', payload: Record<string, unknown>, success: string): void {
+  private submitDashboardRequest(path: 'properties' | 'units' | 'tasks' | 'finances' | 'documents' | 'decisions', payload: Record<string, unknown>, success: string): void {
     this.begin();
     this.http.post<Dashboard>(`${API_BASE_URL}/workspace/${path}`, payload)
       .subscribe({
@@ -302,6 +339,7 @@ export class App implements OnInit, OnDestroy {
           if (path === 'tasks') this.taskForm.reset({ title: '', description: '', priority: 'MEDIUM', dueDate: '' });
           if (path === 'finances') this.financeForm.reset({ label: '', amount: 0, category: 'Hausgeld', bookedOn: this.today(), status: 'BOOKED' });
           if (path === 'documents') this.documentForm.reset({ title: '', documentType: 'PDF', fileName: '', documentDate: this.today() });
+          if (path === 'decisions') this.decisionForm.reset({ title: '', resolutionText: '', meetingDate: this.today(), meetingLocation: 'Eigentümerversammlung', status: 'PASSED', yesVotes: 0, noVotes: 0, abstentions: 0 });
         },
         error: error => this.fail(error)
       });
@@ -416,9 +454,10 @@ function germanDateValidator(control: AbstractControl): ValidationErrors | null 
     : { germanDate: true };
 }
 
-type Section = 'overview' | 'properties' | 'units' | 'finances' | 'tasks' | 'documents' | 'activity';
+type Section = 'overview' | 'properties' | 'units' | 'finances' | 'tasks' | 'documents' | 'decisions' | 'activity';
 type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 type TaskStatus = 'OPEN' | 'IN_REVIEW' | 'DONE';
+type DecisionStatus = 'DRAFT' | 'PASSED' | 'REJECTED' | 'IMPLEMENTED';
 type InsightSeverity = 'HIGH' | 'MEDIUM' | 'LOW' | 'GOOD';
 
 interface RegistrationResult {
@@ -468,6 +507,7 @@ interface Dashboard {
   tasks: WorkTaskView[];
   finances: Array<{ label: string; amount: number; category: string; bookedOn: string; status: string }>;
   documents: Array<{ id: string; title: string; documentType: string; fileName: string; documentDate: string }>;
+  decisions: DecisionView[];
   activity: Array<{ eventType: string; summary: string; createdAt: string }>;
   insights: InsightView[];
   onboarding: {
@@ -477,6 +517,7 @@ interface Dashboard {
     unitsCreated: boolean;
     financeCreated: boolean;
     taskCreated: boolean;
+    decisionCreated: boolean;
   };
 }
 
@@ -495,4 +536,16 @@ interface InsightView {
   description: string;
   actionSection: Section;
   actionLabel: string;
+}
+
+interface DecisionView {
+  id: string;
+  title: string;
+  resolutionText: string;
+  meetingDate: string;
+  meetingLocation: string;
+  status: DecisionStatus;
+  yesVotes: number;
+  noVotes: number;
+  abstentions: number;
 }
