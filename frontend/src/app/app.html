@@ -18,9 +18,6 @@
         <li>Finanzen, Aufgaben, Dokumente und Beschlüsse an einem Ort</li>
         <li>Onboarding per E-Mail-Link mit sicherer Passwortvergabe</li>
       </ul>
-      <figure class="product-visual">
-        <img src="realestate-os-dashboard-concept.png" alt="RealEstate OS Dashboard mit Immobilienkennzahlen, Aufgaben und Finanzübersicht" />
-      </figure>
     </section>
 
     <section class="auth-card">
@@ -72,6 +69,10 @@
       @if (error()) { <p class="message error">{{ error() }}</p> }
       @if (info()) { <p class="message info">{{ info() }}</p> }
     </section>
+
+    <figure class="product-visual">
+      <img src="realestate-os-dashboard-concept.png" alt="RealEstate OS Dashboard mit Immobilienkennzahlen, Aufgaben und Finanzübersicht" />
+    </figure>
   }
 
   @if (mode() === 'dashboard' && dashboard()) {

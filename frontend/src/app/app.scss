@@ -171,6 +171,8 @@ small {
 }
 
 .auth-card {
+  grid-column: 2;
+  grid-row: 1 / span 2;
   margin-top: clamp(58px, 8vw, 108px);
   border-top: 4px solid var(--green-strong);
   box-shadow: var(--shadow-md);
@@ -719,7 +721,11 @@ button:disabled {
 }
 
 .decision-form {
-  grid-template-columns: minmax(180px, 1.2fr) 130px minmax(150px, 0.8fr) 140px repeat(3, 92px) auto;
+  grid-template-columns: minmax(220px, 1.3fr) 140px minmax(170px, 0.9fr) 150px;
+}
+
+.decision-form input[type="number"] {
+  max-width: 120px;
 }
 
 .table {
@@ -1003,11 +1009,14 @@ button.table-row.selected {
 
 @media (max-width: 1180px) {
   .topbar,
-  .metrics,
   .command-center,
   .content-grid,
   .auth-shell {
     grid-template-columns: 1fr;
+  }
+
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .insight-list {
@@ -1016,7 +1025,12 @@ button.table-row.selected {
 
   .sidebar {
     position: static;
+    display: grid;
+    grid-template-columns: minmax(220px, auto) minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: center;
     width: auto;
+    padding: 18px 22px;
   }
 
   .workspace {
@@ -1029,12 +1043,31 @@ button.table-row.selected {
     padding: 22px;
   }
 
+  .brand.compact {
+    margin-bottom: 0;
+  }
+
   .sidebar nav {
+    grid-column: 1 / -1;
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .sidebar-footer {
-    margin-top: 18px;
+    grid-column: 3;
+    grid-row: 1;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .sidebar-footer small {
+    display: none;
+  }
+
+  .sidebar .ghost {
+    width: auto;
+    min-width: 116px;
+    margin-top: 0;
   }
 
   .onboarding-card {
@@ -1050,17 +1083,52 @@ button.table-row.selected {
   .table {
     overflow-x: auto;
   }
+
+  .auth-panel,
+  .auth-card,
+  .product-visual {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .auth-card {
+    margin-top: 0;
+  }
 }
 
-.content-grid > .panel:not(.portfolio):not(.setup-panel) .compact-form {
+.content-grid > .panel:not(.portfolio, .setup-panel, .decisions-panel) .compact-form {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.content-grid > .panel:not(.portfolio):not(.setup-panel) .compact-form textarea {
+.content-grid > .panel:not(.portfolio, .setup-panel, .decisions-panel) .compact-form textarea {
   grid-column: 1 / -1;
 }
 
+@media (min-width: 900px) and (max-width: 1180px) {
+  .topbar {
+    grid-template-columns: 250px minmax(280px, 1fr) auto;
+  }
+}
+
 @media (max-width: 760px) {
+  .auth-shell {
+    gap: 22px;
+    padding: 24px 20px 32px;
+  }
+
+  .brand {
+    margin-bottom: 20px;
+  }
+
+  .auth-panel h1 {
+    font-size: clamp(2.45rem, 12.8vw, 3rem);
+  }
+
+  .auth-card,
+  .panel {
+    padding: 22px;
+  }
+
   .workspace {
     padding: 16px;
   }
@@ -1080,12 +1148,51 @@ button.table-row.selected {
     margin-bottom: 12px;
   }
 
-  .sidebar nav,
   .property-form,
   .compact-form,
   .units-form,
   .task-controls {
     grid-template-columns: 1fr;
+  }
+
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .sidebar nav {
+    display: flex;
+    grid-column: 1 / -1;
+    gap: 8px;
+    overflow-x: auto;
+  }
+
+  .sidebar nav button {
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding: 0 14px;
+    white-space: nowrap;
+  }
+
+  .sidebar-footer {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .sidebar .ghost {
+    min-width: 92px;
+    min-height: 38px;
+    padding: 0 12px;
+  }
+
+  .top-actions {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
   }
 
   .task-controls {
@@ -1114,8 +1221,8 @@ button.table-row.selected {
     display: grid;
   }
 
-  .top-actions {
-    display: grid;
+  .primary-action {
+    width: 100%;
   }
 
   .user-pill {
@@ -1123,7 +1230,40 @@ button.table-row.selected {
     width: 100%;
   }
 
-  .auth-panel h1 {
-    font-size: 2.8rem;
+  .row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  button.table-row > span {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+  }
+
+  button.table-row > span::before {
+    color: #607087;
+    font-weight: 750;
+  }
+
+  button.table-row > span:nth-of-type(1)::before {
+    content: "Einheiten";
+  }
+
+  button.table-row > span:nth-of-type(2)::before {
+    content: "WEG-Kontostand";
+  }
+
+  button.table-row > span:nth-of-type(3)::before {
+    content: "Rücklagenstand";
+  }
+
+  button.table-row > .status {
+    justify-content: space-between;
+  }
+
+  button.table-row > .status::before {
+    content: "Status";
   }
 }
