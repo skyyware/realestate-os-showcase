@@ -24,13 +24,13 @@ export class App implements OnInit {
   protected readonly firstProperty = computed(() => this.dashboard()?.properties[0]);
 
   protected readonly registerForm = this.fb.nonNullable.group({
-    fullName: ['Sascha Dobrochynskyy', [Validators.required, Validators.minLength(2)]],
-    email: ['sascha@skyyware.com', [Validators.required, Validators.email]],
-    organizationName: ['SKYYWARE Product Engineering', [Validators.required, Validators.minLength(2)]]
+    fullName: ['', [Validators.required, Validators.minLength(2)]],
+    email: ['', [Validators.required, Validators.email]],
+    organizationName: ['', [Validators.required, Validators.minLength(2)]]
   });
 
   protected readonly loginForm = this.fb.nonNullable.group({
-    email: ['sascha@skyyware.com', [Validators.required, Validators.email]],
+    email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required]]
   });
 
@@ -39,10 +39,10 @@ export class App implements OnInit {
   });
 
   protected readonly taskForm = this.fb.nonNullable.group({
-    title: ['Angebot für Dachwartung prüfen', [Validators.required, Validators.maxLength(180)]],
-    description: ['Eigentümerbeirat soll Angebot, Budget und Dringlichkeit in einem Vorgang bewerten.', [Validators.required]],
-    priority: ['HIGH' as TaskPriority, [Validators.required]],
-    dueDate: [this.toGermanDate(new Date(Date.now() + 5 * 86400000)), [
+    title: ['', [Validators.required, Validators.maxLength(180)]],
+    description: ['', [Validators.required]],
+    priority: ['' as TaskPriority | '', [Validators.required]],
+    dueDate: ['', [
       Validators.required,
       Validators.pattern(/^\d{2}\.\d{2}\.\d{4}$/)
     ]]
@@ -162,14 +162,6 @@ export class App implements OnInit {
   private fail(error: { error?: { message?: string } }): void {
     this.loading.set(false);
     this.error.set(error.error?.message ?? 'Der Vorgang konnte nicht abgeschlossen werden.');
-  }
-
-  private toGermanDate(date: Date): string {
-    return new Intl.DateTimeFormat('de-DE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    }).format(date);
   }
 
   private toIsoDate(value: string): string {

@@ -35,6 +35,8 @@ await page.getByRole('button', { name: 'Account aktivieren' }).click();
 await page.getByRole('heading', { name: 'Aufgabensteuerung' }).waitFor();
 
 await page.getByPlaceholder('Aufgabe').fill('Eigentümerbeschluss für Solarprüfung vorbereiten');
+await page.locator('select[formcontrolname="priority"]').selectOption('HIGH');
+await page.getByPlaceholder('TT.MM.JJJJ').fill('08.06.2026');
 await page.getByPlaceholder('Beschreibung').fill('Beschlussvorlage, Budgetrahmen und Angebote in einem Vorgang bündeln.');
 await page.getByRole('button', { name: 'Anlegen' }).click();
 await page.locator('.list .row strong', { hasText: 'Eigentümerbeschluss für Solarprüfung vorbereiten' }).first().waitFor();

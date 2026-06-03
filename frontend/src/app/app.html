@@ -8,10 +8,10 @@
           <small>Product Engineering Showcase</small>
         </div>
       </div>
-      <h1>WEG-Verwaltung, die Eigentümer sofort verstehen.</h1>
+      <h1>WEG-Verwaltung, klar und digital.</h1>
       <p>
-        Ein digitaler Arbeitsraum für Selbstverwaltung, Finanzen, Aufgaben und transparente
-        Entscheidungen in Eigentümergemeinschaften.
+        Ein gemeinsamer Arbeitsraum für Eigentümer, Beirat und Verwaltung: Finanzen,
+        Aufgaben und Entscheidungen bleiben transparent nachvollziehbar.
       </p>
       <ul>
         <li>Ein gemeinsamer Überblick für Konto, Rücklage und offene Zahlungen</li>
@@ -30,9 +30,9 @@
           <h2>Demo-Zugang anfordern</h2>
         </div>
         <form [formGroup]="registerForm" (ngSubmit)="register()">
-          <label>Name <input formControlName="fullName" autocomplete="name" /></label>
-          <label>E-Mail <input formControlName="email" type="email" autocomplete="email" /></label>
-          <label>Organisation <input formControlName="organizationName" autocomplete="organization" /></label>
+          <label>Name <input formControlName="fullName" autocomplete="name" placeholder="Ihr Name" /></label>
+          <label>E-Mail <input formControlName="email" type="email" autocomplete="email" placeholder="name@unternehmen.de" /></label>
+          <label>Organisation <input formControlName="organizationName" autocomplete="organization" placeholder="Ihre Organisation" /></label>
           <button type="submit" [disabled]="loading()">Aktivierungslink senden</button>
         </form>
         <button class="link" type="button" (click)="switchMode('login')">Ich habe bereits einen Zugang</button>
@@ -44,7 +44,7 @@
           <h2>Einloggen</h2>
         </div>
         <form [formGroup]="loginForm" (ngSubmit)="login()">
-          <label>E-Mail <input formControlName="email" type="email" autocomplete="email" /></label>
+          <label>E-Mail <input formControlName="email" type="email" autocomplete="email" placeholder="name@unternehmen.de" /></label>
           <label>Passwort <input formControlName="password" type="password" autocomplete="current-password" /></label>
           <button type="submit" [disabled]="loading()">Dashboard öffnen</button>
         </form>
@@ -136,6 +136,7 @@
           <form class="task-form" [formGroup]="taskForm" (ngSubmit)="addTask()">
             <input formControlName="title" placeholder="Aufgabe" />
             <select formControlName="priority">
+              <option value="" disabled>Priorität</option>
               <option value="LOW">Low</option>
               <option value="MEDIUM">Medium</option>
               <option value="HIGH">High</option>
