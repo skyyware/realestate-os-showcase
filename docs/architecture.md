@@ -33,6 +33,15 @@ Damit bleibt das Frontend dünn: Es rendert Handlungsvorschläge, springt in den
 passenden Arbeitsbereich und aktualisiert den Workspace nach jeder Aktion aus
 einer konsistenten Backend-Sicht.
 
+## Product Design
+
+Die Oberfläche ist als verbrauchernahes Eigentümerprodukt gestaltet, nicht als
+reines Admin-Tool. Die visuelle Sprache nutzt ruhige Finanzflächen, klare
+Arbeitskarten, warmes Grün für Fortschritt, Amber für Klärungsbedarf und ein
+priorisiertes Command Center. Der leere Workspace bleibt absichtlich leer:
+Nutzer legen Immobilie, Einheiten, Finanzen, Aufgaben und Dokumente selbst an,
+damit keine Demodaten mit echten Entscheidungsdaten verwechselt werden.
+
 ## Identity
 
 Die Anwendung nutzt eine app-native Registrierung mit einmaligem Token, BCrypt und

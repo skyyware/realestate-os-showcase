@@ -8,14 +8,14 @@
           <small>Digitale WEG-Verwaltung</small>
         </div>
       </div>
-      <h1>WEG-Verwaltung, klar und digital.</h1>
+      <h1>WEG-Verwaltung, die sich leicht anfühlt.</h1>
       <p>
-        Ein gemeinsamer Arbeitsraum für Eigentümer, Beirat und Verwaltung:
-        Finanzen, Aufgaben, Dokumente und Entscheidungen bleiben transparent nachvollziehbar.
+        Ein ruhiger digitaler Arbeitsraum für Eigentümer, Beirat und Verwaltung:
+        Finanzen, Aufgaben, Dokumente und Entscheidungen sind jederzeit verständlich.
       </p>
       <ul>
-        <li>Leerer Workspace: Immobilie anlegen und direkt losarbeiten</li>
-        <li>Aufgaben, Finanzereignisse, Dokumente und Einheiten mit Aktivitätsfeed</li>
+        <li>Immobilie anlegen, Eigentümer strukturieren und direkt losarbeiten</li>
+        <li>Finanzen, Aufgaben, Dokumente und Beschlüsse an einem Ort</li>
         <li>Onboarding per E-Mail-Link mit sicherer Passwortvergabe</li>
       </ul>
       <figure class="product-visual">
@@ -80,7 +80,10 @@
         <span class="brand-icon">
           <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 15 16 6l11 9v12h-7v-8h-8v8H5z" fill="currentColor"/></svg>
         </span>
-        <strong>RealEstate OS</strong>
+        <div>
+          <strong>RealEstate OS</strong>
+          <small>Ihr Eigentümerarbeitsplatz</small>
+        </div>
       </div>
       <nav>
         <button type="button" [class.active]="activeSection() === 'overview'" (click)="selectSection('overview')">
@@ -134,7 +137,7 @@
         </label>
         <label class="search">
           <span>Suche</span>
-          <input type="search" placeholder="Immobilie, Stadt oder Adresse" (input)="updateSearch($event)" />
+          <input type="search" placeholder="Dokumente, Aufgaben oder Einheiten suchen" (input)="updateSearch($event)" />
         </label>
         <div class="top-actions">
           <button class="icon-button notification-button" type="button" aria-label="Benachrichtigungen">
@@ -157,7 +160,7 @@
       <section class="page-title">
         <div>
           <h1>Guten Morgen, {{ dashboard()?.user?.fullName?.split(' ')?.[0] || 'Team' }}.</h1>
-          <p>Aktuelle Lage für Verwaltung, Finanzen und offene Arbeit.</p>
+          <p>Alles Wichtige zur Immobilie: verständlich, aktuell und handlungsbereit.</p>
         </div>
         <button class="primary-action" type="button" (click)="selectSection(hasWorkspace() ? 'tasks' : 'properties')">
           <span>+</span> {{ hasWorkspace() ? 'Neue Aufgabe' : 'Immobilie hinzufügen' }}

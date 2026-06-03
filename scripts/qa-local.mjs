@@ -74,7 +74,7 @@ await page.getByRole('button', { name: 'Ablegen', exact: true }).click();
 await page.getByText('Protokoll JHV 2026').waitFor();
 
 await page.getByRole('button', { name: 'Aufgaben', exact: true }).click();
-await page.getByPlaceholder('Aufgabe').fill('Eigentümerversammlung vorbereiten');
+await page.getByRole('textbox', { name: 'Aufgabe' }).fill('Eigentümerversammlung vorbereiten');
 await page.locator('select[formcontrolname="priority"]').selectOption('HIGH');
 if (await page.locator('input[formcontrolname="dueDate"]').getAttribute('type') === 'date') {
   throw new Error('Due-date input still uses native browser date UI instead of German date entry.');

@@ -18,6 +18,7 @@ Eine shipbare Product-Engineering-Codebasis für moderne digitale WEG-Verwaltung
 - Produktflows für Immobilien, Einheiten, Finanzen, Aufgaben, Dokumente und Aktivität
 - Operatives Command Center mit priorisierten nächsten Schritten je Immobilie
 - Aufgaben-Lifecycle von offen über Prüfung bis erledigt mit Audit-Trail
+- Consumer-grade UI mit ruhiger Finanz-/Eigentümer-Optik, leerem Startzustand und responsiver Arbeitsfläche
 
 ## Lokal starten
 
