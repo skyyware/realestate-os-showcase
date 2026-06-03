@@ -25,6 +25,8 @@ export class App implements OnInit, OnDestroy {
   protected readonly setupToken = signal('');
   protected readonly searchTerm = signal('');
   protected readonly selectedPropertyId = signal<string | null>(null);
+  protected readonly insightHidden = signal(false);
+  protected readonly communicationPosts = signal<CommunicationPost[]>([]);
 
   protected readonly selectedProperty = computed(() => {
     const dashboard = this.dashboard();
@@ -44,6 +46,25 @@ export class App implements OnInit, OnDestroy {
   protected readonly openInvoices = computed(() => (this.dashboard()?.finances ?? []).filter(item => item.amount < 0));
   protected readonly dueTasks = computed(() => (this.dashboard()?.tasks ?? []).filter(task => task.status !== 'DONE'));
   protected readonly openDecisions = computed(() => (this.dashboard()?.decisions ?? []).filter(decision => decision.status !== 'IMPLEMENTED' && decision.status !== 'REJECTED'));
+  protected readonly primaryInsight = computed(() => this.insightHidden() ? null : this.dashboard()?.insights?.[0] ?? null);
+  protected readonly filteredUnits = computed(() => (this.dashboard()?.units ?? []).filter(unit =>
+    this.matchesSearch(unit.unitLabel, unit.ownerName, unit.shareValue)
+  ));
+  protected readonly filteredTasks = computed(() => (this.dashboard()?.tasks ?? []).filter(task =>
+    this.matchesSearch(task.title, task.description, task.priority, task.status, task.dueDate)
+  ));
+  protected readonly filteredFinances = computed(() => (this.dashboard()?.finances ?? []).filter(item =>
+    this.matchesSearch(item.label, item.category, item.status, item.bookedOn, item.amount)
+  ));
+  protected readonly filteredDocuments = computed(() => (this.dashboard()?.documents ?? []).filter(document =>
+    this.matchesSearch(document.title, document.documentType, document.fileName, document.documentDate)
+  ));
+  protected readonly filteredDecisions = computed(() => (this.dashboard()?.decisions ?? []).filter(decision =>
+    this.matchesSearch(decision.title, decision.resolutionText, decision.meetingLocation, decision.status, decision.meetingDate)
+  ));
+  protected readonly filteredActivity = computed(() => (this.dashboard()?.activity ?? []).filter(event =>
+    this.matchesSearch(event.eventType, event.summary, event.createdAt)
+  ));
 
   protected readonly registerForm = this.fb.nonNullable.group({
     fullName: ['', [Validators.required, Validators.minLength(2)]],
@@ -108,8 +129,22 @@ export class App implements OnInit, OnDestroy {
     abstentions: [0, [Validators.required, Validators.min(0)]]
   });
 
+  protected readonly communicationForm = this.fb.nonNullable.group({
+    audience: ['Eigentümer', [Validators.required]],
+    subject: ['', [Validators.required, Validators.maxLength(180)]],
+    message: ['', [Validators.required, Validators.maxLength(1200)]]
+  });
+
+  protected readonly settingsForm = this.fb.nonNullable.group({
+    emailNotifications: [true],
+    taskDigest: [true],
+    decisionReminders: [true],
+    defaultView: ['Übersicht', [Validators.required]]
+  });
+
   ngOnInit(): void {
     window.addEventListener('realestate:session-expired', this.sessionExpiredHandler);
+    this.restoreLocalState();
     const params = new URLSearchParams(location.search);
     const token = params.get('token');
     if (location.pathname.includes('set-password') && token) {
@@ -249,6 +284,10 @@ export class App implements OnInit, OnDestroy {
     this.info.set('');
   }
 
+  protected dismissInsight(): void {
+    this.insightHidden.set(true);
+  }
+
   protected updateSearch(value: Event): void {
     this.searchTerm.set((value.target as HTMLInputElement).value);
   }
@@ -265,6 +304,45 @@ export class App implements OnInit, OnDestroy {
 
   protected openInsight(insight: InsightView): void {
     this.selectSection(insight.actionSection);
+  }
+
+  protected propertyOpenAmount(propertyId: string): number {
+    return propertyId === this.selectedProperty()?.id ? this.openInvoices().reduce((sum, item) => sum + Math.abs(item.amount), 0) : 0;
+  }
+
+  protected propertyOpenCount(propertyId: string): number {
+    return propertyId === this.selectedProperty()?.id ? this.openInvoices().length : 0;
+  }
+
+  protected activityLabel(eventType: string): string {
+    return {
+      PROPERTY: 'Immobilie',
+      UNIT: 'Einheit',
+      TASK: 'Aufgabe',
+      FINANCE: 'Finanzen',
+      DOCUMENT: 'Dokument',
+      DECISION: 'Beschluss'
+    }[eventType] ?? 'Aktivität';
+  }
+
+  protected sendCommunication(): void {
+    if (this.communicationForm.invalid) {
+      this.error.set('Bitte Empfänger, Betreff und Nachricht ausfüllen.');
+      return;
+    }
+    const post = { ...this.communicationForm.getRawValue(), createdAt: new Date().toISOString() };
+    const posts = [post, ...this.communicationPosts()].slice(0, 8);
+    this.communicationPosts.set(posts);
+    localStorage.setItem('realestate.communicationDrafts', JSON.stringify(posts));
+    this.communicationForm.reset({ audience: 'Eigentümer', subject: '', message: '' });
+    this.info.set('Mitteilung wurde vorbereitet.');
+    this.error.set('');
+  }
+
+  protected saveSettings(): void {
+    localStorage.setItem('realestate.workspaceSettings', JSON.stringify(this.settingsForm.getRawValue()));
+    this.info.set('Einstellungen wurden gespeichert.');
+    this.error.set('');
   }
 
   protected updateTaskStatus(task: WorkTaskView, status: TaskStatus): void {
@@ -392,6 +470,31 @@ export class App implements OnInit, OnDestroy {
     this.selectedPropertyId.set(dashboard.selectedPropertyId ?? dashboard.properties[0]?.id ?? null);
   }
 
+  private restoreLocalState(): void {
+    const communicationDrafts = localStorage.getItem('realestate.communicationDrafts');
+    if (communicationDrafts) {
+      try {
+        this.communicationPosts.set(JSON.parse(communicationDrafts));
+      } catch {
+        localStorage.removeItem('realestate.communicationDrafts');
+      }
+    }
+    const settings = localStorage.getItem('realestate.workspaceSettings');
+    if (settings) {
+      try {
+        this.settingsForm.patchValue(JSON.parse(settings));
+      } catch {
+        localStorage.removeItem('realestate.workspaceSettings');
+      }
+    }
+  }
+
+  private matchesSearch(...values: Array<string | number | undefined>): boolean {
+    const term = this.searchTerm().trim().toLowerCase();
+    if (!term) return true;
+    return values.filter(value => value !== undefined).join(' ').toLowerCase().includes(term);
+  }
+
   private requireSelectedPropertyId(): string | null {
     const propertyId = this.selectedProperty()?.id;
     if (propertyId) return propertyId;
@@ -454,7 +557,7 @@ function germanDateValidator(control: AbstractControl): ValidationErrors | null 
     : { germanDate: true };
 }
 
-type Section = 'overview' | 'properties' | 'units' | 'finances' | 'tasks' | 'documents' | 'decisions' | 'activity';
+type Section = 'overview' | 'properties' | 'units' | 'finances' | 'tasks' | 'documents' | 'decisions' | 'activity' | 'communication' | 'settings';
 type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 type TaskStatus = 'OPEN' | 'IN_REVIEW' | 'DONE';
 type DecisionStatus = 'DRAFT' | 'PASSED' | 'REJECTED' | 'IMPLEMENTED';
@@ -548,4 +651,11 @@ interface DecisionView {
   yesVotes: number;
   noVotes: number;
   abstentions: number;
+}
+
+interface CommunicationPost {
+  audience: string;
+  subject: string;
+  message: string;
+  createdAt: string;
 }

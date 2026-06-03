@@ -46,8 +46,7 @@ await page.getByLabel('Einheiten').fill('16');
 await page.getByLabel('Kontostand').fill('125540.75');
 await page.getByLabel('Rücklage').fill('256780.20');
 await page.getByRole('button', { name: 'Immobilie anlegen', exact: true }).click();
-await page.getByRole('heading', { name: 'Immobilienportfolio' }).waitFor();
-await page.getByRole('heading', { name: 'Heute entscheiden' }).waitFor();
+await page.getByRole('heading', { name: 'Ihr Immobilienportfolio' }).waitFor();
 await page.getByText('Eigentümerstruktur fehlt').waitFor();
 
 await page.getByRole('button', { name: 'Einheiten', exact: true }).click();
@@ -58,12 +57,12 @@ await page.locator('form.units-form').getByRole('button', { name: 'Anlegen', exa
 await page.getByText('Einheit 07').waitFor();
 
 await page.getByRole('button', { name: 'Finanzen', exact: true }).click();
-await page.getByPlaceholder('Rechnung oder Buchung').fill('Rechnung Hausmeisterservice');
 await page.getByPlaceholder('Betrag').fill('-1250');
-await page.getByPlaceholder('Kategorie').fill('Instandhaltung');
+await page.getByLabel('Kategorie').selectOption('Instandhaltung');
 await page.locator('input[formcontrolname="bookedOn"]').fill('05.06.2026');
+await page.getByPlaceholder('Beschreibung').fill('Rechnung Hausmeisterservice');
 await page.locator('select[formcontrolname="status"]').selectOption('OPEN');
-await page.getByRole('button', { name: 'Erfassen', exact: true }).click();
+await page.getByRole('button', { name: 'Buchung erfassen', exact: true }).click();
 await page.getByText('Rechnung Hausmeisterservice').waitFor();
 
 await page.getByRole('button', { name: 'Dokumente', exact: true }).click();
@@ -83,7 +82,6 @@ await page.getByLabel('Enthaltungen').fill('1');
 await page.getByPlaceholder('Wortlaut des Beschlusses').fill('Die Eigentümergemeinschaft beschließt, die Sanierung des Treppenhauses auf Basis des Angebots Nr. 24-118 zu beauftragen.');
 await page.getByRole('button', { name: 'Eintragen', exact: true }).click();
 await page.getByText('Sanierung Treppenhaus beauftragen').waitFor();
-await page.getByText('Beschluss umsetzen').waitFor();
 await page.locator('.decision-row').filter({ hasText: 'Sanierung Treppenhaus beauftragen' }).getByRole('button', { name: 'Umgesetzt' }).click();
 await page.getByText('Beschluss als umgesetzt markiert.').waitFor();
 
@@ -95,9 +93,8 @@ if (await page.locator('input[formcontrolname="dueDate"]').getAttribute('type') 
 }
 await page.locator('input[formcontrolname="dueDate"]').fill('12.06.2026');
 await page.getByPlaceholder('Beschreibung').fill('Einladungspaket finalisieren und Beschlüsse vorbereiten.');
-await page.locator('article').filter({ hasText: 'Instandhaltungs-Tickets' }).getByRole('button', { name: 'Anlegen', exact: true }).click();
+await page.locator('.task-card').getByRole('button', { name: 'Anlegen', exact: true }).click();
 await page.getByText('Eigentümerversammlung vorbereiten').waitFor();
-await page.getByText('Nächste Aufgabe steuern').waitFor();
 let taskRow = page.locator('.task-row').filter({ hasText: 'Eigentümerversammlung vorbereiten' });
 await taskRow.getByRole('button', { name: 'In Prüfung' }).click();
 await page.getByText('Aufgabe ist in Prüfung.').waitFor();
@@ -114,7 +111,7 @@ await page.getByLabel('Einheiten').fill('8');
 await page.getByLabel('Kontostand').fill('42000');
 await page.getByLabel('Rücklage').fill('88000');
 await page.getByRole('button', { name: 'Immobilie anlegen', exact: true }).click();
-await page.getByRole('combobox', { name: 'Workspace auswählen' }).selectOption({ label: 'Neckarblick 4 · Stuttgart' });
+await page.getByRole('combobox', { name: 'Workspace auswählen' }).selectOption({ label: 'Neckarblick 4' });
 
 await page.getByRole('button', { name: 'Einheiten', exact: true }).click();
 await page.getByText('Noch keine Einheiten.').waitFor();
@@ -125,9 +122,26 @@ await page.locator('form.units-form').getByRole('button', { name: 'Anlegen', exa
 await page.getByText('Einheit 02').waitFor();
 await Promise.all([
   page.waitForResponse(response => response.url().includes('/api/workspace/dashboard') && response.status() === 200),
-  page.getByRole('combobox', { name: 'Workspace auswählen' }).selectOption({ label: 'Musterstraße 12 · Stuttgart' })
+  page.getByRole('combobox', { name: 'Workspace auswählen' }).selectOption({ label: 'Musterstraße 12' })
 ]);
 await page.getByText('Einheit 07').waitFor();
+
+await page.getByRole('button', { name: 'Übersicht', exact: true }).click();
+await page.getByPlaceholder('Dokumente, Aufgaben oder Einheiten suchen').fill('Neckarblick');
+await page.locator('.property-row').filter({ hasText: 'Neckarblick 4' }).waitFor();
+await page.getByPlaceholder('Dokumente, Aufgaben oder Einheiten suchen').fill('');
+
+await page.getByRole('button', { name: 'Kommunikation', exact: true }).click();
+await page.getByLabel('Empfänger').selectOption('Beirat');
+await page.getByPlaceholder('Betreff').fill('Eigentümerinformation');
+await page.getByPlaceholder('Nachricht an die Gemeinschaft').fill('Die Unterlagen für die nächste Eigentümerversammlung sind vorbereitet.');
+await page.getByRole('button', { name: 'Mitteilung vorbereiten', exact: true }).click();
+await page.getByText('Mitteilung wurde vorbereitet.').waitFor();
+await page.getByText('Eigentümerinformation').waitFor();
+
+await page.getByRole('button', { name: 'Einstellungen', exact: true }).click();
+await page.getByRole('button', { name: 'Einstellungen speichern', exact: true }).click();
+await page.getByText('Einstellungen wurden gespeichert.').waitFor();
 
 await page.getByRole('button', { name: 'Übersicht', exact: true }).click();
 await page.getByText('125.540,75').waitFor();
@@ -152,7 +166,7 @@ mobilePage.on('console', message => {
 });
 mobilePage.on('pageerror', error => mobileErrors.push(error.message));
 await mobilePage.goto(baseUrl, { waitUntil: 'networkidle' });
-await mobilePage.getByRole('heading', { name: 'Immobilienportfolio' }).waitFor();
+await mobilePage.getByRole('heading', { name: 'Ihr Immobilienportfolio' }).waitFor();
 await mobilePage.screenshot({ path: fileURLToPath(new URL('realestate-dashboard-mobile.png', outputDir)), fullPage: true });
 await mobile.close();
 await browser.close();

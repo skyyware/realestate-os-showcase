@@ -78,9 +78,7 @@
   @if (mode() === 'dashboard' && dashboard()) {
     <aside class="sidebar">
       <div class="brand compact">
-        <span class="brand-icon">
-          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 15 16 6l11 9v12h-7v-8h-8v8H5z" fill="currentColor"/></svg>
-        </span>
+        <span class="brand-icon text-mark">RE</span>
         <div>
           <strong>RealEstate OS</strong>
           <small>Ihr Eigentümerarbeitsplatz</small>
@@ -111,17 +109,32 @@
           <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h4M10 12h5M10 16h5"/></svg></span>
           Dokumente
         </button>
-        <button type="button" [class.active]="activeSection() === 'decisions'" (click)="selectSection('decisions')">
-          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v4H7z"/><path d="M5 8h14v12H5z"/><path d="m8.5 14 2 2 5-5"/></svg></span>
-          Beschlüsse
-        </button>
         <button type="button" [class.active]="activeSection() === 'activity'" (click)="selectSection('activity')">
           <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h4M5 12h9M5 17h6"/><path d="M17 8.5v5l3 2"/></svg></span>
           Aktivität
         </button>
+        <button type="button" [class.active]="activeSection() === 'decisions'" (click)="selectSection('decisions')">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v4H7z"/><path d="M5 8h14v12H5z"/><path d="m8.5 14 2 2 5-5"/></svg></span>
+          Beschlüsse
+        </button>
+        <button type="button" [class.active]="activeSection() === 'communication'" (click)="selectSection('communication')">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v10H7l-3 3z"/><path d="M8 9h8M8 12h5"/></svg></span>
+          Kommunikation
+        </button>
+        <button type="button" [class.active]="activeSection() === 'settings'" (click)="selectSection('settings')">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04-2 3.46-.06-.02a1.8 1.8 0 0 0-2.1.42 1.8 1.8 0 0 0-.48 1.02H9a1.8 1.8 0 0 0-.48-1.02 1.8 1.8 0 0 0-2.1-.42l-.06.02-2-3.46.04-.04A1.8 1.8 0 0 0 4.76 15 1.8 1.8 0 0 0 3.8 13.4L3.74 13v-2l.06-.4A1.8 1.8 0 0 0 4.76 9a1.8 1.8 0 0 0-.36-1.98l-.04-.04 2-3.46.06.02a1.8 1.8 0 0 0 2.1-.42A1.8 1.8 0 0 0 9 2.1h6a1.8 1.8 0 0 0 .48 1.02 1.8 1.8 0 0 0 2.1.42l.06-.02 2 3.46-.04.04A1.8 1.8 0 0 0 19.24 9a1.8 1.8 0 0 0 .96 1.6l.06.4v2l-.06.4a1.8 1.8 0 0 0-.8 1.6Z"/></svg></span>
+          Einstellungen
+        </button>
       </nav>
       <div class="sidebar-footer">
-        <small>Verwaltung</small>
+        <small>Schnellzugriff</small>
+        <button class="quick-action" type="button" (click)="selectSection('tasks')">
+          <span>+</span> Neue Aufgabe
+        </button>
+        <button class="quick-action" type="button" (click)="selectSection('documents')">
+          <span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h4"/></svg></span>
+          Dokument ablegen
+        </button>
         <button class="ghost" type="button" (click)="logout()">Logout</button>
       </div>
     </aside>
@@ -129,33 +142,36 @@
     <section class="workspace">
       <header class="topbar">
         <label class="workspace-picker">
-          <span>Workspace</span>
+          <span class="topbar-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/><path d="M8 10h1M15 10h1"/></svg></span>
           @if (dashboard()?.properties?.length) {
             <select aria-label="Workspace auswählen" [value]="selectedProperty()?.id || ''" (change)="selectProperty($event)">
               @for (property of dashboard()?.properties; track property.id) {
-                <option [value]="property.id">{{ property.name }} · {{ property.city }}</option>
+                <option [value]="property.id">{{ property.name }}</option>
               }
             </select>
+            <small>WEG</small>
           } @else {
             <strong>Erste Immobilie hinzufügen</strong>
           }
         </label>
         <label class="search">
-          <span>Suche</span>
+          <span class="search-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.3-4.3"/><circle cx="11" cy="11" r="7"/></svg></span>
           <input type="search" placeholder="Dokumente, Aufgaben oder Einheiten suchen" (input)="updateSearch($event)" />
+          <kbd>K</kbd>
         </label>
         <div class="top-actions">
-          <button class="icon-button notification-button" type="button" aria-label="Benachrichtigungen">
+          <button class="icon-button notification-button" type="button" aria-label="Benachrichtigungen" (click)="selectSection('activity')">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-2 7-2 9h16c0-2-2-2-2-9"/><path d="M10 21h4"/></svg>
             <span>{{ dashboard()?.activity?.length || 0 }}</span>
           </button>
-          <div class="user-pill">
+          <button class="user-pill" type="button" (click)="selectSection('settings')">
             <span>{{ dashboard()?.user?.fullName?.slice(0, 1) || 'U' }}</span>
             <div>
               <strong>{{ dashboard()?.user?.fullName }}</strong>
-              <small>{{ dashboard()?.user?.organizationName }}</small>
+              <small>Eigentümer</small>
             </div>
-          </div>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
         </div>
       </header>
 
@@ -164,8 +180,8 @@
 
       <section class="page-title">
         <div>
-          <h1>Guten Morgen, {{ dashboard()?.user?.fullName?.split(' ')?.[0] || 'Team' }}.</h1>
-          <p>Alles Wichtige zur Immobilie: verständlich, aktuell und handlungsbereit.</p>
+          <h1>Guten Morgen, {{ dashboard()?.user?.fullName?.split(' ')?.[0] || 'Team' }}</h1>
+          <p>Hier ist der aktuelle Stand Ihrer WEG.</p>
         </div>
         <button class="primary-action" type="button" (click)="selectSection(hasWorkspace() ? 'tasks' : 'properties')">
           <span>+</span> {{ hasWorkspace() ? 'Neue Aufgabe' : 'Immobilie hinzufügen' }}
@@ -174,52 +190,44 @@
 
       <section class="metrics">
         <article>
+          <span class="metric-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16"/><path d="M6 10v9M10 10v9M14 10v9M18 10v9"/><path d="M3 21h18M12 3 4 8h16z"/></svg></span>
           <span>WEG-Kontostand</span>
           <strong>{{ dashboard()?.metrics?.cashBalance | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</strong>
           <small>{{ dashboard()?.metrics?.properties }} Immobilien im Workspace</small>
         </article>
         <article>
+          <span class="metric-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-3.2 7-10V5l-7-3-7 3v7c0 6.8 7 10 7 10Z"/><path d="m9 12 2 2 4-4"/></svg></span>
           <span>Rücklagenstand</span>
           <strong>{{ dashboard()?.metrics?.reserveBalance | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</strong>
           <small>{{ dashboard()?.metrics?.units }} Einheiten angelegt</small>
         </article>
         <article>
+          <span class="metric-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 4.2 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0Z"/></svg></span>
           <span>Offene Forderungen</span>
           <strong>{{ dashboard()?.metrics?.pendingPayments | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</strong>
           <small>{{ openInvoices().length }} offene Rechnungsposten</small>
         </article>
         <article>
+          <span class="metric-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v14H5z"/><path d="m8 12 2.4 2.4L16 9"/></svg></span>
           <span>Offene Aufgaben</span>
           <strong>{{ dashboard()?.metrics?.openTasks }}</strong>
           <small>{{ dueTasks().length }} Vorgänge im Board</small>
         </article>
       </section>
 
-      @if (dashboard()?.insights?.length) {
+      @if (primaryInsight()) {
         <section class="command-center">
+          <span class="decision-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/><path d="m4 4 3 3M20 4l-3 3"/></svg></span>
           <div class="command-copy">
-            <span>Betriebslage</span>
-            <h2>Heute entscheiden</h2>
-            <p>Die wichtigsten nächsten Schritte für den ausgewählten Workspace.</p>
+            <span>Heute entscheiden</span>
+            <h2>{{ primaryInsight()?.title }}</h2>
+            <p>{{ primaryInsight()?.description }}</p>
           </div>
-          <div class="insight-list">
-            @for (insight of dashboard()?.insights ?? []; track insight.title) {
-              <button
-                class="insight-action"
-                type="button"
-                [class.high]="insight.severity === 'HIGH'"
-                [class.medium]="insight.severity === 'MEDIUM'"
-                [class.low]="insight.severity === 'LOW'"
-                [class.good]="insight.severity === 'GOOD'"
-                (click)="openInsight(insight)"
-              >
-                <span>{{ insightSeverityLabel(insight.severity) }}</span>
-                <strong>{{ insight.title }}</strong>
-                <small>{{ insight.description }}</small>
-                <em>{{ insight.actionLabel }}</em>
-              </button>
-            }
+          <div class="command-actions">
+            <button class="secondary-action" type="button" (click)="selectSection('activity')">Details ansehen</button>
+            <button type="button" (click)="openInsight(primaryInsight()!)">{{ primaryInsight()?.actionLabel }}</button>
           </div>
+          <button class="close-button" type="button" aria-label="Hinweis ausblenden" (click)="dismissInsight()">x</button>
         </section>
       }
 
@@ -244,36 +252,54 @@
       @if (hasWorkspace()) {
         <section class="content-grid">
           @if (activeSection() === 'overview' || activeSection() === 'properties') {
-            <article class="panel portfolio">
-              <div class="panel-heading"><div><span>Portfolio</span><h2>Immobilienportfolio</h2></div></div>
+            <article class="panel portfolio" [class.full-width]="activeSection() === 'properties'">
+              <div class="panel-heading">
+                <div><span>Portfolio</span><h2>Ihr Immobilienportfolio</h2></div>
+                <button class="panel-link" type="button" (click)="selectSection('properties')">Alle anzeigen</button>
+              </div>
               <div class="table">
-                <div class="table-head"><span>Immobilie</span><span>Einheiten</span><span>WEG-Kontostand</span><span>Rücklagenstand</span><span>Status</span></div>
+                <div class="table-head"><span>Immobilie</span><span>Einheiten</span><span>WEG-Kontostand</span><span>Rücklagenstand</span><span>Offene Forderungen</span><span>Status</span></div>
                 @for (property of filteredProperties(); track property.id) {
                   <button class="table-row property-row" type="button" [class.selected]="selectedProperty()?.id === property.id" (click)="selectPropertyId(property.id)">
                     <div class="property-name"><span class="thumb">{{ property.name.slice(0, 2).toUpperCase() }}</span><div><strong>{{ property.name }}</strong><small>{{ property.address }}, {{ property.city }}</small></div></div>
                     <span>{{ property.unitCount }}</span>
                     <span>{{ property.cashBalance | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</span>
                     <span>{{ property.reserveBalance | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</span>
+                    <span>
+                      @if (propertyOpenCount(property.id)) {
+                        {{ propertyOpenAmount(property.id) | currency:'EUR':'symbol':'1.2-2':'de-DE' }}
+                      } @else {
+                        Keine
+                      }
+                    </span>
                     <span class="status">{{ property.status }}</span>
                   </button>
                 }
+                <button class="add-row" type="button" (click)="selectSection('properties')">+ Immobilie hinzufügen</button>
               </div>
             </article>
           }
 
           @if (activeSection() === 'overview' || activeSection() === 'finances') {
-            <article class="panel">
-              <div class="panel-heading"><div><span>Finanzen</span><h2>Offene Rechnungen</h2></div></div>
+            <article class="panel finance-card" [class.full-width]="activeSection() === 'finances'">
+              <div class="panel-heading">
+                <div><span>Finanzen</span><h2>Finanzen</h2></div>
+                <button class="panel-link" type="button" (click)="selectSection('finances')">Alle Finanzen</button>
+              </div>
+              <div class="tabs">
+                <span class="active">Buchung erfassen</span>
+                <span>Letzte Buchungen</span>
+              </div>
               <form class="compact-form" [formGroup]="financeForm" (ngSubmit)="createFinance()">
-                <input formControlName="label" placeholder="Rechnung oder Buchung" />
-                <input formControlName="amount" type="number" step="0.01" placeholder="Betrag" />
-                <input formControlName="category" placeholder="Kategorie" />
+                <select formControlName="category" aria-label="Kategorie"><option>Hausgeld</option><option>Instandhaltung</option><option>Rücklage</option><option>Versicherung</option></select>
+                <div class="amount-field"><input formControlName="amount" type="number" step="0.01" placeholder="Betrag" /><span>EUR</span></div>
                 <input formControlName="bookedOn" inputmode="numeric" placeholder="TT.MM.JJJJ" aria-label="Buchungsdatum" />
-                <select formControlName="status"><option value="BOOKED">Gebucht</option><option value="OPEN">Offen</option><option value="REVIEW">Prüfung</option></select>
-                <button type="submit">Erfassen</button>
+                <input formControlName="label" placeholder="Beschreibung" />
+                <select formControlName="status" aria-label="Buchungsstatus"><option value="BOOKED">Gebucht</option><option value="OPEN">Offen</option><option value="REVIEW">Prüfung</option></select>
+                <button type="submit">Buchung erfassen</button>
               </form>
               <div class="list finance">
-                @for (item of dashboard()?.finances; track item.label + item.bookedOn) {
+                @for (item of filteredFinances(); track item.label + item.bookedOn) {
                   <div class="row">
                     <div><strong>{{ item.label }}</strong><small>{{ item.category }} · {{ item.bookedOn | date:'dd.MM.yyyy' }} · {{ statusLabel(item.status) }}</small></div>
                     <span [class.negative]="item.amount < 0">{{ item.amount | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</span>
@@ -286,42 +312,59 @@
           }
 
           @if (activeSection() === 'overview' || activeSection() === 'tasks') {
-            <article class="panel">
-              <div class="panel-heading"><div><span>Aufgaben</span><h2>Instandhaltungs-Tickets</h2></div></div>
-              <form class="compact-form" [formGroup]="taskForm" (ngSubmit)="addTask()">
-                <input formControlName="title" placeholder="Aufgabe" />
-                <select formControlName="priority"><option value="LOW">Niedrig</option><option value="MEDIUM">Mittel</option><option value="HIGH">Hoch</option><option value="URGENT">Dringend</option></select>
-                <input formControlName="dueDate" inputmode="numeric" placeholder="TT.MM.JJJJ" aria-label="Fälligkeitsdatum" />
-                <button type="submit">Anlegen</button>
-                <textarea formControlName="description" placeholder="Beschreibung"></textarea>
-              </form>
-              <div class="list">
-                @for (task of dashboard()?.tasks; track task.id) {
-                  <div class="row task-row" [class.done]="task.status === 'DONE'">
-                    <div>
-                      <strong>{{ task.title }}</strong>
-                      <small>{{ task.description }} @if (task.dueDate) { · {{ task.dueDate | date:'dd.MM.yyyy' }} } · {{ statusLabel(task.status) }}</small>
-                    </div>
-                    <div class="task-controls">
-                      <span class="badge" [class.urgent]="task.priority === 'URGENT'">{{ priorityLabel(task.priority) }}</span>
-                      @if (task.status !== 'IN_REVIEW' && task.status !== 'DONE') {
-                        <button class="small-action secondary-action" type="button" [disabled]="loading()" (click)="updateTaskStatus(task, 'IN_REVIEW')">In Prüfung</button>
-                      }
-                      @if (task.status !== 'DONE') {
-                        <button class="small-action" type="button" [disabled]="loading()" (click)="updateTaskStatus(task, 'DONE')">Erledigen</button>
-                      }
-                    </div>
-                  </div>
-                } @empty {
-                  <p class="empty">Keine offenen Aufgaben.</p>
-                }
+            <article class="panel task-card" [class.full-width]="activeSection() === 'tasks'">
+              <div class="panel-heading">
+                <div><span>Aufgaben</span><h2>Aufgaben</h2></div>
+                <button class="panel-link" type="button" (click)="selectSection('tasks')">Alle Aufgaben</button>
               </div>
+              @if (activeSection() === 'tasks') {
+                <form class="compact-form" [formGroup]="taskForm" (ngSubmit)="addTask()">
+                  <input formControlName="title" placeholder="Aufgabe" />
+                  <select formControlName="priority"><option value="LOW">Niedrig</option><option value="MEDIUM">Mittel</option><option value="HIGH">Hoch</option><option value="URGENT">Dringend</option></select>
+                  <input formControlName="dueDate" inputmode="numeric" placeholder="TT.MM.JJJJ" aria-label="Fälligkeitsdatum" />
+                  <button type="submit">Anlegen</button>
+                  <textarea formControlName="description" placeholder="Beschreibung"></textarea>
+                </form>
+              }
+              @if (activeSection() === 'overview' && dueTasks().length === 0) {
+                <div class="empty-state">
+                  <span class="clipboard-illustration"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="M22 10h20v8H22z"/><path d="M18 14h28v40H18z"/><path d="m25 30 4 4 10-10M25 43h14"/></svg></span>
+                  <h3>Keine offenen Aufgaben</h3>
+                  <p>Sie haben alle Aufgaben erledigt. Weiter so.</p>
+                  <button class="secondary-action" type="button" (click)="selectSection('tasks')">Neue Aufgabe erstellen</button>
+                </div>
+              } @else {
+                <div class="list">
+                  @for (task of filteredTasks(); track task.id) {
+                    <div class="row task-row" [class.done]="task.status === 'DONE'">
+                      <div>
+                        <strong>{{ task.title }}</strong>
+                        <small>{{ task.description }} @if (task.dueDate) { · {{ task.dueDate | date:'dd.MM.yyyy' }} } · {{ statusLabel(task.status) }}</small>
+                      </div>
+                      <div class="task-controls">
+                        <span class="badge" [class.urgent]="task.priority === 'URGENT'">{{ priorityLabel(task.priority) }}</span>
+                        @if (task.status !== 'IN_REVIEW' && task.status !== 'DONE') {
+                          <button class="small-action secondary-action" type="button" [disabled]="loading()" (click)="updateTaskStatus(task, 'IN_REVIEW')">In Prüfung</button>
+                        }
+                        @if (task.status !== 'DONE') {
+                          <button class="small-action" type="button" [disabled]="loading()" (click)="updateTaskStatus(task, 'DONE')">Erledigen</button>
+                        }
+                      </div>
+                    </div>
+                  } @empty {
+                    <p class="empty">Keine passenden Aufgaben.</p>
+                  }
+                </div>
+              }
             </article>
           }
 
-          @if (activeSection() === 'overview' || activeSection() === 'units') {
-            <article class="panel">
-              <div class="panel-heading"><div><span>Eigentümer</span><h2>Einheiten</h2></div></div>
+          @if (activeSection() === 'units') {
+            <article class="panel" [class.full-width]="activeSection() === 'units'">
+              <div class="panel-heading">
+                <div><span>Eigentümer</span><h2>Einheiten</h2></div>
+                <button class="panel-link" type="button" (click)="selectSection('units')">Alle Einheiten</button>
+              </div>
               <form class="compact-form units-form" [formGroup]="unitForm" (ngSubmit)="createUnit()">
                 <input formControlName="unitLabel" placeholder="Einheit 01" />
                 <input formControlName="ownerName" placeholder="Eigentümer" />
@@ -329,7 +372,7 @@
                 <button type="submit">Anlegen</button>
               </form>
               <div class="list">
-                @for (unit of dashboard()?.units; track unit.unitLabel) {
+                @for (unit of filteredUnits(); track unit.unitLabel) {
                   <div class="row"><div><strong>{{ unit.unitLabel }}</strong><small>{{ unit.ownerName }}</small></div><span>{{ unit.shareValue | number:'1.2-2' }}</span></div>
                 } @empty {
                   <p class="empty">Noch keine Einheiten.</p>
@@ -338,9 +381,12 @@
             </article>
           }
 
-          @if (activeSection() === 'overview' || activeSection() === 'documents') {
-            <article class="panel">
-              <div class="panel-heading"><div><span>Dokumente</span><h2>Dokumentenablage</h2></div></div>
+          @if (activeSection() === 'documents') {
+            <article class="panel" [class.full-width]="activeSection() === 'documents'">
+              <div class="panel-heading">
+                <div><span>Dokumente</span><h2>Dokumentenablage</h2></div>
+                <button class="panel-link" type="button" (click)="selectSection('documents')">Alle Dokumente</button>
+              </div>
               <form class="compact-form" [formGroup]="documentForm" (ngSubmit)="createDocument()">
                 <input formControlName="title" placeholder="Dokumenttitel" />
                 <input formControlName="documentType" placeholder="Typ" />
@@ -349,7 +395,7 @@
                 <button type="submit">Ablegen</button>
               </form>
               <div class="list">
-                @for (document of dashboard()?.documents; track document.id) {
+                @for (document of filteredDocuments(); track document.id) {
                   <div class="row"><div><strong>{{ document.title }}</strong><small>{{ document.fileName }} · {{ document.documentDate | date:'dd.MM.yyyy' }}</small></div><span class="file-type">{{ document.documentType }}</span></div>
                 } @empty {
                   <p class="empty">Noch keine Dokumente.</p>
@@ -358,7 +404,7 @@
             </article>
           }
 
-          @if (activeSection() === 'overview' || activeSection() === 'decisions') {
+          @if (activeSection() === 'decisions') {
             <article class="panel decisions-panel">
               <div class="panel-heading">
                 <div><span>Beschlüsse</span><h2>Beschluss-Sammlung</h2></div>
@@ -381,7 +427,7 @@
                 <textarea formControlName="resolutionText" placeholder="Wortlaut des Beschlusses"></textarea>
               </form>
               <div class="list">
-                @for (decision of dashboard()?.decisions; track decision.id) {
+                @for (decision of filteredDecisions(); track decision.id) {
                   <div class="row decision-row" [class.done]="decision.status === 'IMPLEMENTED'">
                     <div>
                       <strong>{{ decision.title }}</strong>
@@ -408,11 +454,18 @@
           }
 
           @if (activeSection() === 'overview' || activeSection() === 'activity') {
-            <aside class="panel activity">
-              <div class="panel-heading"><div><span>Audit Trail</span><h2>Aktivitäten</h2></div></div>
-              <div class="timeline">
-                @for (event of dashboard()?.activity; track event.createdAt) {
-                  <div><span></span><p>{{ event.summary }}</p><small>{{ event.createdAt | date:'dd.MM.yyyy HH:mm' }}</small></div>
+            <aside class="panel activity" [class.full-width]="activeSection() === 'activity'">
+              <div class="panel-heading">
+                <div><span>Aktivität</span><h2>Aktivität</h2></div>
+                <button class="panel-link" type="button" (click)="selectSection('activity')">Alle Aktivitäten</button>
+              </div>
+              <div class="activity-list">
+                @for (event of filteredActivity(); track event.createdAt) {
+                  <div class="activity-item">
+                    <span class="activity-dot"></span>
+                    <div><strong>{{ event.summary }}</strong><small>{{ event.createdAt | date:'dd.MM.yyyy HH:mm' }}</small></div>
+                    <span class="file-type">{{ activityLabel(event.eventType) }}</span>
+                  </div>
                 } @empty {
                   <p class="empty">Aktivitäten erscheinen automatisch.</p>
                 }
@@ -420,18 +473,65 @@
             </aside>
           }
 
-          <aside class="panel onboarding-card">
-            <div class="panel-heading"><div><span>Setup</span><h2>Registrierung & Onboarding</h2></div></div>
-            <div class="progress-ring"><strong>{{ dashboard()?.onboarding?.completion }}%</strong></div>
-            <ul class="checklist">
-              <li [class.done]="dashboard()?.onboarding?.accountActivated">E-Mail bestätigt</li>
-              <li [class.done]="dashboard()?.onboarding?.propertyCreated">Erste Immobilie hinzugefügt</li>
-              <li [class.done]="dashboard()?.onboarding?.unitsCreated">Einheiten angelegt</li>
-              <li [class.done]="dashboard()?.onboarding?.financeCreated">Finanzen erfasst</li>
-              <li [class.done]="dashboard()?.onboarding?.taskCreated">Aufgabe angelegt</li>
-              <li [class.done]="dashboard()?.onboarding?.decisionCreated">Beschluss-Sammlung gestartet</li>
-            </ul>
-          </aside>
+          @if (activeSection() === 'communication') {
+            <article class="panel full-width communication-panel">
+              <div class="panel-heading">
+                <div><span>Kommunikation</span><h2>Mitteilung vorbereiten</h2></div>
+                <small>{{ communicationPosts().length }} Entwürfe</small>
+              </div>
+              <form class="communication-form" [formGroup]="communicationForm" (ngSubmit)="sendCommunication()">
+                <select formControlName="audience" aria-label="Empfänger">
+                  <option>Eigentümer</option>
+                  <option>Beirat</option>
+                  <option>Verwaltung</option>
+                </select>
+                <input formControlName="subject" placeholder="Betreff" />
+                <textarea formControlName="message" placeholder="Nachricht an die Gemeinschaft"></textarea>
+                <button type="submit">Mitteilung vorbereiten</button>
+              </form>
+              <div class="list">
+                @for (post of communicationPosts(); track post.createdAt) {
+                  <div class="row">
+                    <div><strong>{{ post.subject }}</strong><small>{{ post.audience }} · {{ post.createdAt | date:'dd.MM.yyyy HH:mm' }}</small><p>{{ post.message }}</p></div>
+                    <span class="file-type">Entwurf</span>
+                  </div>
+                } @empty {
+                  <p class="empty">Noch keine Mitteilungen vorbereitet.</p>
+                }
+              </div>
+            </article>
+          }
+
+          @if (activeSection() === 'settings') {
+            <article class="panel full-width settings-panel">
+              <div class="panel-heading">
+                <div><span>Einstellungen</span><h2>Workspace-Einstellungen</h2></div>
+                <small>{{ dashboard()?.user?.organizationName }}</small>
+              </div>
+              <form class="settings-form" [formGroup]="settingsForm" (ngSubmit)="saveSettings()">
+                <label class="toggle-line"><input type="checkbox" formControlName="emailNotifications" /> E-Mail-Benachrichtigungen aktivieren</label>
+                <label class="toggle-line"><input type="checkbox" formControlName="taskDigest" /> Aufgaben-Digest senden</label>
+                <label class="toggle-line"><input type="checkbox" formControlName="decisionReminders" /> Beschluss-Erinnerungen anzeigen</label>
+                <label>Startansicht <select formControlName="defaultView"><option>Übersicht</option><option>Finanzen</option><option>Aufgaben</option><option>Beschlüsse</option></select></label>
+                <button type="submit">Einstellungen speichern</button>
+              </form>
+            </article>
+          }
+
+          @if (activeSection() === 'overview' && dashboard()?.onboarding?.completion !== 100) {
+            <aside class="panel onboarding-card">
+              <div class="panel-heading"><div><span>Setup</span><h2>Registrierung & Onboarding</h2></div></div>
+              <div class="progress-ring"><strong>{{ dashboard()?.onboarding?.completion }}%</strong></div>
+              <ul class="checklist">
+                <li [class.done]="dashboard()?.onboarding?.accountActivated">E-Mail bestätigt</li>
+                <li [class.done]="dashboard()?.onboarding?.propertyCreated">Erste Immobilie hinzugefügt</li>
+                <li [class.done]="dashboard()?.onboarding?.unitsCreated">Einheiten angelegt</li>
+                <li [class.done]="dashboard()?.onboarding?.financeCreated">Finanzen erfasst</li>
+                <li [class.done]="dashboard()?.onboarding?.taskCreated">Aufgabe angelegt</li>
+                <li [class.done]="dashboard()?.onboarding?.decisionCreated">Beschluss-Sammlung gestartet</li>
+              </ul>
+            </aside>
+          }
         </section>
       }
     </section>
