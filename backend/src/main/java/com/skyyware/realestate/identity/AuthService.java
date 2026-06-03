@@ -70,7 +70,7 @@ public class AuthService {
 
     @Transactional
     public RegistrationResult register(String email, String fullName, String organizationName) {
-        String normalizedEmail = email.toLowerCase();
+        String normalizedEmail = EmailAddressPolicy.normalize(email);
         AppUser user = users.findByEmail(normalizedEmail)
                 .map(existing -> {
                     existing.updateProfile(fullName, organizationName);
@@ -110,7 +110,7 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public AuthSession login(String email, String password) {
-        AppUser user = users.findByEmail(email.toLowerCase())
+        AppUser user = users.findByEmail(EmailAddressPolicy.normalize(email))
                 .orElseThrow(() -> new IllegalArgumentException("E-Mail oder Passwort ist falsch."));
         if (user.status() != UserStatus.ACTIVE || user.passwordHash() == null || !passwordEncoder.matches(password, user.passwordHash())) {
             throw new IllegalArgumentException("E-Mail oder Passwort ist falsch.");

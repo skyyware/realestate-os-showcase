@@ -3,6 +3,7 @@ package com.skyyware.realestate.mail;
 import com.skyyware.realestate.config.RealEstateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -41,7 +42,12 @@ public class TransactionalMailService {
                 Viele Grüße
                 Sascha Dobrochynskyy
                 """.formatted(name, setupLink));
-        mailSender.send(message);
+        try {
+            mailSender.send(message);
+        } catch (MailException exception) {
+            log.warn("Password setup mail could not be sent to {}: {}", email, exception.getMessage());
+            throw new IllegalArgumentException("Aktivierungslink konnte nicht gesendet werden. Bitte E-Mail-Adresse prüfen.");
+        }
         return new MailDelivery(true, null);
     }
 

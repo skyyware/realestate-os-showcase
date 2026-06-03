@@ -64,7 +64,17 @@ export class App implements OnInit {
   }
 
   protected register(): void {
-    if (this.registerForm.invalid) return;
+    if (this.registerForm.invalid) {
+      this.error.set('Bitte Name, gültige E-Mail-Adresse und Organisation ausfüllen.');
+      return;
+    }
+    const normalizedEmail = this.normalizeEmail(this.registerForm.controls.email.value);
+    const suggestion = this.emailSuggestion(normalizedEmail);
+    if (suggestion) {
+      this.error.set(`Bitte E-Mail-Adresse prüfen. Meintest du ${suggestion}?`);
+      return;
+    }
+    this.registerForm.controls.email.setValue(normalizedEmail);
     this.begin();
     this.http.post<RegistrationResult>(`${API_BASE_URL}/auth/register`, this.registerForm.getRawValue())
       .subscribe({
@@ -85,7 +95,17 @@ export class App implements OnInit {
   }
 
   protected login(): void {
-    if (this.loginForm.invalid) return;
+    if (this.loginForm.invalid) {
+      this.error.set('Bitte E-Mail-Adresse und Passwort eingeben.');
+      return;
+    }
+    const normalizedEmail = this.normalizeEmail(this.loginForm.controls.email.value);
+    const suggestion = this.emailSuggestion(normalizedEmail);
+    if (suggestion) {
+      this.error.set(`Bitte E-Mail-Adresse prüfen. Meintest du ${suggestion}?`);
+      return;
+    }
+    this.loginForm.controls.email.setValue(normalizedEmail);
     this.begin();
     this.http.post<AuthSession>(`${API_BASE_URL}/auth/login`, this.loginForm.getRawValue())
       .subscribe({ next: session => this.acceptSession(session), error: error => this.fail(error) });
@@ -167,6 +187,22 @@ export class App implements OnInit {
   private toIsoDate(value: string): string {
     const match = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(value);
     return match ? `${match[3]}-${match[2]}-${match[1]}` : value;
+  }
+
+  private normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
+  }
+
+  private emailSuggestion(email: string): string {
+    const suffixFixes: Record<string, string> = {
+      '.cpm': '.com',
+      '.cmo': '.com',
+      '.con': '.com',
+      '.vom': '.com',
+      '.deu': '.de'
+    };
+    const typo = Object.keys(suffixFixes).find(suffix => email.endsWith(suffix));
+    return typo ? email.slice(0, -typo.length) + suffixFixes[typo] : '';
   }
 }
 
