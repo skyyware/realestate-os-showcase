@@ -46,7 +46,7 @@
         <form [formGroup]="loginForm" (ngSubmit)="login()">
           <label>E-Mail <input formControlName="email" type="email" autocomplete="email" placeholder="name@unternehmen.de" /></label>
           <label>Passwort <input formControlName="password" type="password" autocomplete="current-password" /></label>
-          <button type="submit" [disabled]="loading()">Dashboard öffnen</button>
+          <button type="submit" [disabled]="loading()">Login</button>
         </form>
         <button class="link" type="button" (click)="switchMode('register')">Neuen Zugang erstellen</button>
       }
