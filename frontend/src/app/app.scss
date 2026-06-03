@@ -887,6 +887,7 @@ button.table-row.selected {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  align-items: center;
   justify-content: flex-end;
   min-width: 210px;
 }
