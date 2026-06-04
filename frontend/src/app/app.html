@@ -662,6 +662,9 @@
                 <input formControlName="title" placeholder="Versammlungstitel" />
                 <input formControlName="meetingDate" inputmode="numeric" placeholder="TT.MM.JJJJ" aria-label="Versammlungsdatum" />
                 <input formControlName="location" placeholder="Ort oder Videolink" />
+                <input formControlName="invitationSentOn" inputmode="numeric" placeholder="Einladung am" aria-label="Einladungsdatum" />
+                <input formControlName="responseDeadline" inputmode="numeric" placeholder="Rückmeldung bis" aria-label="Rückmeldefrist" />
+                <input formControlName="quorumRequirement" placeholder="Quorum / Mehrheit" />
                 <select formControlName="status" aria-label="Versammlungsstatus"><option value="SCHEDULED">Geplant</option><option value="INVITED">Eingeladen</option><option value="COMPLETED">Abgeschlossen</option></select>
                 <button type="submit">Versammlung planen</button>
                 <textarea formControlName="agenda" placeholder="Tagesordnung, Unterlagen und offene Beschlussvorlagen"></textarea>
@@ -669,7 +672,14 @@
               <div class="list meeting-list">
                 @for (meeting of filteredMeetings(); track meeting.id) {
                   <div class="row">
-                    <div><strong>{{ meeting.title }}</strong><small>{{ meeting.meetingDate | date:'dd.MM.yyyy' }} · {{ meeting.location }} · {{ statusLabel(meeting.status) }}</small><p>{{ meeting.agenda }}</p></div>
+                    <div>
+                      <strong>{{ meeting.title }}</strong>
+                      <small>
+                        {{ meeting.meetingDate | date:'dd.MM.yyyy' }} · {{ meeting.location }} · {{ statusLabel(meeting.status) }}
+                        @if (meeting.responseDeadline) { · Rückmeldung bis {{ meeting.responseDeadline | date:'dd.MM.yyyy' }} }
+                      </small>
+                      <p>{{ meeting.quorumRequirement }} · {{ meeting.agenda }}</p>
+                    </div>
                     <span class="file-type">EV</span>
                   </div>
                 } @empty {
@@ -682,9 +692,19 @@
                 <small>{{ openDecisions().length }} offen in Umsetzung</small>
               </div>
               <form class="compact-form decision-form" [formGroup]="decisionForm" (ngSubmit)="createDecision()">
+                <select formControlName="meetingId" aria-label="Versammlungsbezug">
+                  <option value="">Keine Versammlung</option>
+                  @for (meeting of dashboard()?.meetings; track meeting.id) {
+                    <option [value]="meeting.id">{{ meeting.title }} · {{ meeting.meetingDate | date:'dd.MM.yyyy' }}</option>
+                  }
+                </select>
                 <input formControlName="title" placeholder="Beschlusstitel" />
                 <input formControlName="meetingDate" inputmode="numeric" placeholder="TT.MM.JJJJ" aria-label="Beschlussdatum" />
                 <input formControlName="meetingLocation" placeholder="Ort oder Format" />
+                <input formControlName="agendaItem" placeholder="Tagesordnungspunkt" />
+                <input formControlName="implementationDueDate" inputmode="numeric" placeholder="Umsetzung bis" aria-label="Umsetzungsfrist" />
+                <input formControlName="responsibleRole" placeholder="Verantwortlich" />
+                <div class="amount-field"><input formControlName="costImpact" type="number" min="0" step="0.01" placeholder="Kostenwirkung" /><span>EUR</span></div>
                 <select formControlName="status">
                   <option value="DRAFT">Entwurf</option>
                   <option value="PASSED">Beschlossen</option>
@@ -700,11 +720,16 @@
               <div class="list">
                 @for (decision of filteredDecisions(); track decision.id) {
                   <div class="row decision-row" [class.done]="decision.status === 'IMPLEMENTED'">
-                    <div>
-                      <strong>{{ decision.title }}</strong>
-                      <small>{{ decision.meetingDate | date:'dd.MM.yyyy' }} · {{ decision.meetingLocation }} · {{ statusLabel(decision.status) }}</small>
-                      <p>{{ decision.resolutionText }}</p>
-                      <div class="vote-strip">
+	                    <div>
+	                      <strong>{{ decision.title }}</strong>
+	                      <small>{{ decision.agendaItem }} · {{ decision.meetingDate | date:'dd.MM.yyyy' }} · {{ decision.meetingTitle || decision.meetingLocation }} · {{ statusLabel(decision.status) }}</small>
+	                      <p>{{ decision.resolutionText }}</p>
+	                      <small>
+	                        {{ decision.responsibleRole }}
+	                        @if (decision.implementationDueDate) { · fällig {{ decision.implementationDueDate | date:'dd.MM.yyyy' }} }
+	                        · Kostenwirkung {{ decision.costImpact | currency:'EUR':'symbol':'1.2-2':'de-DE' }}
+	                      </small>
+	                      <div class="vote-strip">
                         <span>Ja {{ decision.yesVotes }}</span>
                         <span>Nein {{ decision.noVotes }}</span>
                         <span>Enthalten {{ decision.abstentions }}</span>

@@ -72,10 +72,10 @@ export class App implements OnInit, OnDestroy {
     this.matchesSearch(document.title, document.documentType, document.fileName, document.documentDate, document.status, document.visibility, document.source, document.description, document.linkedEntityType)
   ));
   protected readonly filteredDecisions = computed(() => (this.dashboard()?.decisions ?? []).filter(decision =>
-    this.matchesSearch(decision.title, decision.resolutionText, decision.meetingLocation, decision.status, decision.meetingDate)
+    this.matchesSearch(decision.title, decision.resolutionText, decision.meetingLocation, decision.meetingTitle, decision.agendaItem, decision.responsibleRole, decision.costImpact, decision.status, decision.meetingDate)
   ));
   protected readonly filteredMeetings = computed(() => (this.dashboard()?.meetings ?? []).filter(meeting =>
-    this.matchesSearch(meeting.title, meeting.location, meeting.agenda, meeting.status, meeting.meetingDate)
+    this.matchesSearch(meeting.title, meeting.location, meeting.agenda, meeting.quorumRequirement, meeting.responseDeadline, meeting.invitationSentOn, meeting.status, meeting.meetingDate)
   ));
   protected readonly filteredMessages = computed(() => (this.dashboard()?.messages ?? []).filter(message =>
     this.matchesSearch(message.audience, message.subject, message.message, message.status, message.createdAt)
@@ -181,10 +181,15 @@ export class App implements OnInit, OnDestroy {
   });
 
   protected readonly decisionForm = this.fb.nonNullable.group({
+    meetingId: [''],
     title: ['', [Validators.required, Validators.maxLength(180)]],
     resolutionText: ['', [Validators.required, Validators.maxLength(1600)]],
     meetingDate: [this.today(), [Validators.required, germanDateValidator]],
     meetingLocation: ['Eigentümerversammlung', [Validators.required, Validators.maxLength(180)]],
+    agendaItem: ['TOP 1', [Validators.required, Validators.maxLength(240)]],
+    implementationDueDate: ['', [germanDateValidator]],
+    responsibleRole: ['Verwaltung', [Validators.required, Validators.maxLength(80)]],
+    costImpact: [0, [Validators.required, Validators.min(0)]],
     status: ['PASSED' as DecisionStatus, [Validators.required]],
     yesVotes: [0, [Validators.required, Validators.min(0)]],
     noVotes: [0, [Validators.required, Validators.min(0)]],
@@ -196,6 +201,9 @@ export class App implements OnInit, OnDestroy {
     meetingDate: [this.today(), [Validators.required, germanDateValidator]],
     location: ['', [Validators.required, Validators.maxLength(180)]],
     agenda: ['', [Validators.required, Validators.maxLength(1800)]],
+    invitationSentOn: ['', [germanDateValidator]],
+    responseDeadline: ['', [germanDateValidator]],
+    quorumRequirement: ['Einfache Mehrheit nach MEA', [Validators.required, Validators.maxLength(240)]],
     status: ['SCHEDULED' as MeetingStatus, [Validators.required]]
   });
 
@@ -384,7 +392,13 @@ export class App implements OnInit, OnDestroy {
     const propertyId = this.requireSelectedPropertyId();
     if (!propertyId) return;
     const formValue = this.decisionForm.getRawValue();
-    this.submitDashboardRequest('decisions', { ...formValue, meetingDate: this.toIsoDate(formValue.meetingDate), propertyId }, 'Beschluss wurde in die Sammlung aufgenommen.');
+    this.submitDashboardRequest('decisions', {
+      ...formValue,
+      meetingId: formValue.meetingId || null,
+      meetingDate: this.toIsoDate(formValue.meetingDate),
+      implementationDueDate: formValue.implementationDueDate ? this.toIsoDate(formValue.implementationDueDate) : null,
+      propertyId
+    }, 'Beschluss wurde in die Sammlung aufgenommen.');
   }
 
   protected createMeeting(): void {
@@ -392,7 +406,13 @@ export class App implements OnInit, OnDestroy {
     const propertyId = this.requireSelectedPropertyId();
     if (!propertyId) return;
     const formValue = this.meetingForm.getRawValue();
-    this.submitDashboardRequest('meetings', { ...formValue, meetingDate: this.toIsoDate(formValue.meetingDate), propertyId }, 'Eigentümerversammlung wurde vorbereitet.');
+    this.submitDashboardRequest('meetings', {
+      ...formValue,
+      meetingDate: this.toIsoDate(formValue.meetingDate),
+      invitationSentOn: formValue.invitationSentOn ? this.toIsoDate(formValue.invitationSentOn) : null,
+      responseDeadline: formValue.responseDeadline ? this.toIsoDate(formValue.responseDeadline) : null,
+      propertyId
+    }, 'Eigentümerversammlung wurde vorbereitet.');
   }
 
   protected logout(): void {
@@ -642,8 +662,8 @@ export class App implements OnInit, OnDestroy {
           if (path === 'house-money') this.houseMoneyForm.reset({ unitId: '', fiscalYear: new Date().getFullYear(), monthlyHouseMoney: 0, monthlyReserveContribution: 0, validFrom: `01.01.${new Date().getFullYear()}`, status: 'ACTIVE' });
           if (path === 'annual-plans') this.annualPlanForm.reset({ fiscalYear: new Date().getFullYear(), houseMoneyBudget: 0, maintenanceBudget: 0, reserveContribution: 0, status: 'DRAFT' });
           if (path === 'documents') this.documentForm.reset({ title: '', documentType: 'Rechnung', fileName: '', documentDate: this.today(), status: 'RECEIVED', visibility: 'ALL_OWNERS', source: 'UPLOAD', description: '', linkedEntityType: 'GENERAL', linkedEntityId: '' });
-          if (path === 'meetings') this.meetingForm.reset({ title: '', meetingDate: this.today(), location: '', agenda: '', status: 'SCHEDULED' });
-          if (path === 'decisions') this.decisionForm.reset({ title: '', resolutionText: '', meetingDate: this.today(), meetingLocation: 'Eigentümerversammlung', status: 'PASSED', yesVotes: 0, noVotes: 0, abstentions: 0 });
+          if (path === 'meetings') this.meetingForm.reset({ title: '', meetingDate: this.today(), location: '', agenda: '', invitationSentOn: '', responseDeadline: '', quorumRequirement: 'Einfache Mehrheit nach MEA', status: 'SCHEDULED' });
+          if (path === 'decisions') this.decisionForm.reset({ meetingId: '', title: '', resolutionText: '', meetingDate: this.today(), meetingLocation: 'Eigentümerversammlung', agendaItem: 'TOP 1', implementationDueDate: '', responsibleRole: 'Verwaltung', costImpact: 0, status: 'PASSED', yesVotes: 0, noVotes: 0, abstentions: 0 });
           if (path === 'messages') this.communicationForm.reset({ audience: 'Eigentümer', subject: '', message: '' });
         },
         error: error => this.fail(error)
@@ -980,6 +1000,12 @@ interface DecisionView {
   resolutionText: string;
   meetingDate: string;
   meetingLocation: string;
+  meetingId?: string;
+  meetingTitle?: string;
+  agendaItem: string;
+  implementationDueDate?: string;
+  responsibleRole: string;
+  costImpact: number;
   status: DecisionStatus;
   yesVotes: number;
   noVotes: number;
@@ -1001,6 +1027,9 @@ interface MeetingView {
   meetingDate: string;
   location: string;
   agenda: string;
+  invitationSentOn?: string;
+  responseDeadline?: string;
+  quorumRequirement: string;
   status: MeetingStatus;
 }
 

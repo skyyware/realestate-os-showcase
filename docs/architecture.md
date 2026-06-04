@@ -116,6 +116,24 @@ Damit entsteht die Grundlage fuer spaetere Dateiablage in S3-kompatiblem
 Storage, ohne heute Infrastrukturkosten oder Scheindateien ins Produkt zu
 ziehen.
 
+## Slice 4: Versammlung und Beschlussworkflow
+
+Der Beschlussbereich wurde zu einem geschlossenen Meeting-Workflow erweitert:
+
+- Versammlungen fuehren Einladungsdatum, Rueckmeldefrist,
+  Quorum-/Mehrheitsanforderung, Status und Tagesordnung
+- Beschluesse koennen optional an eine Versammlung derselben WEG gebunden werden
+- Tagesordnungspunkt, Umsetzungsfrist, verantwortliche Rolle und Kostenwirkung
+  sind Teil der Domain-Daten
+- der Service validiert den WEG-Kontext des Versammlungsbezugs serverseitig
+- Protokolle und weitere Dokumente koennen den Beschluss als Nachweis belegen
+- der Browser-Smoke prueft den Pfad von Versammlung ueber Beschluss bis
+  Protokollablage und Umsetzung
+
+Damit wird aus "Beschluss als Text" ein pruefbarer Eigentuemerversammlungs-
+Prozess, der spaeter Benachrichtigungen, Aufgaben, Fristen und Exportlogik
+tragen kann.
+
 ## Identity
 
 Die Anwendung nutzt lokal eine app-native Registrierung mit einmaligem Token,

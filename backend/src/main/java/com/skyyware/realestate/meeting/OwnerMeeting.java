@@ -36,6 +36,13 @@ public class OwnerMeeting {
     @Column(nullable = false)
     private String agenda;
 
+    private LocalDate invitationSentOn;
+
+    private LocalDate responseDeadline;
+
+    @Column(nullable = false)
+    private String quorumRequirement;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MeetingStatus status;
@@ -46,13 +53,26 @@ public class OwnerMeeting {
     protected OwnerMeeting() {
     }
 
-    public OwnerMeeting(PropertyAsset property, String title, LocalDate meetingDate, String location, String agenda, MeetingStatus status) {
+    public OwnerMeeting(
+            PropertyAsset property,
+            String title,
+            LocalDate meetingDate,
+            String location,
+            String agenda,
+            LocalDate invitationSentOn,
+            LocalDate responseDeadline,
+            String quorumRequirement,
+            MeetingStatus status
+    ) {
         this.id = UUID.randomUUID();
         this.property = property;
         this.title = title;
         this.meetingDate = meetingDate;
         this.location = location;
         this.agenda = agenda;
+        this.invitationSentOn = invitationSentOn;
+        this.responseDeadline = responseDeadline;
+        this.quorumRequirement = quorumRequirement;
         this.status = status;
         this.createdAt = Instant.now();
     }
@@ -79,6 +99,18 @@ public class OwnerMeeting {
 
     public String agenda() {
         return agenda;
+    }
+
+    public LocalDate invitationSentOn() {
+        return invitationSentOn;
+    }
+
+    public LocalDate responseDeadline() {
+        return responseDeadline;
+    }
+
+    public String quorumRequirement() {
+        return quorumRequirement;
     }
 
     public MeetingStatus status() {

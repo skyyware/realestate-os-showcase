@@ -184,6 +184,9 @@ public class WorkspaceController {
                 request.meetingDate(),
                 request.location(),
                 request.agenda(),
+                request.invitationSentOn(),
+                request.responseDeadline(),
+                request.quorumRequirement(),
                 request.status()
         ));
     }
@@ -204,10 +207,15 @@ public class WorkspaceController {
     WorkspaceService.DashboardView createDecision(@Valid @RequestBody CreateDecisionRequest request) {
         return workspaceService.createDecision(CurrentUser.require().userId(), new WorkspaceService.CreateDecisionCommand(
                 request.propertyId(),
+                request.meetingId(),
                 request.title(),
                 request.resolutionText(),
                 request.meetingDate(),
                 request.meetingLocation(),
+                request.agendaItem(),
+                request.implementationDueDate(),
+                request.responsibleRole(),
+                request.costImpact(),
                 request.status(),
                 request.yesVotes(),
                 request.noVotes(),
@@ -326,6 +334,9 @@ public class WorkspaceController {
             @NotNull LocalDate meetingDate,
             @NotBlank @Size(max = 180) String location,
             @NotBlank @Size(max = 1800) String agenda,
+            LocalDate invitationSentOn,
+            LocalDate responseDeadline,
+            @NotBlank @Size(max = 240) String quorumRequirement,
             @NotNull MeetingStatus status
     ) {
     }
@@ -340,10 +351,15 @@ public class WorkspaceController {
 
     public record CreateDecisionRequest(
             UUID propertyId,
+            UUID meetingId,
             @NotBlank @Size(max = 180) String title,
             @NotBlank @Size(max = 1600) String resolutionText,
             @NotNull LocalDate meetingDate,
             @NotBlank @Size(max = 180) String meetingLocation,
+            @NotBlank @Size(max = 240) String agendaItem,
+            LocalDate implementationDueDate,
+            @NotBlank @Size(max = 80) String responsibleRole,
+            @NotNull @DecimalMin("0.00") BigDecimal costImpact,
             @NotNull DecisionStatus status,
             @Min(0) int yesVotes,
             @Min(0) int noVotes,

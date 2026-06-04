@@ -136,14 +136,18 @@ class WorkspaceFlowTest {
                 DocumentLinkType.FINANCE,
                 financeId
         ));
-        workspaceService.createMeeting(user.id(), new WorkspaceService.CreateMeetingCommand(
+        WorkspaceService.DashboardView withMeeting = workspaceService.createMeeting(user.id(), new WorkspaceService.CreateMeetingCommand(
                 withProperty.selectedPropertyId(),
                 "Eigentümerversammlung 2026",
                 LocalDate.of(2026, 7, 10),
                 "Stuttgart und digital",
                 "Jahresabrechnung, Wirtschaftsplan, Treppenhaus-Sanierung",
+                LocalDate.of(2026, 6, 10),
+                LocalDate.of(2026, 7, 1),
+                "Einfache Mehrheit nach MEA",
                 MeetingStatus.INVITED
         ));
+        UUID meetingId = withMeeting.meetings().getFirst().id();
         workspaceService.createMessage(user.id(), new WorkspaceService.CreateMessageCommand(
                 withProperty.selectedPropertyId(),
                 "Eigentümer",
@@ -152,16 +156,24 @@ class WorkspaceFlowTest {
         ));
         WorkspaceService.DashboardView withDecision = workspaceService.createDecision(user.id(), new WorkspaceService.CreateDecisionCommand(
                 withProperty.selectedPropertyId(),
+                meetingId,
                 "Sanierung Treppenhaus beauftragen",
                 "Die Eigentümergemeinschaft beschließt, die Sanierung des Treppenhauses auf Basis des Angebots Nr. 24-118 zu beauftragen.",
                 LocalDate.of(2026, 6, 3),
                 "Eigentümerversammlung",
+                "TOP 3 Treppenhaus-Sanierung",
+                LocalDate.of(2026, 9, 30),
+                "Verwaltung",
+                new BigDecimal("18500.00"),
                 DecisionStatus.PASSED,
                 14,
                 1,
                 1
         ));
         assertThat(withDecision.decisions()).hasSize(1);
+        assertThat(withDecision.decisions().getFirst().meetingId()).isEqualTo(meetingId);
+        assertThat(withDecision.decisions().getFirst().agendaItem()).isEqualTo("TOP 3 Treppenhaus-Sanierung");
+        assertThat(withDecision.decisions().getFirst().implementationDueDate()).isEqualTo(LocalDate.of(2026, 9, 30));
         WorkspaceService.DashboardView withDecisionDocument = workspaceService.createDocument(user.id(), new WorkspaceService.CreateDocumentCommand(
                 withProperty.selectedPropertyId(),
                 "Protokoll JHV 2026",

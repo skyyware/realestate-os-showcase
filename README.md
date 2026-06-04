@@ -15,7 +15,7 @@ Eine shipbare Product-Engineering-Codebasis für moderne digitale WEG-Verwaltung
 - PostgreSQL 16 lokal und Aurora-kompatibles Schema
 - Keycloak/OIDC-ready Identity Boundary via `docker-compose --profile identity`
 - Onboarding mit Registrierung, E-Mail-Link, Passwortvergabe und leerem Workspace
-- Produktflows für Immobilien, Einheiten, Finanzen, Hausgeld-Soll, Einheitensalden, Wirtschaftspläne, Versammlungen, Kommunikation, Aufgaben, Dokumente mit Belegkette und Aktivität
+- Produktflows für Immobilien, Einheiten, Finanzen, Hausgeld-Soll, Einheitensalden, Wirtschaftspläne, Versammlungen, Beschlussworkflow, Kommunikation, Aufgaben, Dokumente mit Belegkette und Aktivität
 - Rollenbasierte Workspace-Commands und Audit-Log für schreibende Vorgänge
 - Operatives Command Center mit priorisierten nächsten Schritten je Immobilie
 - Beschluss-Sammlung mit Datum, Ort, Wortlaut, Abstimmungsergebnis und Umsetzungsstatus
@@ -82,6 +82,7 @@ Weitere Übergabeartefakte:
 - [docs/case-study/slice-1-weg-onboarding.md](docs/case-study/slice-1-weg-onboarding.md)
 - [docs/case-study/slice-2-finance-foundation.md](docs/case-study/slice-2-finance-foundation.md)
 - [docs/case-study/slice-3-document-evidence-chain.md](docs/case-study/slice-3-document-evidence-chain.md)
+- [docs/case-study/slice-4-meeting-decision-workflow.md](docs/case-study/slice-4-meeting-decision-workflow.md)
 - [docs/adr/0001-modular-monolith.md](docs/adr/0001-modular-monolith.md)
 - [docs/test-strategy.md](docs/test-strategy.md)
 - [docs/handover.md](docs/handover.md)

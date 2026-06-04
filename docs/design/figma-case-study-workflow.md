@@ -53,6 +53,7 @@ wurde:
 | 2026-06-04 | Slice 1 WEG Onboarding And Roles | [FigJam öffnen](https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8) | Erstellt und lokal umgesetzt |
 | 2026-06-04 | Slice 2 Finance Foundation | [FigJam öffnen](https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8) | Erstellt, lokal getestet und deploybereit |
 | 2026-06-04 | Slice 3 Documents And Evidence Chain | [FigJam öffnen](https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8) | Erstellt, lokal getestet und deploybereit |
+| 2026-06-04 | Slice 4 Meeting Decision Workflow | [FigJam öffnen](https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8) | Erstellt, lokal getestet und deploybereit |
 
 ## Integration ins Bewerbungsdeck
 

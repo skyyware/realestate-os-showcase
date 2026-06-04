@@ -382,6 +382,9 @@ public class WorkspaceService {
                 command.meetingDate(),
                 command.location(),
                 command.agenda(),
+                command.invitationSentOn(),
+                command.responseDeadline(),
+                command.quorumRequirement(),
                 command.status()
         ));
         activities.save(new ActivityEvent(user, property, "MEETING", "Eigentümerversammlung geplant: " + meeting.title()));
@@ -409,12 +412,18 @@ public class WorkspaceService {
     public DashboardView createDecision(UUID userId, CreateDecisionCommand command) {
         AppUser user = user(userId);
         PropertyAsset property = propertyForAdmin(user, command.propertyId());
+        OwnerMeeting meeting = command.meetingId() == null ? null : meetingFor(property, command.meetingId());
         CommunityDecision decision = decisions.save(new CommunityDecision(
                 property,
                 command.title(),
                 command.resolutionText(),
                 command.meetingDate(),
                 command.meetingLocation(),
+                meeting,
+                command.agendaItem(),
+                command.implementationDueDate(),
+                command.responsibleRole(),
+                command.costImpact(),
                 command.status(),
                 command.yesVotes(),
                 command.noVotes(),
@@ -483,6 +492,15 @@ public class WorkspaceService {
             throw new IllegalArgumentException("Einheit gehört nicht zu dieser WEG.");
         }
         return unit;
+    }
+
+    private OwnerMeeting meetingFor(PropertyAsset property, UUID meetingId) {
+        OwnerMeeting meeting = ownerMeetings.findById(meetingId)
+                .orElseThrow(() -> new IllegalArgumentException("Versammlung nicht gefunden."));
+        if (!meeting.property().id().equals(property.id())) {
+            throw new IllegalArgumentException("Versammlung gehört nicht zu dieser WEG.");
+        }
+        return meeting;
     }
 
     private void validateDocumentLink(PropertyAsset property, DocumentLinkType linkType, UUID linkedEntityId) {
@@ -837,12 +855,19 @@ public class WorkspaceService {
     }
 
     private static DecisionView toDecision(CommunityDecision decision) {
+        OwnerMeeting meeting = decision.meeting();
         return new DecisionView(
                 decision.id(),
                 decision.title(),
                 decision.resolutionText(),
                 decision.meetingDate(),
                 decision.meetingLocation(),
+                meeting == null ? null : meeting.id(),
+                meeting == null ? null : meeting.title(),
+                decision.agendaItem(),
+                decision.implementationDueDate(),
+                decision.responsibleRole(),
+                decision.costImpact(),
                 decision.status().name(),
                 decision.yesVotes(),
                 decision.noVotes(),
@@ -857,6 +882,9 @@ public class WorkspaceService {
                 meeting.meetingDate(),
                 meeting.location(),
                 meeting.agenda(),
+                meeting.invitationSentOn(),
+                meeting.responseDeadline(),
+                meeting.quorumRequirement(),
                 meeting.status().name()
         );
     }
@@ -929,10 +957,10 @@ public class WorkspaceService {
     public record DocumentView(UUID id, String title, String documentType, String fileName, LocalDate documentDate, String status, String visibility, String source, String description, String linkedEntityType, UUID linkedEntityId) {
     }
 
-    public record DecisionView(UUID id, String title, String resolutionText, LocalDate meetingDate, String meetingLocation, String status, int yesVotes, int noVotes, int abstentions) {
+    public record DecisionView(UUID id, String title, String resolutionText, LocalDate meetingDate, String meetingLocation, UUID meetingId, String meetingTitle, String agendaItem, LocalDate implementationDueDate, String responsibleRole, BigDecimal costImpact, String status, int yesVotes, int noVotes, int abstentions) {
     }
 
-    public record MeetingView(UUID id, String title, LocalDate meetingDate, String location, String agenda, String status) {
+    public record MeetingView(UUID id, String title, LocalDate meetingDate, String location, String agenda, LocalDate invitationSentOn, LocalDate responseDeadline, String quorumRequirement, String status) {
     }
 
     public record MessageView(UUID id, String audience, String subject, String message, String status, Instant createdAt) {
@@ -980,12 +1008,12 @@ public class WorkspaceService {
     public record CreateDocumentCommand(UUID propertyId, String title, String documentType, String fileName, LocalDate documentDate, DocumentStatus status, DocumentVisibility visibility, String source, String description, DocumentLinkType linkedEntityType, UUID linkedEntityId) {
     }
 
-    public record CreateMeetingCommand(UUID propertyId, String title, LocalDate meetingDate, String location, String agenda, MeetingStatus status) {
+    public record CreateMeetingCommand(UUID propertyId, String title, LocalDate meetingDate, String location, String agenda, LocalDate invitationSentOn, LocalDate responseDeadline, String quorumRequirement, MeetingStatus status) {
     }
 
     public record CreateMessageCommand(UUID propertyId, String audience, String subject, String message) {
     }
 
-    public record CreateDecisionCommand(UUID propertyId, String title, String resolutionText, LocalDate meetingDate, String meetingLocation, DecisionStatus status, int yesVotes, int noVotes, int abstentions) {
+    public record CreateDecisionCommand(UUID propertyId, UUID meetingId, String title, String resolutionText, LocalDate meetingDate, String meetingLocation, String agendaItem, LocalDate implementationDueDate, String responsibleRole, BigDecimal costImpact, DecisionStatus status, int yesVotes, int noVotes, int abstentions) {
     }
 }

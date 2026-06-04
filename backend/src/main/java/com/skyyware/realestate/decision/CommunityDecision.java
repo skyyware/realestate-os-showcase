@@ -1,5 +1,6 @@
 package com.skyyware.realestate.decision;
 
+import com.skyyware.realestate.meeting.OwnerMeeting;
 import com.skyyware.realestate.property.PropertyAsset;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -10,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -36,6 +38,21 @@ public class CommunityDecision {
     @Column(nullable = false)
     private String meetingLocation;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "meeting_id")
+    private OwnerMeeting meeting;
+
+    @Column(nullable = false)
+    private String agendaItem;
+
+    private LocalDate implementationDueDate;
+
+    @Column(nullable = false)
+    private String responsibleRole;
+
+    @Column(nullable = false)
+    private BigDecimal costImpact;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private DecisionStatus status;
@@ -61,6 +78,11 @@ public class CommunityDecision {
             String resolutionText,
             LocalDate meetingDate,
             String meetingLocation,
+            OwnerMeeting meeting,
+            String agendaItem,
+            LocalDate implementationDueDate,
+            String responsibleRole,
+            BigDecimal costImpact,
             DecisionStatus status,
             int yesVotes,
             int noVotes,
@@ -72,6 +94,11 @@ public class CommunityDecision {
         this.resolutionText = resolutionText;
         this.meetingDate = meetingDate;
         this.meetingLocation = meetingLocation;
+        this.meeting = meeting;
+        this.agendaItem = agendaItem;
+        this.implementationDueDate = implementationDueDate;
+        this.responsibleRole = responsibleRole;
+        this.costImpact = costImpact;
         this.status = status;
         this.yesVotes = yesVotes;
         this.noVotes = noVotes;
@@ -101,6 +128,26 @@ public class CommunityDecision {
 
     public String meetingLocation() {
         return meetingLocation;
+    }
+
+    public OwnerMeeting meeting() {
+        return meeting;
+    }
+
+    public String agendaItem() {
+        return agendaItem;
+    }
+
+    public LocalDate implementationDueDate() {
+        return implementationDueDate;
+    }
+
+    public String responsibleRole() {
+        return responsibleRole;
+    }
+
+    public BigDecimal costImpact() {
+        return costImpact;
     }
 
     public DecisionStatus status() {
