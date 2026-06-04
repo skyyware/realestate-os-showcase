@@ -35,6 +35,11 @@ public class AuthController {
         return authService.setPassword(request.token(), request.password());
     }
 
+    @PostMapping("/password-reset")
+    AuthService.RegistrationResult requestPasswordReset(@Valid @RequestBody PasswordResetRequest request) {
+        return authService.requestPasswordReset(request.email());
+    }
+
     @PostMapping("/login")
     AuthService.AuthSession login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request.email(), request.password());
@@ -50,6 +55,11 @@ public class AuthController {
     public record SetPasswordRequest(
             @NotBlank String token,
             @NotBlank @Size(min = 10, max = 128) String password
+    ) {
+    }
+
+    public record PasswordResetRequest(
+            @Email @NotBlank String email
     ) {
     }
 

@@ -14,6 +14,7 @@ import com.skyyware.realestate.meeting.MeetingStatus;
 import com.skyyware.realestate.planning.AnnualPlanStatus;
 import com.skyyware.realestate.property.CommunityRole;
 import com.skyyware.realestate.property.ManagementMode;
+import com.skyyware.realestate.property.MemberStatus;
 import com.skyyware.realestate.property.OccupancyType;
 import com.skyyware.realestate.security.CurrentUser;
 import com.skyyware.realestate.task.TaskPriority;
@@ -28,11 +29,13 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -94,6 +97,23 @@ public class WorkspaceController {
         ));
     }
 
+    @PatchMapping("/members/{memberId}")
+    @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER')")
+    WorkspaceService.DashboardView updateMember(@PathVariable UUID memberId, @Valid @RequestBody UpdateMemberRequest request) {
+        return workspaceService.updateMember(CurrentUser.require().userId(), memberId, new WorkspaceService.UpdateMemberCommand(
+                request.fullName(),
+                request.email(),
+                request.role(),
+                request.status()
+        ));
+    }
+
+    @DeleteMapping("/members/{memberId}")
+    @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER')")
+    WorkspaceService.DashboardView disableMember(@PathVariable UUID memberId) {
+        return workspaceService.disableMember(CurrentUser.require().userId(), memberId);
+    }
+
     @PostMapping("/tasks")
     @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER','BOARD_MEMBER')")
     WorkspaceService.DashboardView addTask(@Valid @RequestBody CreateTaskRequest request) {
@@ -110,10 +130,32 @@ public class WorkspaceController {
         ));
     }
 
+    @PutMapping("/tasks/{taskId}")
+    @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER','BOARD_MEMBER')")
+    WorkspaceService.DashboardView updateTask(@PathVariable UUID taskId, @Valid @RequestBody UpdateTaskRequest request) {
+        return workspaceService.updateTask(CurrentUser.require().userId(), taskId, new WorkspaceService.UpdateTaskCommand(
+                request.title(),
+                request.description(),
+                request.priority(),
+                request.assigneeRole(),
+                request.sourceType(),
+                request.sourceId(),
+                request.dueDate(),
+                request.reminderDate(),
+                request.status()
+        ));
+    }
+
     @PatchMapping("/tasks/{taskId}/status")
     @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER','BOARD_MEMBER')")
     WorkspaceService.DashboardView updateTaskStatus(@PathVariable UUID taskId, @Valid @RequestBody UpdateTaskStatusRequest request) {
         return workspaceService.updateTaskStatus(CurrentUser.require().userId(), taskId, request.status());
+    }
+
+    @DeleteMapping("/tasks/{taskId}")
+    @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER','BOARD_MEMBER')")
+    WorkspaceService.DashboardView deleteTask(@PathVariable UUID taskId) {
+        return workspaceService.deleteTask(CurrentUser.require().userId(), taskId);
     }
 
     @PostMapping("/finances")
@@ -281,6 +323,14 @@ public class WorkspaceController {
     ) {
     }
 
+    public record UpdateMemberRequest(
+            @NotBlank @Size(max = 180) String fullName,
+            @NotBlank @Email @Size(max = 320) String email,
+            @NotNull CommunityRole role,
+            @NotNull MemberStatus status
+    ) {
+    }
+
     public record CreateTaskRequest(
             UUID propertyId,
             @NotBlank @Size(max = 180) String title,
@@ -291,6 +341,19 @@ public class WorkspaceController {
             UUID sourceId,
             LocalDate dueDate,
             LocalDate reminderDate
+    ) {
+    }
+
+    public record UpdateTaskRequest(
+            @NotBlank @Size(max = 180) String title,
+            @NotBlank @Size(max = 1000) String description,
+            @NotNull TaskPriority priority,
+            @NotBlank @Size(max = 80) String assigneeRole,
+            @NotNull WorkContextType sourceType,
+            UUID sourceId,
+            LocalDate dueDate,
+            LocalDate reminderDate,
+            @NotNull TaskStatus status
     ) {
     }
 

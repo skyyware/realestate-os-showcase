@@ -126,6 +126,26 @@ public class CommunityMember {
         }
     }
 
+    public void updateAccess(String fullName, String email, CommunityRole role, MemberStatus status) {
+        this.fullName = fullName;
+        this.email = normalizeEmail(email);
+        this.role = role;
+        if (this.status != status) {
+            this.status = status;
+            if (status == MemberStatus.INVITED) {
+                this.invitedAt = Instant.now();
+                this.acceptedAt = null;
+            }
+            if (status == MemberStatus.ACTIVE && this.acceptedAt == null) {
+                this.acceptedAt = Instant.now();
+            }
+        }
+    }
+
+    public void disable() {
+        this.status = MemberStatus.DISABLED;
+    }
+
     public void attachUser(AppUser user) {
         this.user = user;
         this.status = MemberStatus.ACTIVE;
@@ -136,4 +156,3 @@ public class CommunityMember {
         return email.trim().toLowerCase();
     }
 }
-

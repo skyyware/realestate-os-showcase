@@ -45,6 +45,24 @@ await page.getByLabel('Neues Passwort').fill(user.password);
 await page.getByRole('button', { name: 'Account aktivieren' }).click();
 await page.getByRole('heading', { name: 'Erste Immobilie hinzufügen' }).waitFor();
 
+await page.getByRole('button', { name: 'Logout' }).click();
+await page.getByRole('heading', { name: 'Einloggen' }).waitFor();
+await page.getByRole('button', { name: 'Passwort vergessen' }).click();
+await page.getByRole('heading', { name: 'Passwort vergessen' }).waitFor();
+await page.getByLabel('E-Mail').fill(user.email);
+const resetResponse = page.waitForResponse(response => response.url().includes('/api/auth/password-reset') && response.status() === 200);
+await page.getByRole('button', { name: 'Reset-Link senden' }).click();
+const resetResult = await (await resetResponse).json();
+if (resetResult.localSetupLink) {
+  const resetToken = new URL(resetResult.localSetupLink).searchParams.get('token');
+  user.password = `Reset2ship-${stamp}!`;
+  await page.goto(`${baseUrl}/set-password?token=${resetToken}`, { waitUntil: 'networkidle' });
+  await page.getByRole('heading', { name: 'Passwort vergeben' }).waitFor();
+  await page.getByLabel('Neues Passwort').fill(user.password);
+  await page.getByRole('button', { name: 'Account aktivieren' }).click();
+}
+await page.getByRole('heading', { name: 'Erste Immobilie hinzufügen' }).waitFor();
+
 await page.getByLabel('Immobilie').fill('Musterstraße 12');
 await page.getByLabel('Adresse').fill('Musterstraße 12');
 await page.getByLabel('Stadt').fill('Stuttgart');
@@ -204,7 +222,20 @@ await page.getByText('Aufgabe ist in Prüfung.').waitFor();
 taskRow = page.locator('.task-row').filter({ hasText: 'Eigentümerversammlung vorbereiten' });
 await taskRow.getByRole('button', { name: 'Erledigen' }).click();
 await page.getByText('Aufgabe erledigt.').waitFor();
-await page.getByText('0 Vorgänge im Board').waitFor();
+await page.locator('.task-row.done').filter({ hasText: 'Eigentümerversammlung vorbereiten' }).waitFor();
+taskRow = page.locator('.task-row').filter({ hasText: 'Eigentümerversammlung vorbereiten' });
+await taskRow.getByRole('button', { name: 'Bearbeiten' }).click();
+await page.getByRole('heading', { name: 'Aufgabe bearbeiten' }).waitFor();
+await page.locator('input[formcontrolname="title"]').fill('Eigentümerversammlung final prüfen');
+await page.getByLabel('Aufgabenstatus').selectOption('OPEN');
+await page.getByRole('button', { name: 'Speichern' }).click();
+await page.getByText('Aufgabe wurde gespeichert.').waitFor();
+taskRow = page.locator('.task-row').filter({ hasText: 'Eigentümerversammlung final prüfen' });
+await taskRow.waitFor();
+page.once('dialog', dialog => dialog.accept());
+await taskRow.getByRole('button', { name: 'Löschen' }).click();
+await page.getByText('Aufgabe wurde gelöscht.').waitFor();
+await page.getByText('Eigentümerversammlung final prüfen').waitFor({ state: 'hidden' });
 
 await page.getByRole('button', { name: 'Immobilien', exact: true }).click();
 await page.getByLabel('Immobilie').fill('Neckarblick 4');
@@ -249,13 +280,26 @@ await page.screenshot({ path: fileURLToPath(new URL('realestate-audit-desktop.pn
 
 await page.getByRole('button', { name: 'Einstellungen', exact: true }).click();
 await page.getByText('Rollen & Rechte').waitFor();
-await page.getByText('WEG-Admin').waitFor();
+await page.getByRole('heading', { name: 'WEG-Admin' }).waitFor();
 await page.getByText('Finanzen steuern').waitFor();
+let memberRow = page.locator('.member-row').filter({ hasText: 'Beirat Stuttgart' }).first();
+await memberRow.getByLabel('Rolle ändern').selectOption('PROPERTY_MANAGER');
+await page.getByText('Rolle wurde aktualisiert.').waitFor();
+memberRow = page.locator('.member-row').filter({ hasText: 'Beirat Stuttgart' }).first();
+await memberRow.getByLabel('Zugriffsstatus ändern').selectOption('ACTIVE');
+await page.getByText('Rolle wurde aktualisiert.').waitFor();
+memberRow = page.locator('.member-row').filter({ hasText: 'Beirat Stuttgart' }).first();
+page.once('dialog', dialog => dialog.accept());
+await memberRow.getByRole('button', { name: 'Deaktivieren' }).click();
+await page.getByText('Rolle wurde deaktiviert.').waitFor();
+await page.locator('.member-row.disabled').filter({ hasText: 'Beirat Stuttgart' }).waitFor();
+await page.locator('.quick-config').getByLabel('Buchung erfassen').check();
 await page.getByRole('button', { name: 'Einstellungen speichern', exact: true }).click();
 await page.getByText('Einstellungen wurden gespeichert.').waitFor();
+await page.locator('.sidebar-footer').getByRole('button', { name: 'Buchung erfassen' }).waitFor();
 
 await page.getByRole('button', { name: 'Übersicht', exact: true }).click();
-await page.getByText('125.540,75').waitFor();
+await page.locator('.metrics').getByText('125.540,75').waitFor();
 await page.screenshot({ path: fileURLToPath(new URL('realestate-dashboard-desktop.png', outputDir)), fullPage: true });
 
 const token = await page.evaluate(() => localStorage.getItem('realestate.token'));

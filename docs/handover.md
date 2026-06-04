@@ -40,7 +40,8 @@ Secrets werden nicht im Repo gespeichert.
 4. Artefakte nach `/srv/www/realestate.stage.dev/releases/<release>` kopieren.
 5. Symlink `current` aktualisieren.
 6. `sudo systemctl restart realestate-api.service`
-7. Healthcheck und Browser-Smoke ausfuehren.
+7. Healthcheck, oeffentlichen Passwort-Reset-Endpunkt und Browser-Smoke
+   ausfuehren.
 
 ## Uebernahme-Checkliste
 

@@ -19,6 +19,7 @@ import com.skyyware.realestate.meeting.MeetingStatus;
 import com.skyyware.realestate.planning.AnnualPlanStatus;
 import com.skyyware.realestate.property.CommunityRole;
 import com.skyyware.realestate.property.ManagementMode;
+import com.skyyware.realestate.property.MemberStatus;
 import com.skyyware.realestate.property.OccupancyType;
 import com.skyyware.realestate.task.TaskPriority;
 import com.skyyware.realestate.task.TaskStatus;
@@ -49,6 +50,9 @@ class WorkspaceFlowTest {
         String rawToken = registration.localSetupLink().substring(registration.localSetupLink().indexOf("token=") + 6);
 
         authService.setPassword(rawToken, "Ready2ship-password");
+        AuthService.RegistrationResult passwordReset = authService.requestPasswordReset(email);
+        assertThat(passwordReset.emailSent()).isFalse();
+        assertThat(passwordReset.localSetupLink()).contains("/set-password?token=");
         AppUser user = users.findByEmail(email).orElseThrow();
 
         WorkspaceService.DashboardView empty = workspaceService.dashboard(user.id());
@@ -90,6 +94,27 @@ class WorkspaceFlowTest {
         assertThat(withBoard.readiness().readyForFinance()).isTrue();
         assertThat(withBoard.members()).extracting(WorkspaceService.MemberView::role)
                 .contains("OWNER_ADMIN", "BOARD_MEMBER");
+        UUID boardMemberId = withBoard.members().stream()
+                .filter(member -> member.role().equals("BOARD_MEMBER"))
+                .findFirst()
+                .orElseThrow()
+                .id();
+        WorkspaceService.DashboardView updatedBoardMember = workspaceService.updateMember(user.id(), boardMemberId, new WorkspaceService.UpdateMemberCommand(
+                "Beirat Stuttgart",
+                "beirat@example.com",
+                CommunityRole.PROPERTY_MANAGER,
+                MemberStatus.ACTIVE
+        ));
+        assertThat(updatedBoardMember.members()).anySatisfy(member -> {
+            assertThat(member.email()).isEqualTo("beirat@example.com");
+            assertThat(member.role()).isEqualTo("PROPERTY_MANAGER");
+            assertThat(member.status()).isEqualTo("ACTIVE");
+        });
+        WorkspaceService.DashboardView disabledBoardMember = workspaceService.disableMember(user.id(), boardMemberId);
+        assertThat(disabledBoardMember.members()).anySatisfy(member -> {
+            assertThat(member.email()).isEqualTo("beirat@example.com");
+            assertThat(member.status()).isEqualTo("DISABLED");
+        });
         WorkspaceService.DashboardView withAssessment = workspaceService.createHouseMoneyAssessment(user.id(), new WorkspaceService.CreateHouseMoneyAssessmentCommand(
                 withProperty.selectedPropertyId(),
                 unitId,
@@ -262,6 +287,27 @@ class WorkspaceFlowTest {
         assertThat(taskDone.metrics().openTasks()).isZero();
         assertThat(taskDone.insights()).extracting(WorkspaceService.InsightView::title)
                 .doesNotContain("Nächste Aufgabe steuern", "Wiedervorlage steht an", "Frist überfällig");
+
+        UUID taskId = complete.tasks().getFirst().id();
+        WorkspaceService.DashboardView taskEdited = workspaceService.updateTask(user.id(), taskId, new WorkspaceService.UpdateTaskCommand(
+                "Einladungspaket final abstimmen",
+                "Einladung, Unterlagen und Rückmeldefrist fachlich finalisieren.",
+                TaskPriority.URGENT,
+                "Verwaltung",
+                WorkContextType.MEETING,
+                meetingId,
+                LocalDate.of(2026, 6, 13),
+                LocalDate.of(2026, 6, 10),
+                TaskStatus.OPEN
+        ));
+        assertThat(taskEdited.tasks().getFirst().title()).isEqualTo("Einladungspaket final abstimmen");
+        assertThat(taskEdited.tasks().getFirst().priority()).isEqualTo("URGENT");
+        assertThat(taskEdited.metrics().openTasks()).isEqualTo(1);
+
+        WorkspaceService.DashboardView taskDeleted = workspaceService.deleteTask(user.id(), taskId);
+        assertThat(taskDeleted.tasks()).isEmpty();
+        assertThat(taskDeleted.audit()).extracting(WorkspaceService.AuditView::action)
+                .contains("task.delete");
 
         WorkspaceService.DashboardView secondProperty = workspaceService.createProperty(user.id(), new WorkspaceService.CreatePropertyCommand(
                 "Neckarblick 4",

@@ -275,6 +275,36 @@ public class WorkspaceService {
     }
 
     @Transactional
+    public DashboardView updateMember(UUID userId, UUID memberId, UpdateMemberCommand command) {
+        AppUser user = user(userId);
+        CommunityMember member = members.findById(memberId).orElseThrow(() -> new IllegalArgumentException("Mitglied nicht gefunden."));
+        PropertyAsset property = member.property();
+        requireAdmin(user, property);
+        if (property.owner().email().equalsIgnoreCase(member.email()) && command.status() == MemberStatus.DISABLED) {
+            throw new IllegalArgumentException("Die primäre Administratorrolle kann nicht deaktiviert werden.");
+        }
+        member.updateAccess(command.fullName(), command.email(), command.role(), command.status());
+        activities.save(new ActivityEvent(user, property, "MEMBER", "Rolle aktualisiert: " + member.fullName() + " als " + roleLabel(member.role())));
+        audit.record(user, property, "member.update", "community_member", member.id(), "Mitglied aktualisiert: " + member.email() + " als " + member.role().name());
+        return dashboard(userId, property.id());
+    }
+
+    @Transactional
+    public DashboardView disableMember(UUID userId, UUID memberId) {
+        AppUser user = user(userId);
+        CommunityMember member = members.findById(memberId).orElseThrow(() -> new IllegalArgumentException("Mitglied nicht gefunden."));
+        PropertyAsset property = member.property();
+        requireAdmin(user, property);
+        if (property.owner().email().equalsIgnoreCase(member.email())) {
+            throw new IllegalArgumentException("Die primäre Administratorrolle kann nicht deaktiviert werden.");
+        }
+        member.disable();
+        activities.save(new ActivityEvent(user, property, "MEMBER", "Rolle deaktiviert: " + member.fullName()));
+        audit.record(user, property, "member.disable", "community_member", member.id(), "Mitglied deaktiviert: " + member.email());
+        return dashboard(userId, property.id());
+    }
+
+    @Transactional
     public DashboardView addTask(UUID userId, CreateTaskCommand command) {
         AppUser user = user(userId);
         PropertyAsset property = propertyForCollaborator(user, command.propertyId());
@@ -304,6 +334,42 @@ public class WorkspaceService {
         task.transitionTo(status);
         activities.save(new ActivityEvent(user, property, "TASK", "Aufgabe aktualisiert: " + task.title() + " ist " + taskStatusLabel(status) + "."));
         audit.record(user, property, "task.status", "work_task", task.id(), "Aufgabenstatus gesetzt: " + status.name());
+        return dashboard(userId, property.id());
+    }
+
+    @Transactional
+    public DashboardView updateTask(UUID userId, UUID taskId, UpdateTaskCommand command) {
+        AppUser user = user(userId);
+        WorkTask task = tasks.findById(taskId).orElseThrow(() -> new IllegalArgumentException("Aufgabe nicht gefunden."));
+        PropertyAsset property = task.property();
+        requireCollaborator(user, property);
+        validateWorkContext(property, command.sourceType(), command.sourceId());
+        task.updateDetails(
+                command.title(),
+                command.description(),
+                command.priority(),
+                command.assigneeRole(),
+                command.sourceType(),
+                command.sourceId(),
+                command.dueDate(),
+                command.reminderDate(),
+                command.status()
+        );
+        activities.save(new ActivityEvent(user, property, "TASK", "Aufgabe bearbeitet: " + task.title()));
+        audit.record(user, property, "task.update", "work_task", task.id(), "Aufgabe bearbeitet: " + task.title());
+        return dashboard(userId, property.id());
+    }
+
+    @Transactional
+    public DashboardView deleteTask(UUID userId, UUID taskId) {
+        AppUser user = user(userId);
+        WorkTask task = tasks.findById(taskId).orElseThrow(() -> new IllegalArgumentException("Aufgabe nicht gefunden."));
+        PropertyAsset property = task.property();
+        requireCollaborator(user, property);
+        String title = task.title();
+        tasks.delete(task);
+        activities.save(new ActivityEvent(user, property, "TASK", "Aufgabe gelöscht: " + title));
+        audit.record(user, property, "task.delete", "work_task", taskId, "Aufgabe gelöscht: " + title);
         return dashboard(userId, property.id());
     }
 
@@ -1160,6 +1226,12 @@ public class WorkspaceService {
     }
 
     public record CreateTaskCommand(UUID propertyId, String title, String description, TaskPriority priority, String assigneeRole, WorkContextType sourceType, UUID sourceId, LocalDate dueDate, LocalDate reminderDate) {
+    }
+
+    public record UpdateMemberCommand(String fullName, String email, CommunityRole role, MemberStatus status) {
+    }
+
+    public record UpdateTaskCommand(String title, String description, TaskPriority priority, String assigneeRole, WorkContextType sourceType, UUID sourceId, LocalDate dueDate, LocalDate reminderDate, TaskStatus status) {
     }
 
     public record CreateFinanceCommand(UUID propertyId, String label, FinanceEventType eventType, BigDecimal amount, String category, AllocationKey allocationKey, UUID ownerUnitId, LocalDate bookedOn, LocalDate dueDate, LocalDate paidOn, String counterparty, String invoiceNumber, String documentReference, String status) {

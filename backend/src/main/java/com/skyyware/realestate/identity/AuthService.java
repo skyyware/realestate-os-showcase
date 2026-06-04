@@ -68,6 +68,21 @@ public class AuthService {
         return new RegistrationResult(delivery.emailSent(), delivery.localSetupLink());
     }
 
+    @Transactional
+    public RegistrationResult requestPasswordReset(String email) {
+        String normalizedEmail = EmailAddressPolicy.normalize(email);
+        return users.findByEmail(normalizedEmail)
+                .map(user -> {
+                    String rawToken = newToken();
+                    tokens.save(new RegistrationToken(user, hash(rawToken), Instant.now().plusSeconds(60 * 60 * 2)));
+                    String setupLink = appProperties.publicBaseUrl() + "/set-password?token=" + rawToken;
+                    var delivery = mailService.sendPasswordReset(user.email(), user.fullName(), setupLink);
+                    activities.save(new ActivityEvent(user, null, "PASSWORD_RESET", "Passwort-Zurücksetzen angefordert."));
+                    return new RegistrationResult(delivery.emailSent(), delivery.localSetupLink());
+                })
+                .orElseGet(() -> new RegistrationResult(true, null));
+    }
+
     @Transactional(readOnly = true)
     public RegistrationPreview previewRegistration(String rawToken) {
         RegistrationToken token = tokens.findByTokenHash(hash(rawToken))

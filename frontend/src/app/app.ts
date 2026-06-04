@@ -15,7 +15,7 @@ export class App implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly sessionExpiredHandler = () => this.handleSessionExpired();
 
-  protected readonly mode = signal<'register' | 'login' | 'password' | 'dashboard'>('register');
+  protected readonly mode = signal<'register' | 'login' | 'forgot' | 'password' | 'dashboard'>('register');
   protected readonly activeSection = signal<Section>('overview');
   protected readonly loading = signal(false);
   protected readonly error = signal('');
@@ -27,6 +27,20 @@ export class App implements OnInit, OnDestroy {
   protected readonly selectedPropertyId = signal<string | null>(null);
   protected readonly insightHidden = signal(false);
   protected readonly financePanelTab = signal<'entry' | 'history'>('entry');
+  protected readonly editingTaskId = signal<string | null>(null);
+  protected readonly quickAccess = signal<Section[]>(['tasks', 'documents']);
+  private applyDefaultViewOnNextDashboard = false;
+
+  protected readonly quickAccessOptions: Array<{ section: Section; label: string }> = [
+    { section: 'tasks', label: 'Neue Aufgabe' },
+    { section: 'documents', label: 'Dokument ablegen' },
+    { section: 'finances', label: 'Buchung erfassen' },
+    { section: 'communication', label: 'Mitteilung vorbereiten' },
+    { section: 'settings', label: 'Nutzer & Rechte' }
+  ];
+  protected readonly configuredQuickActions = computed(() =>
+    this.quickAccessOptions.filter(option => this.quickAccess().includes(option.section))
+  );
 
   protected readonly selectedProperty = computed(() => {
     const dashboard = this.dashboard();
@@ -98,6 +112,10 @@ export class App implements OnInit, OnDestroy {
     password: ['', [Validators.required]]
   });
 
+  protected readonly forgotForm = this.fb.nonNullable.group({
+    email: ['', [Validators.required, Validators.email]]
+  });
+
   protected readonly passwordForm = this.fb.nonNullable.group({
     password: ['', [Validators.required, Validators.minLength(10)]]
   });
@@ -138,7 +156,8 @@ export class App implements OnInit, OnDestroy {
     sourceType: ['MANUAL' as WorkContextType, [Validators.required]],
     sourceId: [''],
     dueDate: ['', [Validators.required, germanDateValidator]],
-    reminderDate: ['', [germanDateValidator]]
+    reminderDate: ['', [germanDateValidator]],
+    status: ['OPEN' as TaskStatus, [Validators.required]]
   });
 
   protected readonly financeForm = this.fb.nonNullable.group({
@@ -236,7 +255,7 @@ export class App implements OnInit, OnDestroy {
     emailNotifications: [true],
     taskDigest: [true],
     decisionReminders: [true],
-    defaultView: ['Übersicht', [Validators.required]]
+    defaultView: ['overview' as Section, [Validators.required]]
   });
 
   ngOnInit(): void {
@@ -252,7 +271,15 @@ export class App implements OnInit, OnDestroy {
     }
     if (localStorage.getItem('realestate.token')) {
       this.mode.set('dashboard');
+      this.applyDefaultViewOnNextDashboard = true;
       this.loadDashboard();
+      return;
+    }
+    const lastEmail = localStorage.getItem('realestate.lastEmail') ?? '';
+    if (lastEmail) {
+      this.loginForm.controls.email.setValue(lastEmail);
+      this.forgotForm.controls.email.setValue(lastEmail);
+      this.mode.set('login');
     }
   }
 
@@ -272,6 +299,7 @@ export class App implements OnInit, OnDestroy {
       return;
     }
     this.registerForm.controls.email.setValue(normalizedEmail);
+    localStorage.setItem('realestate.lastEmail', normalizedEmail);
     this.begin();
     this.http.post<RegistrationResult>(`${API_BASE_URL}/auth/register`, this.registerForm.getRawValue())
       .subscribe({
@@ -306,6 +334,41 @@ export class App implements OnInit, OnDestroy {
     this.begin();
     this.http.post<AuthSession>(`${API_BASE_URL}/auth/login`, this.loginForm.getRawValue())
       .subscribe({ next: session => this.acceptSession(session), error: error => this.fail(error) });
+  }
+
+  protected requestPasswordReset(): void {
+    if (this.forgotForm.invalid) {
+      this.error.set('Bitte E-Mail-Adresse eingeben.');
+      return;
+    }
+    const normalizedEmail = this.normalizeEmail(this.forgotForm.controls.email.value);
+    const suggestion = this.emailSuggestion(normalizedEmail);
+    if (suggestion) {
+      this.error.set(`Bitte E-Mail-Adresse prüfen. Meintest du ${suggestion}?`);
+      return;
+    }
+    this.forgotForm.controls.email.setValue(normalizedEmail);
+    localStorage.setItem('realestate.lastEmail', normalizedEmail);
+    this.begin();
+    this.http.post<RegistrationResult>(`${API_BASE_URL}/auth/password-reset`, this.forgotForm.getRawValue())
+      .subscribe({
+        next: result => {
+          this.loading.set(false);
+          this.info.set(result.emailSent
+            ? 'Wenn ein Zugang existiert, wurde ein Link zum Passwortsetzen verschickt.'
+            : `Lokaler Mailversand ist deaktiviert. Reset-Link: ${result.localSetupLink}`);
+          if (result.localSetupLink) {
+            const token = new URL(result.localSetupLink).searchParams.get('token') ?? '';
+            this.setupToken.set(token);
+            this.mode.set('password');
+            this.previewRegistration(token);
+          } else {
+            this.mode.set('login');
+            this.loginForm.controls.email.setValue(normalizedEmail);
+          }
+        },
+        error: error => this.fail(error)
+      });
   }
 
   protected setPassword(): void {
@@ -356,13 +419,34 @@ export class App implements OnInit, OnDestroy {
       this.info.set('');
       return;
     }
-    this.submitDashboardRequest('tasks', {
-      ...formValue,
+    const taskPayload = {
+      title: formValue.title,
+      description: formValue.description,
+      priority: formValue.priority,
+      assigneeRole: formValue.assigneeRole,
+      sourceType: formValue.sourceType,
       sourceId: formValue.sourceType === 'MANUAL' ? null : formValue.sourceId || null,
       dueDate: this.toIsoDate(formValue.dueDate),
       reminderDate: formValue.reminderDate ? this.toIsoDate(formValue.reminderDate) : null,
-      propertyId
-    }, 'Aufgabe wurde erstellt und protokolliert.');
+      status: formValue.status
+    };
+    if (this.editingTaskId()) {
+      this.begin();
+      this.http.put<Dashboard>(`${API_BASE_URL}/workspace/tasks/${this.editingTaskId()}`, taskPayload)
+        .subscribe({
+          next: dashboard => {
+            this.loading.set(false);
+            this.editingTaskId.set(null);
+            this.applyDashboard(dashboard);
+            this.resetTaskForm();
+            this.info.set('Aufgabe wurde gespeichert.');
+          },
+          error: error => this.fail(error)
+      });
+      return;
+    }
+    const { status: _status, ...createPayload } = taskPayload;
+    this.submitDashboardRequest('tasks', { ...createPayload, propertyId }, 'Aufgabe wurde erstellt und protokolliert.');
   }
 
   protected createFinance(): void {
@@ -453,9 +537,15 @@ export class App implements OnInit, OnDestroy {
     history.replaceState({}, '', '/');
   }
 
-  protected switchMode(mode: 'register' | 'login'): void {
+  protected switchMode(mode: 'register' | 'login' | 'forgot'): void {
     this.error.set('');
     this.info.set('');
+    if (mode === 'forgot') {
+      this.forgotForm.controls.email.setValue(this.loginForm.controls.email.value || localStorage.getItem('realestate.lastEmail') || '');
+    }
+    if (mode === 'login') {
+      this.loginForm.controls.email.setValue(this.forgotForm.controls.email.value || this.loginForm.controls.email.value);
+    }
     this.mode.set(mode);
   }
 
@@ -543,7 +633,9 @@ export class App implements OnInit, OnDestroy {
   }
 
   protected saveSettings(): void {
-    localStorage.setItem('realestate.workspaceSettings', JSON.stringify(this.settingsForm.getRawValue()));
+    const email = this.preferenceEmail();
+    localStorage.setItem(this.preferenceKey('workspaceSettings', email), JSON.stringify(this.settingsForm.getRawValue()));
+    localStorage.setItem(this.preferenceKey('quickAccess', email), JSON.stringify(this.quickAccess()));
     this.info.set('Einstellungen wurden gespeichert.');
     this.error.set('');
   }
@@ -559,6 +651,86 @@ export class App implements OnInit, OnDestroy {
         },
         error: error => this.fail(error)
       });
+  }
+
+  protected updateTaskStatusFromSelect(task: WorkTaskView, event: Event): void {
+    this.updateTaskStatus(task, (event.target as HTMLSelectElement).value as TaskStatus);
+  }
+
+  protected editTask(task: WorkTaskView): void {
+    this.editingTaskId.set(task.id);
+    this.taskForm.reset({
+      title: task.title,
+      description: task.description,
+      priority: task.priority,
+      assigneeRole: task.assigneeRole,
+      sourceType: task.sourceType,
+      sourceId: task.sourceId ?? '',
+      dueDate: task.dueDate ? this.toGermanDate(task.dueDate) : '',
+      reminderDate: task.reminderDate ? this.toGermanDate(task.reminderDate) : '',
+      status: task.status
+    });
+    this.activeSection.set('tasks');
+    this.info.set('Aufgabe kann jetzt bearbeitet werden.');
+    this.error.set('');
+  }
+
+  protected cancelTaskEdit(): void {
+    this.editingTaskId.set(null);
+    this.resetTaskForm();
+    this.info.set('');
+    this.error.set('');
+  }
+
+  protected deleteTask(task: WorkTaskView): void {
+    if (!confirm(`Aufgabe "${task.title}" wirklich löschen?`)) return;
+    this.begin();
+    this.http.delete<Dashboard>(`${API_BASE_URL}/workspace/tasks/${task.id}`)
+      .subscribe({
+        next: dashboard => {
+          this.loading.set(false);
+          if (this.editingTaskId() === task.id) this.editingTaskId.set(null);
+          this.applyDashboard(dashboard);
+          this.resetTaskForm();
+          this.info.set('Aufgabe wurde gelöscht.');
+        },
+        error: error => this.fail(error)
+      });
+  }
+
+  protected updateMemberRole(member: MemberView, event: Event): void {
+    this.updateMember(member, { role: (event.target as HTMLSelectElement).value as CommunityRole });
+  }
+
+  protected updateMemberStatus(member: MemberView, event: Event): void {
+    this.updateMember(member, { status: (event.target as HTMLSelectElement).value as MemberStatus });
+  }
+
+  protected disableMember(member: MemberView): void {
+    if (!confirm(`Zugriff für ${member.fullName} deaktivieren?`)) return;
+    this.begin();
+    this.http.delete<Dashboard>(`${API_BASE_URL}/workspace/members/${member.id}`)
+      .subscribe({
+        next: dashboard => {
+          this.loading.set(false);
+          this.applyDashboard(dashboard);
+          this.info.set('Rolle wurde deaktiviert.');
+        },
+        error: error => this.fail(error)
+      });
+  }
+
+  protected isQuickActionEnabled(section: Section): boolean {
+    return this.quickAccess().includes(section);
+  }
+
+  protected toggleQuickAction(section: Section, event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    const current = this.quickAccess();
+    const next = checked
+      ? [...new Set([...current, section])]
+      : current.filter(item => item !== section);
+    this.quickAccess.set(next.length ? next : ['tasks']);
   }
 
   protected updateDecisionStatus(decision: DecisionView, status: DecisionStatus): void {
@@ -745,7 +917,7 @@ export class App implements OnInit, OnDestroy {
           if (path === 'properties') this.propertyForm.reset({ name: '', address: '', city: '', unitCount: 1, fiscalYear: new Date().getFullYear(), cashBalance: 0, reserveBalance: 0, reserveTarget: 0, shareTotal: 1000, managementMode: 'SELF_MANAGED' });
           if (path === 'units') this.unitForm.reset({ ownerName: '', ownerEmail: '', unitLabel: '', shareValue: 0, votingWeight: 0, occupancyType: 'OWNER_OCCUPIED' });
           if (path === 'members') this.memberForm.reset({ fullName: '', email: '', role: 'BOARD_MEMBER' });
-          if (path === 'tasks') this.taskForm.reset({ title: '', description: '', priority: 'MEDIUM', assigneeRole: 'Verwaltung', sourceType: 'MANUAL', sourceId: '', dueDate: '', reminderDate: '' });
+          if (path === 'tasks') this.resetTaskForm();
           if (path === 'finances') {
             this.financeForm.reset({ label: '', eventType: 'EXPENSE', amount: 0, category: 'Instandhaltung', allocationKey: 'MEA', ownerUnitId: '', bookedOn: this.today(), dueDate: '', paidOn: '', counterparty: '', invoiceNumber: '', documentReference: '', status: 'BOOKED' });
             this.financePanelTab.set('history');
@@ -780,10 +952,12 @@ export class App implements OnInit, OnDestroy {
 
   private acceptSession(session: AuthSession): void {
     localStorage.setItem('realestate.token', session.accessToken);
+    localStorage.setItem('realestate.lastEmail', session.user.email);
     this.loading.set(false);
     this.info.set(`Willkommen, ${session.user.fullName}.`);
     this.mode.set('dashboard');
     this.activeSection.set('overview');
+    this.applyDefaultViewOnNextDashboard = true;
     history.replaceState({}, '', '/');
     this.loadDashboard();
   }
@@ -806,17 +980,75 @@ export class App implements OnInit, OnDestroy {
   private applyDashboard(dashboard: Dashboard): void {
     this.dashboard.set(dashboard);
     this.selectedPropertyId.set(dashboard.selectedPropertyId ?? dashboard.properties[0]?.id ?? null);
+    this.loadUserPreferences(dashboard.user.email);
+    if (this.applyDefaultViewOnNextDashboard) {
+      this.activeSection.set(this.settingsForm.controls.defaultView.value as Section);
+      this.applyDefaultViewOnNextDashboard = false;
+    }
   }
 
   private restoreLocalState(): void {
-    const settings = localStorage.getItem('realestate.workspaceSettings');
+    this.loadUserPreferences(localStorage.getItem('realestate.lastEmail') ?? 'default');
+  }
+
+  private loadUserPreferences(email: string): void {
+    const settings = localStorage.getItem(this.preferenceKey('workspaceSettings', email)) ?? localStorage.getItem('realestate.workspaceSettings');
     if (settings) {
       try {
         this.settingsForm.patchValue(JSON.parse(settings));
       } catch {
-        localStorage.removeItem('realestate.workspaceSettings');
+        localStorage.removeItem(this.preferenceKey('workspaceSettings', email));
       }
     }
+    const quickAccess = localStorage.getItem(this.preferenceKey('quickAccess', email));
+    if (quickAccess) {
+      try {
+        const parsed = JSON.parse(quickAccess) as Section[];
+        const allowed = parsed.filter(section => this.quickAccessOptions.some(option => option.section === section));
+        if (allowed.length) this.quickAccess.set(allowed);
+      } catch {
+        localStorage.removeItem(this.preferenceKey('quickAccess', email));
+      }
+    }
+  }
+
+  private updateMember(member: MemberView, changes: Partial<Pick<MemberView, 'role' | 'status'>>): void {
+    this.begin();
+    this.http.patch<Dashboard>(`${API_BASE_URL}/workspace/members/${member.id}`, {
+      fullName: member.fullName,
+      email: member.email,
+      role: changes.role ?? member.role,
+      status: changes.status ?? member.status
+    }).subscribe({
+      next: dashboard => {
+        this.loading.set(false);
+        this.applyDashboard(dashboard);
+        this.info.set('Rolle wurde aktualisiert.');
+      },
+      error: error => this.fail(error)
+    });
+  }
+
+  private resetTaskForm(): void {
+    this.taskForm.reset({
+      title: '',
+      description: '',
+      priority: 'MEDIUM',
+      assigneeRole: 'Verwaltung',
+      sourceType: 'MANUAL',
+      sourceId: '',
+      dueDate: '',
+      reminderDate: '',
+      status: 'OPEN'
+    });
+  }
+
+  private preferenceEmail(): string {
+    return this.dashboard()?.user.email ?? localStorage.getItem('realestate.lastEmail') ?? 'default';
+  }
+
+  private preferenceKey(kind: 'workspaceSettings' | 'quickAccess', email: string): string {
+    return `realestate.${kind}.${email}`;
   }
 
   private matchesSearch(...values: Array<unknown>): boolean {
@@ -874,6 +1106,13 @@ export class App implements OnInit, OnDestroy {
     const [, day, month, year] = match;
     return `${year}-${month}-${day}`;
   }
+
+  private toGermanDate(value: string): string {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (!match) return value;
+    const [, year, month, day] = match;
+    return `${day}.${month}.${year}`;
+  }
 }
 
 function germanDateValidator(control: AbstractControl): ValidationErrors | null {
@@ -904,6 +1143,7 @@ type InsightSeverity = 'HIGH' | 'MEDIUM' | 'LOW' | 'GOOD';
 type ManagementMode = 'SELF_MANAGED' | 'HYBRID' | 'PROFESSIONAL';
 type OccupancyType = 'OWNER_OCCUPIED' | 'RENTED' | 'VACANT';
 type CommunityRole = 'OWNER_ADMIN' | 'SELF_MANAGER' | 'PROPERTY_MANAGER' | 'BOARD_MEMBER' | 'OWNER' | 'EXTERNAL_EXPERT';
+type MemberStatus = 'ACTIVE' | 'INVITED' | 'DISABLED';
 type FinanceEventType = 'HOUSE_MONEY_CHARGE' | 'OWNER_PAYMENT' | 'EXPENSE' | 'RESERVE_TRANSFER' | 'SPECIAL_ASSESSMENT' | 'REFUND';
 type AllocationKey = 'MEA' | 'UNIT' | 'CONSUMPTION' | 'EQUAL' | 'DIRECT';
 type AssessmentStatus = 'DRAFT' | 'ACTIVE' | 'SUPERSEDED';
@@ -1021,7 +1261,7 @@ interface MemberView {
   fullName: string;
   email: string;
   role: CommunityRole;
-  status: string;
+  status: MemberStatus;
   invitedAt?: string;
   acceptedAt?: string;
 }

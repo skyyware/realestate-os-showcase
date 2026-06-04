@@ -137,4 +137,26 @@ public class WorkTask {
         this.status = status;
         this.completedAt = status == TaskStatus.DONE ? Instant.now() : null;
     }
+
+    public void updateDetails(
+            String title,
+            String description,
+            TaskPriority priority,
+            String assigneeRole,
+            WorkContextType sourceType,
+            UUID sourceId,
+            LocalDate dueDate,
+            LocalDate reminderDate,
+            TaskStatus status
+    ) {
+        this.title = title;
+        this.description = description;
+        this.priority = priority;
+        this.assigneeRole = assigneeRole;
+        this.sourceType = sourceType;
+        this.sourceId = sourceId;
+        this.dueDate = dueDate;
+        this.reminderDate = reminderDate;
+        transitionTo(status);
+    }
 }

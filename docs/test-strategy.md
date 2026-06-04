@@ -9,6 +9,8 @@ Stand: 4. Juni 2026
 - Architekturtests: Modulgrenzen per ArchUnit
 - Frontend-Build: Angular Template- und TypeScript-Check
 - Browser-Smoke: Registrierung, Passwortvergabe, leerer Workspace und Kernflows
+- Security-Smoke: oeffentliche Auth-Endpunkte bleiben ohne Session erreichbar,
+  Workspace-APIs bleiben geschuetzt
 
 ## Kritische Produktpfade
 
@@ -16,6 +18,7 @@ Der lokale QA-Smoke muss diese Pfade abdecken:
 
 - Registrierung ohne vorbefuellte Daten
 - Aktivierungslink und Passwortvergabe
+- Passwort-Reset ueber Login-Maske
 - Immobilie anlegen
 - Einheiten und Eigentuemerstruktur erfassen
 - Finanzbuchung und offenen Betrag erfassen
@@ -23,8 +26,10 @@ Der lokale QA-Smoke muss diese Pfade abdecken:
 - Dokument ablegen
 - Eigentuemerversammlung vorbereiten
 - Beschluss erfassen und umsetzen
-- Aufgabe erstellen, pruefen und erledigen
+- Aufgabe erstellen, bearbeiten, pruefen, erledigen und loeschen
 - Mitteilung vorbereiten
+- Nutzerrolle aendern, Status setzen und Zugriff deaktivieren
+- Schnellzugriff pro Nutzer konfigurieren
 - Workspace wechseln
 - Suche nutzen
 - Desktop- und Mobile-Screenshot ohne sichtbare Layoutbrueche
