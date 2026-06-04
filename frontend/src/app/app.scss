@@ -901,6 +901,59 @@ button:disabled {
   line-height: 1.15;
 }
 
+.readiness-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+.readiness-card {
+  display: grid;
+  gap: 7px;
+  min-height: 116px;
+  padding: 16px;
+  border: 1px solid #e0ebf2;
+  border-left: 4px solid #d86c00;
+  border-radius: 8px;
+  background: #fffaf2;
+}
+
+.readiness-card.done {
+  border-left-color: #00a870;
+  background: #f1fbf7;
+}
+
+.readiness-card span {
+  color: #607087;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.readiness-card strong {
+  font-size: 1.08rem;
+  line-height: 1.15;
+}
+
+.blocker-list {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.blocker-list li {
+  padding: 10px 12px;
+  border: 1px solid #ffe0ba;
+  border-radius: 8px;
+  color: #7a3b00;
+  background: #fff6eb;
+  font-weight: 750;
+}
+
 .plan-form {
   grid-template-columns: 120px minmax(180px, 1fr) minmax(180px, 1fr) minmax(180px, 1fr) 150px auto;
 }
@@ -910,7 +963,11 @@ button:disabled {
 }
 
 .units-form {
-  grid-template-columns: 1fr 1fr 120px auto;
+  grid-template-columns: minmax(120px, 0.8fr) minmax(180px, 1fr) minmax(220px, 1.1fr) 110px 130px 150px auto;
+}
+
+.member-form {
+  grid-template-columns: minmax(180px, 1fr) minmax(220px, 1fr) 180px auto;
 }
 
 .decision-form {
@@ -1466,6 +1523,8 @@ button.table-row.selected {
   .property-form,
   .compact-form,
   .units-form,
+  .member-form,
+  .readiness-grid,
   .task-controls {
     grid-template-columns: 1fr;
   }

@@ -47,7 +47,10 @@ export class App implements OnInit, OnDestroy {
   protected readonly openDecisions = computed(() => (this.dashboard()?.decisions ?? []).filter(decision => decision.status !== 'IMPLEMENTED' && decision.status !== 'REJECTED'));
   protected readonly primaryInsight = computed(() => this.insightHidden() ? null : this.dashboard()?.insights?.[0] ?? null);
   protected readonly filteredUnits = computed(() => (this.dashboard()?.units ?? []).filter(unit =>
-    this.matchesSearch(unit.unitLabel, unit.ownerName, unit.shareValue)
+    this.matchesSearch(unit.unitLabel, unit.ownerName, unit.ownerEmail, unit.shareValue, unit.occupancyType)
+  ));
+  protected readonly filteredMembers = computed(() => (this.dashboard()?.members ?? []).filter(member =>
+    this.matchesSearch(member.fullName, member.email, member.role, member.status)
   ));
   protected readonly filteredTasks = computed(() => (this.dashboard()?.tasks ?? []).filter(task =>
     this.matchesSearch(task.title, task.description, task.priority, task.status, task.dueDate)
@@ -94,14 +97,27 @@ export class App implements OnInit, OnDestroy {
     address: ['', [Validators.required, Validators.maxLength(240)]],
     city: ['', [Validators.required, Validators.maxLength(120)]],
     unitCount: [1, [Validators.required, Validators.min(1)]],
+    fiscalYear: [new Date().getFullYear(), [Validators.required, Validators.min(2020)]],
     cashBalance: [0, [Validators.required, Validators.min(0)]],
-    reserveBalance: [0, [Validators.required, Validators.min(0)]]
+    reserveBalance: [0, [Validators.required, Validators.min(0)]],
+    reserveTarget: [0, [Validators.required, Validators.min(0)]],
+    shareTotal: [1000, [Validators.required, Validators.min(1)]],
+    managementMode: ['SELF_MANAGED' as ManagementMode, [Validators.required]]
   });
 
   protected readonly unitForm = this.fb.nonNullable.group({
     ownerName: ['', [Validators.required, Validators.maxLength(180)]],
+    ownerEmail: ['', [Validators.required, Validators.email, Validators.maxLength(320)]],
     unitLabel: ['', [Validators.required, Validators.maxLength(80)]],
-    shareValue: [0, [Validators.required, Validators.min(0)]]
+    shareValue: [0, [Validators.required, Validators.min(0)]],
+    votingWeight: [0, [Validators.required, Validators.min(0)]],
+    occupancyType: ['OWNER_OCCUPIED' as OccupancyType, [Validators.required]]
+  });
+
+  protected readonly memberForm = this.fb.nonNullable.group({
+    fullName: ['', [Validators.required, Validators.maxLength(180)]],
+    email: ['', [Validators.required, Validators.email, Validators.maxLength(320)]],
+    role: ['BOARD_MEMBER' as CommunityRole, [Validators.required]]
   });
 
   protected readonly taskForm = this.fb.nonNullable.group({
@@ -253,7 +269,24 @@ export class App implements OnInit, OnDestroy {
     if (this.unitForm.invalid) return;
     const propertyId = this.requireSelectedPropertyId();
     if (!propertyId) return;
-    this.submitDashboardRequest('units', { ...this.unitForm.getRawValue(), propertyId }, 'Einheit wurde angelegt.');
+    const formValue = this.unitForm.getRawValue();
+    this.submitDashboardRequest('units', {
+      ...formValue,
+      ownerEmail: this.normalizeEmail(formValue.ownerEmail),
+      propertyId
+    }, 'Einheit und Eigentümerrolle wurden angelegt.');
+  }
+
+  protected inviteMember(): void {
+    if (this.memberForm.invalid) return;
+    const propertyId = this.requireSelectedPropertyId();
+    if (!propertyId) return;
+    const formValue = this.memberForm.getRawValue();
+    this.submitDashboardRequest('members', {
+      ...formValue,
+      email: this.normalizeEmail(formValue.email),
+      propertyId
+    }, 'Rolle wurde eingeladen und dokumentiert.');
   }
 
   protected addTask(): void {
@@ -363,7 +396,8 @@ export class App implements OnInit, OnDestroy {
       DECISION: 'Beschluss',
       PLAN: 'Wirtschaftsplan',
       MEETING: 'Versammlung',
-      COMMUNICATION: 'Kommunikation'
+      COMMUNICATION: 'Kommunikation',
+      MEMBER: 'Rolle'
     }[eventType] ?? 'Aktivität';
   }
 
@@ -435,7 +469,20 @@ export class App implements OnInit, OnDestroy {
       SCHEDULED: 'Geplant',
       INVITED: 'Eingeladen',
       COMPLETED: 'Abgeschlossen',
-      PREPARED: 'Vorbereitet'
+      PREPARED: 'Vorbereitet',
+      SELF_MANAGED: 'Selbstverwaltung',
+      HYBRID: 'Hybrid',
+      PROFESSIONAL: 'Professionell',
+      OWNER_ADMIN: 'WEG-Admin',
+      SELF_MANAGER: 'Selbstverwalter',
+      PROPERTY_MANAGER: 'Verwaltung',
+      BOARD_MEMBER: 'Beirat',
+      OWNER: 'Eigentümer',
+      EXTERNAL_EXPERT: 'Externer Experte',
+      OWNER_OCCUPIED: 'Selbst genutzt',
+      RENTED: 'Vermietet',
+      VACANT: 'Leerstand',
+      DISABLED: 'Deaktiviert'
     }[status] ?? status;
   }
 
@@ -448,7 +495,7 @@ export class App implements OnInit, OnDestroy {
     }[severity] ?? severity;
   }
 
-  private submitDashboardRequest(path: 'properties' | 'units' | 'tasks' | 'finances' | 'annual-plans' | 'documents' | 'meetings' | 'decisions' | 'messages', payload: Record<string, unknown>, success: string): void {
+  private submitDashboardRequest(path: 'properties' | 'units' | 'members' | 'tasks' | 'finances' | 'annual-plans' | 'documents' | 'meetings' | 'decisions' | 'messages', payload: Record<string, unknown>, success: string): void {
     this.begin();
     this.http.post<Dashboard>(`${API_BASE_URL}/workspace/${path}`, payload)
       .subscribe({
@@ -456,8 +503,9 @@ export class App implements OnInit, OnDestroy {
           this.loading.set(false);
           this.applyDashboard(dashboard);
           this.info.set(success);
-          if (path === 'properties') this.propertyForm.reset({ name: '', address: '', city: '', unitCount: 1, cashBalance: 0, reserveBalance: 0 });
-          if (path === 'units') this.unitForm.reset({ ownerName: '', unitLabel: '', shareValue: 0 });
+          if (path === 'properties') this.propertyForm.reset({ name: '', address: '', city: '', unitCount: 1, fiscalYear: new Date().getFullYear(), cashBalance: 0, reserveBalance: 0, reserveTarget: 0, shareTotal: 1000, managementMode: 'SELF_MANAGED' });
+          if (path === 'units') this.unitForm.reset({ ownerName: '', ownerEmail: '', unitLabel: '', shareValue: 0, votingWeight: 0, occupancyType: 'OWNER_OCCUPIED' });
+          if (path === 'members') this.memberForm.reset({ fullName: '', email: '', role: 'BOARD_MEMBER' });
           if (path === 'tasks') this.taskForm.reset({ title: '', description: '', priority: 'MEDIUM', dueDate: '' });
           if (path === 'finances') this.financeForm.reset({ label: '', amount: 0, category: 'Hausgeld', bookedOn: this.today(), status: 'BOOKED' });
           if (path === 'annual-plans') this.annualPlanForm.reset({ fiscalYear: new Date().getFullYear(), houseMoneyBudget: 0, maintenanceBudget: 0, reserveContribution: 0, status: 'DRAFT' });
@@ -603,6 +651,9 @@ type DecisionStatus = 'DRAFT' | 'PASSED' | 'REJECTED' | 'IMPLEMENTED';
 type AnnualPlanStatus = 'DRAFT' | 'APPROVED' | 'ACTIVE';
 type MeetingStatus = 'SCHEDULED' | 'INVITED' | 'COMPLETED';
 type InsightSeverity = 'HIGH' | 'MEDIUM' | 'LOW' | 'GOOD';
+type ManagementMode = 'SELF_MANAGED' | 'HYBRID' | 'PROFESSIONAL';
+type OccupancyType = 'OWNER_OCCUPIED' | 'RENTED' | 'VACANT';
+type CommunityRole = 'OWNER_ADMIN' | 'SELF_MANAGER' | 'PROPERTY_MANAGER' | 'BOARD_MEMBER' | 'OWNER' | 'EXTERNAL_EXPERT';
 
 interface RegistrationResult {
   emailSent: boolean;
@@ -634,8 +685,12 @@ interface Dashboard {
     address: string;
     city: string;
     unitCount: number;
+    fiscalYear: number;
     cashBalance: number;
     reserveBalance: number;
+    reserveTarget: number;
+    shareTotal: number;
+    managementMode: ManagementMode;
     status: string;
   }>;
   metrics: {
@@ -647,7 +702,7 @@ interface Dashboard {
     openTasks: number;
     onboardingCompletion: number;
   };
-  units: Array<{ ownerName: string; unitLabel: string; shareValue: number }>;
+  units: UnitView[];
   tasks: WorkTaskView[];
   finances: Array<{ label: string; amount: number; category: string; bookedOn: string; status: string }>;
   annualPlans: AnnualPlanView[];
@@ -655,6 +710,20 @@ interface Dashboard {
   decisions: DecisionView[];
   meetings: MeetingView[];
   messages: MessageView[];
+  members: MemberView[];
+  readiness: {
+    shareValueTotal: number;
+    missingShareValue: number;
+    shareDistributionComplete: boolean;
+    expectedShareTotal: number;
+    expectedUnits: number;
+    createdUnits: number;
+    invitedMembers: number;
+    activeMembers: number;
+    rolesReady: boolean;
+    readyForFinance: boolean;
+    blockers: string[];
+  };
   activity: Array<{ eventType: string; summary: string; createdAt: string }>;
   insights: InsightView[];
   onboarding: {
@@ -662,12 +731,34 @@ interface Dashboard {
     accountActivated: boolean;
     propertyCreated: boolean;
     unitsCreated: boolean;
+    sharesComplete: boolean;
+    rolesInvited: boolean;
     financeCreated: boolean;
     taskCreated: boolean;
     decisionCreated: boolean;
     annualPlanCreated: boolean;
     meetingCreated: boolean;
   };
+}
+
+interface UnitView {
+  id: string;
+  ownerName: string;
+  ownerEmail: string;
+  unitLabel: string;
+  shareValue: number;
+  votingWeight: number;
+  occupancyType: OccupancyType;
+}
+
+interface MemberView {
+  id: string;
+  fullName: string;
+  email: string;
+  role: CommunityRole;
+  status: string;
+  invitedAt?: string;
+  acceptedAt?: string;
 }
 
 interface WorkTaskView {

@@ -11,7 +11,8 @@ qualitativ, pragmatisch und ohne unnötige Komplexität zu liefern.
 Das Backend ist bewusst modular geschnitten:
 
 - `identity`: Registrierung, Passwort-Setup, Session/JWT
-- `property`: Immobilien, Einheiten, Eigentümerdaten
+- `property`: WEG-Profil, Einheiten, MEA, Rollen, Mitgliedschaften und
+  Einladungsstatus
 - `finance`: Buchungsfeed und Zahlungsübersicht
 - `planning`: Wirtschaftspläne, Budgets und Rücklagenzuführung
 - `task`: Aufgabensteuerung
@@ -62,6 +63,23 @@ eigenen Vertical Slice ab:
 
 Damit rückt die App näher an den Kern realer WEG-Verwaltung: nicht nur Daten
 ablegen, sondern Entscheidungen sauber dokumentieren und in Arbeit übersetzen.
+
+## Slice 1: WEG-Onboarding und Rollen
+
+Die WEG-Struktur wurde als tragender Produktslice vertieft:
+
+- WEG-Profil mit Wirtschaftsjahr, Verwaltungsmodus, Ziel-Ruecklage und
+  erwarteter MEA-Summe
+- Einheiten mit Eigentuemer-E-Mail, Nutzung, MEA und Stimmgewicht
+- `community_member` als Rollen- und Einladungsmodell je WEG
+- Dashboard-Readiness fuer Einheitenanzahl, MEA-Summe, Rollenstatus und
+  Finanzraum-Bereitschaft
+- Service-Level-Rechte fuer Admin, Selbstverwalter, Verwaltung und Beirat
+- automatische Aktivierung eingeladener Mitgliedschaften beim Passwort-Setup
+
+Dieser Slice ist die fachliche Voraussetzung fuer den naechsten Finanzraum:
+Hausgeld, Rueckstaende, Ruecklage und Eigentuemeranteile koennen erst dann
+robust berechnet werden, wenn Einheiten und Verteilung belastbar sind.
 
 ## Identity
 

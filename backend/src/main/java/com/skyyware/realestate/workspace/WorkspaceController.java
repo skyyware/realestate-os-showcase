@@ -4,10 +4,14 @@ import com.skyyware.realestate.security.CurrentUser;
 import com.skyyware.realestate.decision.DecisionStatus;
 import com.skyyware.realestate.meeting.MeetingStatus;
 import com.skyyware.realestate.planning.AnnualPlanStatus;
+import com.skyyware.realestate.property.CommunityRole;
+import com.skyyware.realestate.property.ManagementMode;
+import com.skyyware.realestate.property.OccupancyType;
 import com.skyyware.realestate.task.TaskPriority;
 import com.skyyware.realestate.task.TaskStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -47,8 +51,12 @@ public class WorkspaceController {
                 request.address(),
                 request.city(),
                 request.unitCount(),
+                request.fiscalYear(),
                 request.cashBalance(),
-                request.reserveBalance()
+                request.reserveBalance(),
+                request.reserveTarget(),
+                request.shareTotal(),
+                request.managementMode()
         ));
     }
 
@@ -58,8 +66,22 @@ public class WorkspaceController {
         return workspaceService.createUnit(CurrentUser.require().userId(), new WorkspaceService.CreateUnitCommand(
                 request.propertyId(),
                 request.ownerName(),
+                request.ownerEmail(),
                 request.unitLabel(),
-                request.shareValue()
+                request.shareValue(),
+                request.votingWeight(),
+                request.occupancyType()
+        ));
+    }
+
+    @PostMapping("/members")
+    @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER')")
+    WorkspaceService.DashboardView inviteMember(@Valid @RequestBody InviteMemberRequest request) {
+        return workspaceService.inviteMember(CurrentUser.require().userId(), new WorkspaceService.InviteMemberCommand(
+                request.propertyId(),
+                request.fullName(),
+                request.email(),
+                request.role()
         ));
     }
 
@@ -170,16 +192,31 @@ public class WorkspaceController {
             @NotBlank @Size(max = 240) String address,
             @NotBlank @Size(max = 120) String city,
             @Min(1) int unitCount,
+            @Min(2020) int fiscalYear,
             @NotNull @DecimalMin("0.00") BigDecimal cashBalance,
-            @NotNull @DecimalMin("0.00") BigDecimal reserveBalance
+            @NotNull @DecimalMin("0.00") BigDecimal reserveBalance,
+            @NotNull @DecimalMin("0.00") BigDecimal reserveTarget,
+            @NotNull @DecimalMin("1.00") BigDecimal shareTotal,
+            @NotNull ManagementMode managementMode
     ) {
     }
 
     public record CreateUnitRequest(
             UUID propertyId,
             @NotBlank @Size(max = 180) String ownerName,
+            @NotBlank @Email @Size(max = 320) String ownerEmail,
             @NotBlank @Size(max = 80) String unitLabel,
-            @NotNull @DecimalMin("0.00") BigDecimal shareValue
+            @NotNull @DecimalMin("0.00") BigDecimal shareValue,
+            @NotNull @DecimalMin("0.00") BigDecimal votingWeight,
+            @NotNull OccupancyType occupancyType
+    ) {
+    }
+
+    public record InviteMemberRequest(
+            UUID propertyId,
+            @NotBlank @Size(max = 180) String fullName,
+            @NotBlank @Email @Size(max = 320) String email,
+            @NotNull CommunityRole role
     ) {
     }
 

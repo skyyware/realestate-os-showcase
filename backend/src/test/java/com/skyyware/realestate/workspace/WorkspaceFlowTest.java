@@ -8,6 +8,9 @@ import com.skyyware.realestate.identity.AuthService;
 import com.skyyware.realestate.decision.DecisionStatus;
 import com.skyyware.realestate.meeting.MeetingStatus;
 import com.skyyware.realestate.planning.AnnualPlanStatus;
+import com.skyyware.realestate.property.CommunityRole;
+import com.skyyware.realestate.property.ManagementMode;
+import com.skyyware.realestate.property.OccupancyType;
 import com.skyyware.realestate.task.TaskPriority;
 import com.skyyware.realestate.task.TaskStatus;
 import java.math.BigDecimal;
@@ -47,18 +50,35 @@ class WorkspaceFlowTest {
                 "Musterstraße 12",
                 "Musterstraße 12",
                 "Stuttgart",
-                16,
+                1,
+                2026,
                 new BigDecimal("125540.75"),
-                new BigDecimal("256780.20")
+                new BigDecimal("256780.20"),
+                new BigDecimal("300000.00"),
+                new BigDecimal("1000.00"),
+                ManagementMode.SELF_MANAGED
         ));
         assertThat(withProperty.properties()).hasSize(1);
+        assertThat(withProperty.members()).extracting(WorkspaceService.MemberView::role).contains("OWNER_ADMIN");
 
         workspaceService.createUnit(user.id(), new WorkspaceService.CreateUnitCommand(
                 withProperty.selectedPropertyId(),
                 "Sascha Dobrochynskyy",
+                email,
                 "Einheit 07",
-                new BigDecimal("84.50")
+                new BigDecimal("1000.00"),
+                new BigDecimal("1000.00"),
+                OccupancyType.OWNER_OCCUPIED
         ));
+        WorkspaceService.DashboardView withBoard = workspaceService.inviteMember(user.id(), new WorkspaceService.InviteMemberCommand(
+                withProperty.selectedPropertyId(),
+                "Beirat Stuttgart",
+                "beirat@example.com",
+                CommunityRole.BOARD_MEMBER
+        ));
+        assertThat(withBoard.readiness().readyForFinance()).isTrue();
+        assertThat(withBoard.members()).extracting(WorkspaceService.MemberView::role)
+                .contains("OWNER_ADMIN", "BOARD_MEMBER");
         workspaceService.createFinance(user.id(), new WorkspaceService.CreateFinanceCommand(
                 withProperty.selectedPropertyId(),
                 "Rechnung Hausmeisterservice",
@@ -124,6 +144,8 @@ class WorkspaceFlowTest {
         assertThat(complete.messages()).hasSize(1);
         assertThat(complete.decisions()).hasSize(1);
         assertThat(complete.tasks()).hasSize(1);
+        assertThat(complete.readiness().shareDistributionComplete()).isTrue();
+        assertThat(complete.readiness().rolesReady()).isTrue();
         assertThat(complete.metrics().pendingPayments()).isEqualByComparingTo("1250.00");
         assertThat(complete.metrics().openTasks()).isEqualTo(1);
         assertThat(complete.onboarding().completion()).isEqualTo(100);
@@ -159,9 +181,13 @@ class WorkspaceFlowTest {
                 "Neckarblick 4",
                 "Neckarblick 4",
                 "Stuttgart",
-                8,
+                1,
+                2026,
                 new BigDecimal("42000.00"),
-                new BigDecimal("88000.00")
+                new BigDecimal("88000.00"),
+                new BigDecimal("120000.00"),
+                new BigDecimal("1000.00"),
+                ManagementMode.SELF_MANAGED
         ));
         assertThat(secondProperty.selectedPropertyId()).isNotEqualTo(withProperty.selectedPropertyId());
         assertThat(secondProperty.units()).isEmpty();
@@ -170,8 +196,11 @@ class WorkspaceFlowTest {
         workspaceService.createUnit(user.id(), new WorkspaceService.CreateUnitCommand(
                 secondProperty.selectedPropertyId(),
                 "Beirat Stuttgart",
+                "beirat@example.com",
                 "Einheit 02",
-                new BigDecimal("92.00")
+                new BigDecimal("1000.00"),
+                new BigDecimal("1000.00"),
+                OccupancyType.OWNER_OCCUPIED
         ));
 
         WorkspaceService.DashboardView firstAgain = workspaceService.dashboard(user.id(), withProperty.selectedPropertyId());

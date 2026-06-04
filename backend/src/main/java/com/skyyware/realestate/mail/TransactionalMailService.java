@@ -65,6 +65,46 @@ public class TransactionalMailService {
         return new MailDelivery(true, null);
     }
 
+    public MailDelivery sendCommunityInvitation(String email, String name, String propertyName, String roleLabel, String workspaceUrl) {
+        if (!properties.mail().enabled()) {
+            log.info("Mail disabled. Community invitation for {} to {}: {}", email, propertyName, workspaceUrl);
+            return new MailDelivery(false, workspaceUrl);
+        }
+
+        MimeMessage message = mailSender.createMimeMessage();
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(message, StandardCharsets.UTF_8.name());
+            helper.setFrom(new InternetAddress(
+                    properties.mail().from(),
+                    properties.mail().fromName(),
+                    StandardCharsets.UTF_8.name()
+            ));
+            helper.setTo(email);
+            helper.setSubject("RealEstate OS Einladung zu " + propertyName);
+            helper.setText("""
+                Hallo %s,
+
+                du wurdest in RealEstate OS zur WEG "%s" eingeladen.
+                Rolle: %s
+
+                Öffne deinen Arbeitsraum hier:
+                %s
+
+                Viele Grüße
+                RealEstate OS
+                """.formatted(name, propertyName, roleLabel, workspaceUrl));
+        } catch (MessagingException | UnsupportedEncodingException exception) {
+            throw new IllegalStateException("Community invitation mail could not be composed.", exception);
+        }
+        try {
+            mailSender.send(message);
+        } catch (MailException exception) {
+            log.warn("Community invitation mail could not be sent to {}: {}", email, exception.getMessage());
+            throw new IllegalArgumentException("Einladung konnte nicht gesendet werden. Bitte E-Mail-Adresse prüfen.");
+        }
+        return new MailDelivery(true, null);
+    }
+
     public record MailDelivery(boolean emailSent, String localSetupLink) {
     }
 }

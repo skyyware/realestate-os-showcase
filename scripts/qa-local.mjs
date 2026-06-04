@@ -42,9 +42,13 @@ await page.getByRole('heading', { name: 'Erste Immobilie hinzufügen' }).waitFor
 await page.getByLabel('Immobilie').fill('Musterstraße 12');
 await page.getByLabel('Adresse').fill('Musterstraße 12');
 await page.getByLabel('Stadt').fill('Stuttgart');
-await page.getByLabel('Einheiten').fill('16');
+await page.getByLabel('Einheiten').fill('1');
+await page.getByLabel('Wirtschaftsjahr').fill('2026');
 await page.getByLabel('Kontostand').fill('125540.75');
-await page.getByLabel('Rücklage').fill('256780.20');
+await page.getByRole('spinbutton', { name: 'Rücklage', exact: true }).fill('256780.20');
+await page.getByRole('spinbutton', { name: 'Ziel-Rücklage', exact: true }).fill('300000');
+await page.getByLabel('MEA gesamt').fill('1000');
+await page.getByLabel('Verwaltungsmodell').selectOption('SELF_MANAGED');
 await page.getByRole('button', { name: 'Immobilie anlegen', exact: true }).click();
 await page.getByRole('heading', { name: 'Ihr Immobilienportfolio' }).waitFor();
 await page.getByText('Eigentümerstruktur fehlt').waitFor();
@@ -52,9 +56,21 @@ await page.getByText('Eigentümerstruktur fehlt').waitFor();
 await page.getByRole('button', { name: 'Einheiten', exact: true }).click();
 await page.getByPlaceholder('Einheit 01').fill('Einheit 07');
 await page.getByPlaceholder('Eigentümer').fill(user.fullName);
-await page.getByPlaceholder('MEA').fill('84.50');
+await page.locator('form.units-form').getByPlaceholder('name@example.de').fill(user.email);
+await page.getByPlaceholder('MEA').fill('1000');
+await page.getByPlaceholder('Stimmgewicht').fill('1000');
+await page.getByLabel('Nutzung').selectOption('OWNER_OCCUPIED');
 await page.locator('form.units-form').getByRole('button', { name: 'Anlegen', exact: true }).click();
 await page.getByText('Einheit 07').waitFor();
+await page.getByText('Finanzraum bereit').waitFor();
+await page.locator('form.member-form').getByRole('textbox', { name: 'Name', exact: true }).fill('Beirat Stuttgart');
+await page.locator('form.member-form').getByPlaceholder('name@example.de').fill(`beirat+${stamp}@skyyware.com`);
+await page.getByLabel('Rolle').selectOption('BOARD_MEMBER');
+await page.getByRole('button', { name: 'Einladen', exact: true }).click();
+await page.getByText('Rolle wurde eingeladen und dokumentiert.').waitFor();
+await page.getByText('Beirat Stuttgart').waitFor();
+await page.evaluate(() => window.scrollTo(0, 0));
+await page.screenshot({ path: fileURLToPath(new URL('realestate-units-desktop.png', outputDir)), fullPage: true });
 
 await page.getByRole('button', { name: 'Finanzen', exact: true }).click();
 await page.getByPlaceholder('Betrag').fill('-1250');
@@ -123,9 +139,13 @@ await page.getByRole('button', { name: 'Immobilien', exact: true }).click();
 await page.getByLabel('Immobilie').fill('Neckarblick 4');
 await page.getByLabel('Adresse').fill('Neckarblick 4');
 await page.getByLabel('Stadt').fill('Stuttgart');
-await page.getByLabel('Einheiten').fill('8');
+await page.getByLabel('Einheiten').fill('1');
+await page.getByLabel('Wirtschaftsjahr').fill('2026');
 await page.getByLabel('Kontostand').fill('42000');
-await page.getByLabel('Rücklage').fill('88000');
+await page.getByRole('spinbutton', { name: 'Rücklage', exact: true }).fill('88000');
+await page.getByRole('spinbutton', { name: 'Ziel-Rücklage', exact: true }).fill('120000');
+await page.getByLabel('MEA gesamt').fill('1000');
+await page.getByLabel('Verwaltungsmodell').selectOption('SELF_MANAGED');
 await page.getByRole('button', { name: 'Immobilie anlegen', exact: true }).click();
 await page.getByRole('combobox', { name: 'Workspace auswählen' }).selectOption({ label: 'Neckarblick 4' });
 
@@ -133,7 +153,10 @@ await page.getByRole('button', { name: 'Einheiten', exact: true }).click();
 await page.getByText('Noch keine Einheiten.').waitFor();
 await page.getByPlaceholder('Einheit 01').fill('Einheit 02');
 await page.getByPlaceholder('Eigentümer').fill('Beirat Stuttgart');
-await page.getByPlaceholder('MEA').fill('92.00');
+await page.locator('form.units-form').getByPlaceholder('name@example.de').fill(`beirat+${stamp}@skyyware.com`);
+await page.getByPlaceholder('MEA').fill('1000');
+await page.getByPlaceholder('Stimmgewicht').fill('1000');
+await page.getByLabel('Nutzung').selectOption('OWNER_OCCUPIED');
 await page.locator('form.units-form').getByRole('button', { name: 'Anlegen', exact: true }).click();
 await page.getByText('Einheit 02').waitFor();
 await Promise.all([
@@ -197,6 +220,7 @@ console.log(JSON.stringify({
   email: user.email,
   screenshots: [
     'output/qa/realestate-register-desktop.png',
+    'output/qa/realestate-units-desktop.png',
     'output/qa/realestate-finances-desktop.png',
     'output/qa/realestate-decisions-desktop.png',
     'output/qa/realestate-communication-desktop.png',

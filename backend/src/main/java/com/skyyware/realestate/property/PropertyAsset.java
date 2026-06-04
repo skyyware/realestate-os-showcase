@@ -3,6 +3,8 @@ package com.skyyware.realestate.property;
 import com.skyyware.realestate.identity.AppUser;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -35,10 +37,23 @@ public class PropertyAsset {
     private Integer unitCount;
 
     @Column(nullable = false)
+    private Integer fiscalYear;
+
+    @Column(nullable = false)
     private BigDecimal cashBalance;
 
     @Column(nullable = false)
     private BigDecimal reserveBalance;
+
+    @Column(nullable = false)
+    private BigDecimal reserveTarget;
+
+    @Column(nullable = false)
+    private BigDecimal shareTotal;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ManagementMode managementMode;
 
     @Column(nullable = false)
     private Instant createdAt;
@@ -46,15 +61,31 @@ public class PropertyAsset {
     protected PropertyAsset() {
     }
 
-    public PropertyAsset(AppUser owner, String name, String address, String city, int unitCount, BigDecimal cashBalance, BigDecimal reserveBalance) {
+    public PropertyAsset(
+            AppUser owner,
+            String name,
+            String address,
+            String city,
+            int unitCount,
+            int fiscalYear,
+            BigDecimal cashBalance,
+            BigDecimal reserveBalance,
+            BigDecimal reserveTarget,
+            BigDecimal shareTotal,
+            ManagementMode managementMode
+    ) {
         this.id = UUID.randomUUID();
         this.owner = owner;
         this.name = name;
         this.address = address;
         this.city = city;
         this.unitCount = unitCount;
+        this.fiscalYear = fiscalYear;
         this.cashBalance = cashBalance;
         this.reserveBalance = reserveBalance;
+        this.reserveTarget = reserveTarget;
+        this.shareTotal = shareTotal;
+        this.managementMode = managementMode;
         this.createdAt = Instant.now();
     }
 
@@ -82,11 +113,27 @@ public class PropertyAsset {
         return unitCount;
     }
 
+    public int fiscalYear() {
+        return fiscalYear;
+    }
+
     public BigDecimal cashBalance() {
         return cashBalance;
     }
 
     public BigDecimal reserveBalance() {
         return reserveBalance;
+    }
+
+    public BigDecimal reserveTarget() {
+        return reserveTarget;
+    }
+
+    public BigDecimal shareTotal() {
+        return shareTotal;
+    }
+
+    public ManagementMode managementMode() {
+        return managementMode;
     }
 }

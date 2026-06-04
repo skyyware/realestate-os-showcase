@@ -242,8 +242,18 @@
             <label>Adresse <input formControlName="address" placeholder="Musterstraße 12" /></label>
             <label>Stadt <input formControlName="city" placeholder="Stuttgart" /></label>
             <label>Einheiten <input formControlName="unitCount" type="number" min="1" /></label>
+            <label>Wirtschaftsjahr <input formControlName="fiscalYear" type="number" min="2020" /></label>
             <label>Kontostand <input formControlName="cashBalance" type="number" min="0" step="0.01" /></label>
             <label>Rücklage <input formControlName="reserveBalance" type="number" min="0" step="0.01" /></label>
+            <label>Ziel-Rücklage <input formControlName="reserveTarget" type="number" min="0" step="0.01" /></label>
+            <label>MEA gesamt <input formControlName="shareTotal" type="number" min="1" step="0.01" /></label>
+            <label>Verwaltungsmodell
+              <select formControlName="managementMode">
+                <option value="SELF_MANAGED">Selbstverwaltung</option>
+                <option value="HYBRID">Hybrid</option>
+                <option value="PROFESSIONAL">Professionell</option>
+              </select>
+            </label>
             <button type="submit" [disabled]="loading()">Immobilie anlegen</button>
           </form>
         </section>
@@ -388,22 +398,93 @@
           @if (activeSection() === 'units') {
             <article class="panel" [class.full-width]="activeSection() === 'units'">
               <div class="panel-heading">
-                <div><span>Eigentümer</span><h2>Einheiten</h2></div>
-                <button class="panel-link" type="button" (click)="selectSection('units')">Alle Einheiten</button>
+                <div><span>WEG-Struktur</span><h2>Einheiten & Rollen</h2></div>
+                <small>{{ dashboard()?.readiness?.createdUnits || 0 }} / {{ dashboard()?.readiness?.expectedUnits || 0 }} Einheiten</small>
               </div>
+              <div class="readiness-grid">
+                <div class="readiness-card" [class.done]="dashboard()?.readiness?.shareDistributionComplete">
+                  <span>MEA-Summe</span>
+                  <strong>{{ dashboard()?.readiness?.shareValueTotal | number:'1.2-2' }} / {{ dashboard()?.readiness?.expectedShareTotal | number:'1.2-2' }}</strong>
+                  <small>
+                    @if (dashboard()?.readiness?.shareDistributionComplete) {
+                      Verteilung vollständig
+                    } @else {
+                      Offen: {{ dashboard()?.readiness?.missingShareValue | number:'1.2-2' }}
+                    }
+                  </small>
+                </div>
+                <div class="readiness-card" [class.done]="dashboard()?.readiness?.rolesReady">
+                  <span>Rollen</span>
+                  <strong>{{ dashboard()?.readiness?.activeMembers || 0 }} aktiv · {{ dashboard()?.readiness?.invitedMembers || 0 }} eingeladen</strong>
+                  <small>{{ dashboard()?.readiness?.rolesReady ? 'Alle Einheiten zugeordnet' : 'Rollen vervollständigen' }}</small>
+                </div>
+                <div class="readiness-card" [class.done]="dashboard()?.readiness?.readyForFinance">
+                  <span>Nächster Slice</span>
+                  <strong>{{ dashboard()?.readiness?.readyForFinance ? 'Finanzraum bereit' : 'Setup offen' }}</strong>
+                  <small>{{ selectedProperty()?.managementMode ? statusLabel(selectedProperty()!.managementMode) : 'WEG' }}</small>
+                </div>
+              </div>
+              @if (dashboard()?.readiness?.blockers?.length) {
+                <ul class="blocker-list">
+                  @for (blocker of dashboard()?.readiness?.blockers; track blocker) {
+                    <li>{{ blocker }}</li>
+                  }
+                </ul>
+              }
               <form class="compact-form units-form" [formGroup]="unitForm" (ngSubmit)="createUnit()">
                 <input formControlName="unitLabel" placeholder="Einheit 01" />
                 <input formControlName="ownerName" placeholder="Eigentümer" />
+                <input formControlName="ownerEmail" type="email" placeholder="name@example.de" />
                 <input formControlName="shareValue" type="number" step="0.01" placeholder="MEA" />
+                <input formControlName="votingWeight" type="number" step="0.01" placeholder="Stimmgewicht" />
+                <select formControlName="occupancyType" aria-label="Nutzung">
+                  <option value="OWNER_OCCUPIED">Selbst genutzt</option>
+                  <option value="RENTED">Vermietet</option>
+                  <option value="VACANT">Leerstand</option>
+                </select>
                 <button type="submit">Anlegen</button>
               </form>
               <div class="list">
                 @for (unit of filteredUnits(); track unit.unitLabel) {
-                  <div class="row"><div><strong>{{ unit.unitLabel }}</strong><small>{{ unit.ownerName }}</small></div><span>{{ unit.shareValue | number:'1.2-2' }}</span></div>
+                  <div class="row">
+                    <div>
+                      <strong>{{ unit.unitLabel }}</strong>
+                      <small>{{ unit.ownerName }} · {{ unit.ownerEmail }} · {{ statusLabel(unit.occupancyType) }}</small>
+                    </div>
+                    <span>{{ unit.shareValue | number:'1.2-2' }} MEA</span>
+                  </div>
                 } @empty {
                   <p class="empty">Noch keine Einheiten.</p>
                 }
               </div>
+              <section class="subsection">
+                <div class="subsection-heading">
+                  <div><span>Mitglieder</span><h3>Rollen einladen</h3></div>
+                  <small>{{ dashboard()?.members?.length || 0 }} Rollen</small>
+                </div>
+                <form class="compact-form member-form" [formGroup]="memberForm" (ngSubmit)="inviteMember()">
+                  <input formControlName="fullName" placeholder="Name" />
+                  <input formControlName="email" type="email" placeholder="name@example.de" />
+                  <select formControlName="role" aria-label="Rolle">
+                    <option value="BOARD_MEMBER">Beirat</option>
+                    <option value="OWNER">Eigentümer</option>
+                    <option value="SELF_MANAGER">Selbstverwalter</option>
+                    <option value="PROPERTY_MANAGER">Verwaltung</option>
+                    <option value="EXTERNAL_EXPERT">Externer Experte</option>
+                  </select>
+                  <button type="submit">Einladen</button>
+                </form>
+                <div class="list">
+                  @for (member of filteredMembers(); track member.id) {
+                    <div class="row">
+                      <div><strong>{{ member.fullName }}</strong><small>{{ member.email }} · {{ statusLabel(member.role) }}</small></div>
+                      <span class="status">{{ statusLabel(member.status) }}</span>
+                    </div>
+                  } @empty {
+                    <p class="empty">Noch keine Rollen eingeladen.</p>
+                  }
+                </div>
+              </section>
             </article>
           }
 
@@ -575,6 +656,8 @@
                 <li [class.done]="dashboard()?.onboarding?.accountActivated">E-Mail bestätigt</li>
                 <li [class.done]="dashboard()?.onboarding?.propertyCreated">Erste Immobilie hinzugefügt</li>
                 <li [class.done]="dashboard()?.onboarding?.unitsCreated">Einheiten angelegt</li>
+                <li [class.done]="dashboard()?.onboarding?.sharesComplete">MEA-Verteilung vollständig</li>
+                <li [class.done]="dashboard()?.onboarding?.rolesInvited">Rollen zugeordnet</li>
                 <li [class.done]="dashboard()?.onboarding?.financeCreated">Finanzen erfasst</li>
                 <li [class.done]="dashboard()?.onboarding?.annualPlanCreated">Wirtschaftsplan angelegt</li>
                 <li [class.done]="dashboard()?.onboarding?.meetingCreated">Versammlung vorbereitet</li>

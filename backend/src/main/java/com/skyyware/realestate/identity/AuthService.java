@@ -4,6 +4,8 @@ import com.skyyware.realestate.activity.ActivityEvent;
 import com.skyyware.realestate.activity.ActivityEventRepository;
 import com.skyyware.realestate.config.RealEstateProperties;
 import com.skyyware.realestate.mail.TransactionalMailService;
+import com.skyyware.realestate.property.CommunityMemberRepository;
+import com.skyyware.realestate.property.MemberStatus;
 import com.skyyware.realestate.security.JwtService;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -25,6 +27,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final TransactionalMailService mailService;
     private final RealEstateProperties appProperties;
+    private final CommunityMemberRepository members;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public AuthService(
@@ -34,7 +37,8 @@ public class AuthService {
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             TransactionalMailService mailService,
-            RealEstateProperties appProperties
+            RealEstateProperties appProperties,
+            CommunityMemberRepository members
     ) {
         this.users = users;
         this.tokens = tokens;
@@ -43,6 +47,7 @@ public class AuthService {
         this.jwtService = jwtService;
         this.mailService = mailService;
         this.appProperties = appProperties;
+        this.members = members;
     }
 
     @Transactional
@@ -79,6 +84,9 @@ public class AuthService {
                 .orElseThrow(() -> new IllegalArgumentException("Token ist ungültig oder abgelaufen."));
         AppUser user = token.user();
         user.activate(passwordEncoder.encode(password));
+        members.findByEmailIgnoreCaseOrderByCreatedAtAsc(user.email()).stream()
+                .filter(member -> member.status() == MemberStatus.INVITED)
+                .forEach(member -> member.attachUser(user));
         token.markUsed();
         activities.save(new ActivityEvent(user, null, "ACTIVATION", "Passwort gesetzt. Workspace ist bereit für die erste Immobilie."));
         return sessionFor(user);
