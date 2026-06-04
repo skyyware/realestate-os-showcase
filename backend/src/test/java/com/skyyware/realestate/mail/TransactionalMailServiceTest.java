@@ -27,6 +27,7 @@ class TransactionalMailServiceTest {
                 "https://realestate.stage.dev",
                 "https://realestate.stage.dev",
                 new RealEstateProperties.Security("test-secret-test-secret-test-secret"),
+                new RealEstateProperties.Identity("local", "", "realestate-os"),
                 new RealEstateProperties.Mail("admin@stage.dev", "Real Estate OS", true)
         );
 
@@ -57,6 +58,7 @@ class TransactionalMailServiceTest {
                 "https://realestate.stage.dev",
                 "https://realestate.stage.dev",
                 new RealEstateProperties.Security("test-secret-test-secret-test-secret"),
+                new RealEstateProperties.Identity("local", "", "realestate-os"),
                 new RealEstateProperties.Mail("admin@stage.dev", "Real Estate OS", true)
         );
 

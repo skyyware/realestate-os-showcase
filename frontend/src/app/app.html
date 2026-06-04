@@ -308,6 +308,32 @@
                   <p class="empty">Noch keine Finanzereignisse.</p>
                 }
               </div>
+              @if (activeSection() === 'finances') {
+                <section class="subsection">
+                  <div class="subsection-heading">
+                    <div><span>Wirtschaftsplan</span><h3>Jahresplanung</h3></div>
+                    <small>{{ dashboard()?.annualPlans?.length || 0 }} Pläne</small>
+                  </div>
+                  <form class="compact-form plan-form" [formGroup]="annualPlanForm" (ngSubmit)="createAnnualPlan()">
+                    <input formControlName="fiscalYear" type="number" min="2020" placeholder="Jahr" aria-label="Wirtschaftsjahr" />
+                    <div class="amount-field"><input formControlName="houseMoneyBudget" type="number" min="0" step="0.01" placeholder="Hausgeld-Budget" /><span>EUR</span></div>
+                    <div class="amount-field"><input formControlName="maintenanceBudget" type="number" min="0" step="0.01" placeholder="Instandhaltung" /><span>EUR</span></div>
+                    <div class="amount-field"><input formControlName="reserveContribution" type="number" min="0" step="0.01" placeholder="Rücklagenzuführung" /><span>EUR</span></div>
+                    <select formControlName="status" aria-label="Planstatus"><option value="DRAFT">Entwurf</option><option value="APPROVED">Freigegeben</option><option value="ACTIVE">Aktiv</option></select>
+                    <button type="submit">Wirtschaftsplan anlegen</button>
+                  </form>
+                  <div class="list">
+                    @for (plan of filteredAnnualPlans(); track plan.id) {
+                      <div class="row">
+                        <div><strong>Wirtschaftsplan {{ plan.fiscalYear }}</strong><small>{{ statusLabel(plan.status) }} · Instandhaltung {{ plan.maintenanceBudget | currency:'EUR':'symbol':'1.2-2':'de-DE' }} · Rücklage {{ plan.reserveContribution | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</small></div>
+                        <span>{{ plan.houseMoneyBudget | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</span>
+                      </div>
+                    } @empty {
+                      <p class="empty">Noch kein Wirtschaftsplan.</p>
+                    }
+                  </div>
+                </section>
+              }
             </article>
           }
 
@@ -407,6 +433,29 @@
           @if (activeSection() === 'decisions') {
             <article class="panel decisions-panel">
               <div class="panel-heading">
+                <div><span>Versammlung</span><h2>Eigentümerversammlung</h2></div>
+                <small>{{ dashboard()?.meetings?.length || 0 }} Termine</small>
+              </div>
+              <form class="compact-form meeting-form" [formGroup]="meetingForm" (ngSubmit)="createMeeting()">
+                <input formControlName="title" placeholder="Versammlungstitel" />
+                <input formControlName="meetingDate" inputmode="numeric" placeholder="TT.MM.JJJJ" aria-label="Versammlungsdatum" />
+                <input formControlName="location" placeholder="Ort oder Videolink" />
+                <select formControlName="status" aria-label="Versammlungsstatus"><option value="SCHEDULED">Geplant</option><option value="INVITED">Eingeladen</option><option value="COMPLETED">Abgeschlossen</option></select>
+                <button type="submit">Versammlung planen</button>
+                <textarea formControlName="agenda" placeholder="Tagesordnung, Unterlagen und offene Beschlussvorlagen"></textarea>
+              </form>
+              <div class="list meeting-list">
+                @for (meeting of filteredMeetings(); track meeting.id) {
+                  <div class="row">
+                    <div><strong>{{ meeting.title }}</strong><small>{{ meeting.meetingDate | date:'dd.MM.yyyy' }} · {{ meeting.location }} · {{ statusLabel(meeting.status) }}</small><p>{{ meeting.agenda }}</p></div>
+                    <span class="file-type">EV</span>
+                  </div>
+                } @empty {
+                  <p class="empty">Noch keine Eigentümerversammlung vorbereitet.</p>
+                }
+              </div>
+
+              <div class="panel-heading">
                 <div><span>Beschlüsse</span><h2>Beschluss-Sammlung</h2></div>
                 <small>{{ openDecisions().length }} offen in Umsetzung</small>
               </div>
@@ -477,7 +526,7 @@
             <article class="panel full-width communication-panel">
               <div class="panel-heading">
                 <div><span>Kommunikation</span><h2>Mitteilung vorbereiten</h2></div>
-                <small>{{ communicationPosts().length }} Entwürfe</small>
+                <small>{{ dashboard()?.messages?.length || 0 }} Entwürfe</small>
               </div>
               <form class="communication-form" [formGroup]="communicationForm" (ngSubmit)="sendCommunication()">
                 <select formControlName="audience" aria-label="Empfänger">
@@ -490,10 +539,10 @@
                 <button type="submit">Mitteilung vorbereiten</button>
               </form>
               <div class="list">
-                @for (post of communicationPosts(); track post.createdAt) {
+                @for (post of filteredMessages(); track post.id) {
                   <div class="row">
                     <div><strong>{{ post.subject }}</strong><small>{{ post.audience }} · {{ post.createdAt | date:'dd.MM.yyyy HH:mm' }}</small><p>{{ post.message }}</p></div>
-                    <span class="file-type">Entwurf</span>
+                    <span class="file-type">{{ statusLabel(post.status) }}</span>
                   </div>
                 } @empty {
                   <p class="empty">Noch keine Mitteilungen vorbereitet.</p>
@@ -527,6 +576,8 @@
                 <li [class.done]="dashboard()?.onboarding?.propertyCreated">Erste Immobilie hinzugefügt</li>
                 <li [class.done]="dashboard()?.onboarding?.unitsCreated">Einheiten angelegt</li>
                 <li [class.done]="dashboard()?.onboarding?.financeCreated">Finanzen erfasst</li>
+                <li [class.done]="dashboard()?.onboarding?.annualPlanCreated">Wirtschaftsplan angelegt</li>
+                <li [class.done]="dashboard()?.onboarding?.meetingCreated">Versammlung vorbereitet</li>
                 <li [class.done]="dashboard()?.onboarding?.taskCreated">Aufgabe angelegt</li>
                 <li [class.done]="dashboard()?.onboarding?.decisionCreated">Beschluss-Sammlung gestartet</li>
               </ul>

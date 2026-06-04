@@ -2,6 +2,9 @@ package com.skyyware.realestate.workspace;
 
 import com.skyyware.realestate.activity.ActivityEvent;
 import com.skyyware.realestate.activity.ActivityEventRepository;
+import com.skyyware.realestate.audit.AuditService;
+import com.skyyware.realestate.communication.CommunityMessage;
+import com.skyyware.realestate.communication.CommunityMessageRepository;
 import com.skyyware.realestate.decision.CommunityDecision;
 import com.skyyware.realestate.decision.CommunityDecisionRepository;
 import com.skyyware.realestate.decision.DecisionStatus;
@@ -11,6 +14,12 @@ import com.skyyware.realestate.finance.FinanceEvent;
 import com.skyyware.realestate.finance.FinanceEventRepository;
 import com.skyyware.realestate.identity.AppUser;
 import com.skyyware.realestate.identity.AppUserRepository;
+import com.skyyware.realestate.meeting.MeetingStatus;
+import com.skyyware.realestate.meeting.OwnerMeeting;
+import com.skyyware.realestate.meeting.OwnerMeetingRepository;
+import com.skyyware.realestate.planning.AnnualPlan;
+import com.skyyware.realestate.planning.AnnualPlanRepository;
+import com.skyyware.realestate.planning.AnnualPlanStatus;
 import com.skyyware.realestate.property.OwnerUnit;
 import com.skyyware.realestate.property.OwnerUnitRepository;
 import com.skyyware.realestate.property.PropertyAsset;
@@ -37,6 +46,10 @@ public class WorkspaceService {
     private final ActivityEventRepository activities;
     private final PropertyDocumentRepository documents;
     private final CommunityDecisionRepository decisions;
+    private final AnnualPlanRepository annualPlans;
+    private final OwnerMeetingRepository ownerMeetings;
+    private final CommunityMessageRepository messages;
+    private final AuditService audit;
 
     public WorkspaceService(
             AppUserRepository users,
@@ -46,7 +59,11 @@ public class WorkspaceService {
             FinanceEventRepository finances,
             ActivityEventRepository activities,
             PropertyDocumentRepository documents,
-            CommunityDecisionRepository decisions
+            CommunityDecisionRepository decisions,
+            AnnualPlanRepository annualPlans,
+            OwnerMeetingRepository ownerMeetings,
+            CommunityMessageRepository messages,
+            AuditService audit
     ) {
         this.users = users;
         this.properties = properties;
@@ -56,6 +73,10 @@ public class WorkspaceService {
         this.activities = activities;
         this.documents = documents;
         this.decisions = decisions;
+        this.annualPlans = annualPlans;
+        this.ownerMeetings = ownerMeetings;
+        this.messages = messages;
+        this.audit = audit;
     }
 
     @Transactional(readOnly = true)
@@ -79,9 +100,12 @@ public class WorkspaceService {
                     List.of(),
                     List.of(),
                     List.of(),
+                    List.of(),
+                    List.of(),
+                    List.of(),
                     activityEvents.stream().map(WorkspaceService::toActivity).toList(),
                     List.of(new InsightView("HIGH", "Immobilie anlegen", "Lege die erste WEG mit Kontostand, Rücklage und Einheiten an.", "properties", "Immobilie starten")),
-                    new OnboardingView(17, true, false, false, false, false, false)
+                    new OnboardingView(13, true, false, false, false, false, false, false, false)
             );
         }
 
@@ -89,8 +113,11 @@ public class WorkspaceService {
         List<OwnerUnit> ownerUnits = units.findByProperty(selected);
         List<WorkTask> workTasks = tasks.findTop8ByPropertyOrderByCreatedAtDesc(selected);
         List<FinanceEvent> financeEvents = finances.findTop8ByPropertyOrderByBookedOnDesc(selected);
+        List<AnnualPlan> planViews = annualPlans.findTop4ByPropertyOrderByFiscalYearDesc(selected);
         List<PropertyDocument> documentViews = documents.findTop8ByPropertyOrderByDocumentDateDesc(selected);
         List<CommunityDecision> communityDecisions = decisions.findTop8ByPropertyOrderByMeetingDateDesc(selected);
+        List<OwnerMeeting> meetingViews = ownerMeetings.findTop6ByPropertyOrderByMeetingDateDesc(selected);
+        List<CommunityMessage> messageViews = messages.findTop8ByPropertyOrderByCreatedAtDesc(selected);
 
         BigDecimal pendingPayments = financeEvents.stream()
                 .map(FinanceEvent::amount)
@@ -99,7 +126,7 @@ public class WorkspaceService {
                 .abs();
         int openTaskCount = (int) workTasks.stream().filter(task -> task.status() != TaskStatus.DONE).count();
 
-        OnboardingView onboarding = onboarding(!assets.isEmpty(), !ownerUnits.isEmpty(), !financeEvents.isEmpty(), !workTasks.isEmpty(), !communityDecisions.isEmpty());
+        OnboardingView onboarding = onboarding(!assets.isEmpty(), !ownerUnits.isEmpty(), !financeEvents.isEmpty(), !workTasks.isEmpty(), !communityDecisions.isEmpty(), !planViews.isEmpty(), !meetingViews.isEmpty());
         return new DashboardView(
                 new UserView(user.email(), user.fullName(), user.organizationName()),
                 selected.id(),
@@ -116,10 +143,13 @@ public class WorkspaceService {
                 ownerUnits.stream().map(WorkspaceService::toUnit).toList(),
                 workTasks.stream().map(WorkspaceService::toTask).toList(),
                 financeEvents.stream().map(WorkspaceService::toFinance).toList(),
+                planViews.stream().map(WorkspaceService::toAnnualPlan).toList(),
                 documentViews.stream().map(WorkspaceService::toDocument).toList(),
                 communityDecisions.stream().map(WorkspaceService::toDecision).toList(),
+                meetingViews.stream().map(WorkspaceService::toMeeting).toList(),
+                messageViews.stream().map(WorkspaceService::toMessage).toList(),
                 activityEvents.stream().map(WorkspaceService::toActivity).toList(),
-                insights(ownerUnits, workTasks, financeEvents, documentViews, communityDecisions, pendingPayments),
+                insights(ownerUnits, workTasks, financeEvents, planViews, documentViews, communityDecisions, meetingViews, pendingPayments),
                 onboarding
         );
     }
@@ -137,6 +167,7 @@ public class WorkspaceService {
                 command.reserveBalance()
         ));
         activities.save(new ActivityEvent(user, property, "PROPERTY", "Immobilie hinzugefügt: " + property.name()));
+        audit.record(user, "property.create", "property_asset", property.id(), "Immobilie angelegt: " + property.name());
         return dashboard(userId, property.id());
     }
 
@@ -144,8 +175,9 @@ public class WorkspaceService {
     public DashboardView createUnit(UUID userId, CreateUnitCommand command) {
         AppUser user = user(userId);
         PropertyAsset property = propertyFor(user, command.propertyId());
-        units.save(new OwnerUnit(property, command.ownerName(), command.unitLabel(), command.shareValue()));
+        OwnerUnit unit = units.save(new OwnerUnit(property, command.ownerName(), command.unitLabel(), command.shareValue()));
         activities.save(new ActivityEvent(user, property, "UNIT", "Einheit hinzugefügt: " + command.unitLabel()));
+        audit.record(user, "unit.create", "owner_unit", unit.id(), "Einheit angelegt: " + command.unitLabel());
         return dashboard(userId, property.id());
     }
 
@@ -153,8 +185,9 @@ public class WorkspaceService {
     public DashboardView addTask(UUID userId, CreateTaskCommand command) {
         AppUser user = user(userId);
         PropertyAsset property = propertyFor(user, command.propertyId());
-        tasks.save(new WorkTask(property, command.title(), command.description(), command.priority(), command.dueDate()));
+        WorkTask task = tasks.save(new WorkTask(property, command.title(), command.description(), command.priority(), command.dueDate()));
         activities.save(new ActivityEvent(user, property, "TASK", "Neue Aufgabe erstellt: " + command.title()));
+        audit.record(user, "task.create", "work_task", task.id(), "Aufgabe angelegt: " + command.title());
         return dashboard(userId, property.id());
     }
 
@@ -168,6 +201,7 @@ public class WorkspaceService {
         }
         task.transitionTo(status);
         activities.save(new ActivityEvent(user, property, "TASK", "Aufgabe aktualisiert: " + task.title() + " ist " + taskStatusLabel(status) + "."));
+        audit.record(user, "task.status", "work_task", task.id(), "Aufgabenstatus gesetzt: " + status.name());
         return dashboard(userId, property.id());
     }
 
@@ -175,8 +209,26 @@ public class WorkspaceService {
     public DashboardView createFinance(UUID userId, CreateFinanceCommand command) {
         AppUser user = user(userId);
         PropertyAsset property = propertyFor(user, command.propertyId());
-        finances.save(new FinanceEvent(property, command.label(), command.amount(), command.category(), command.bookedOn(), command.status()));
+        FinanceEvent finance = finances.save(new FinanceEvent(property, command.label(), command.amount(), command.category(), command.bookedOn(), command.status()));
         activities.save(new ActivityEvent(user, property, "FINANCE", "Finanzereignis erfasst: " + command.label()));
+        audit.record(user, "finance.create", "finance_event", finance.id(), "Finanzereignis erfasst: " + command.label());
+        return dashboard(userId, property.id());
+    }
+
+    @Transactional
+    public DashboardView createAnnualPlan(UUID userId, CreateAnnualPlanCommand command) {
+        AppUser user = user(userId);
+        PropertyAsset property = propertyFor(user, command.propertyId());
+        AnnualPlan plan = annualPlans.save(new AnnualPlan(
+                property,
+                command.fiscalYear(),
+                command.houseMoneyBudget(),
+                command.maintenanceBudget(),
+                command.reserveContribution(),
+                command.status()
+        ));
+        activities.save(new ActivityEvent(user, property, "PLAN", "Wirtschaftsplan erfasst: " + command.fiscalYear()));
+        audit.record(user, "annual_plan.create", "annual_plan", plan.id(), "Wirtschaftsplan angelegt: " + command.fiscalYear());
         return dashboard(userId, property.id());
     }
 
@@ -184,8 +236,42 @@ public class WorkspaceService {
     public DashboardView createDocument(UUID userId, CreateDocumentCommand command) {
         AppUser user = user(userId);
         PropertyAsset property = propertyFor(user, command.propertyId());
-        documents.save(new PropertyDocument(property, command.title(), command.documentType(), command.fileName(), command.documentDate()));
+        PropertyDocument document = documents.save(new PropertyDocument(property, command.title(), command.documentType(), command.fileName(), command.documentDate()));
         activities.save(new ActivityEvent(user, property, "DOCUMENT", "Dokument abgelegt: " + command.title()));
+        audit.record(user, "document.create", "property_document", document.id(), "Dokument abgelegt: " + command.title());
+        return dashboard(userId, property.id());
+    }
+
+    @Transactional
+    public DashboardView createMeeting(UUID userId, CreateMeetingCommand command) {
+        AppUser user = user(userId);
+        PropertyAsset property = propertyFor(user, command.propertyId());
+        OwnerMeeting meeting = ownerMeetings.save(new OwnerMeeting(
+                property,
+                command.title(),
+                command.meetingDate(),
+                command.location(),
+                command.agenda(),
+                command.status()
+        ));
+        activities.save(new ActivityEvent(user, property, "MEETING", "Eigentümerversammlung geplant: " + meeting.title()));
+        audit.record(user, "meeting.create", "owner_meeting", meeting.id(), "Eigentümerversammlung angelegt: " + meeting.title());
+        return dashboard(userId, property.id());
+    }
+
+    @Transactional
+    public DashboardView createMessage(UUID userId, CreateMessageCommand command) {
+        AppUser user = user(userId);
+        PropertyAsset property = propertyFor(user, command.propertyId());
+        CommunityMessage message = messages.save(new CommunityMessage(
+                property,
+                command.audience(),
+                command.subject(),
+                command.message(),
+                "PREPARED"
+        ));
+        activities.save(new ActivityEvent(user, property, "COMMUNICATION", "Mitteilung vorbereitet: " + message.subject()));
+        audit.record(user, "message.create", "community_message", message.id(), "Mitteilung vorbereitet: " + message.subject());
         return dashboard(userId, property.id());
     }
 
@@ -205,6 +291,7 @@ public class WorkspaceService {
                 command.abstentions()
         ));
         activities.save(new ActivityEvent(user, property, "DECISION", "Beschluss dokumentiert: " + decision.title()));
+        audit.record(user, "decision.create", "community_decision", decision.id(), "Beschluss dokumentiert: " + decision.title());
         return dashboard(userId, property.id());
     }
 
@@ -218,6 +305,7 @@ public class WorkspaceService {
         }
         decision.transitionTo(status);
         activities.save(new ActivityEvent(user, property, "DECISION", "Beschluss aktualisiert: " + decision.title() + " ist " + decisionStatusLabel(status) + "."));
+        audit.record(user, "decision.status", "community_decision", decision.id(), "Beschlussstatus gesetzt: " + status.name());
         return dashboard(userId, property.id());
     }
 
@@ -238,17 +326,26 @@ public class WorkspaceService {
                 .orElseThrow(() -> new IllegalArgumentException("Bitte zuerst eine Immobilie hinzufügen."));
     }
 
-    private static OnboardingView onboarding(boolean hasProperty, boolean hasUnits, boolean hasFinance, boolean hasTasks, boolean hasDecisions) {
-        int completed = 1 + (hasProperty ? 1 : 0) + (hasUnits ? 1 : 0) + (hasFinance ? 1 : 0) + (hasTasks ? 1 : 0) + (hasDecisions ? 1 : 0);
-        return new OnboardingView(Math.round(completed * 100f / 6f), true, hasProperty, hasUnits, hasFinance, hasTasks, hasDecisions);
+    private static OnboardingView onboarding(boolean hasProperty, boolean hasUnits, boolean hasFinance, boolean hasTasks, boolean hasDecisions, boolean hasAnnualPlan, boolean hasMeeting) {
+        int completed = 1
+                + (hasProperty ? 1 : 0)
+                + (hasUnits ? 1 : 0)
+                + (hasFinance ? 1 : 0)
+                + (hasTasks ? 1 : 0)
+                + (hasDecisions ? 1 : 0)
+                + (hasAnnualPlan ? 1 : 0)
+                + (hasMeeting ? 1 : 0);
+        return new OnboardingView(Math.round(completed * 100f / 8f), true, hasProperty, hasUnits, hasFinance, hasTasks, hasDecisions, hasAnnualPlan, hasMeeting);
     }
 
     private static List<InsightView> insights(
             List<OwnerUnit> ownerUnits,
             List<WorkTask> workTasks,
             List<FinanceEvent> financeEvents,
+            List<AnnualPlan> annualPlans,
             List<PropertyDocument> documents,
             List<CommunityDecision> decisions,
+            List<OwnerMeeting> meetings,
             BigDecimal pendingPayments
     ) {
         List<InsightView> result = new java.util.ArrayList<>();
@@ -270,6 +367,12 @@ public class WorkspaceService {
         }
         if (financeEvents.isEmpty()) {
             result.add(new InsightView("MEDIUM", "Finanzlage erfassen", "Kontostand und Rücklage werden wertvoller, sobald die ersten Buchungen im Verlauf sichtbar sind.", "finances", "Buchung erfassen"));
+        }
+        if (annualPlans.isEmpty()) {
+            result.add(new InsightView("MEDIUM", "Wirtschaftsplan anlegen", "Hausgeld, Instandhaltung und Rücklage brauchen eine beschlossene Jahresplanung.", "finances", "Wirtschaftsplan erfassen"));
+        }
+        if (meetings.isEmpty()) {
+            result.add(new InsightView("LOW", "Versammlung vorbereiten", "Einladung, Tagesordnung und Beschlussvorlagen sollten früh an einer Stelle liegen.", "decisions", "Versammlung planen"));
         }
         if (documents.isEmpty()) {
             result.add(new InsightView("LOW", "Beschlüsse dokumentieren", "Protokolle, Wirtschaftspläne und Rechnungen sollten direkt am Objekt auffindbar sein.", "documents", "Dokument ablegen"));
@@ -313,6 +416,17 @@ public class WorkspaceService {
         return new FinanceView(finance.label(), finance.amount(), finance.category(), finance.bookedOn(), finance.status());
     }
 
+    private static AnnualPlanView toAnnualPlan(AnnualPlan plan) {
+        return new AnnualPlanView(
+                plan.id(),
+                plan.fiscalYear(),
+                plan.houseMoneyBudget(),
+                plan.maintenanceBudget(),
+                plan.reserveContribution(),
+                plan.status().name()
+        );
+    }
+
     private static DocumentView toDocument(PropertyDocument document) {
         return new DocumentView(document.id(), document.title(), document.documentType(), document.fileName(), document.documentDate());
     }
@@ -331,6 +445,21 @@ public class WorkspaceService {
         );
     }
 
+    private static MeetingView toMeeting(OwnerMeeting meeting) {
+        return new MeetingView(
+                meeting.id(),
+                meeting.title(),
+                meeting.meetingDate(),
+                meeting.location(),
+                meeting.agenda(),
+                meeting.status().name()
+        );
+    }
+
+    private static MessageView toMessage(CommunityMessage message) {
+        return new MessageView(message.id(), message.audience(), message.subject(), message.message(), message.status(), message.createdAt());
+    }
+
     private static ActivityView toActivity(ActivityEvent event) {
         return new ActivityView(event.eventType(), event.summary(), event.createdAt());
     }
@@ -343,8 +472,11 @@ public class WorkspaceService {
             List<UnitView> units,
             List<TaskView> tasks,
             List<FinanceView> finances,
+            List<AnnualPlanView> annualPlans,
             List<DocumentView> documents,
             List<DecisionView> decisions,
+            List<MeetingView> meetings,
+            List<MessageView> messages,
             List<ActivityView> activity,
             List<InsightView> insights,
             OnboardingView onboarding
@@ -372,10 +504,19 @@ public class WorkspaceService {
     public record FinanceView(String label, BigDecimal amount, String category, LocalDate bookedOn, String status) {
     }
 
+    public record AnnualPlanView(UUID id, int fiscalYear, BigDecimal houseMoneyBudget, BigDecimal maintenanceBudget, BigDecimal reserveContribution, String status) {
+    }
+
     public record DocumentView(UUID id, String title, String documentType, String fileName, LocalDate documentDate) {
     }
 
     public record DecisionView(UUID id, String title, String resolutionText, LocalDate meetingDate, String meetingLocation, String status, int yesVotes, int noVotes, int abstentions) {
+    }
+
+    public record MeetingView(UUID id, String title, LocalDate meetingDate, String location, String agenda, String status) {
+    }
+
+    public record MessageView(UUID id, String audience, String subject, String message, String status, Instant createdAt) {
     }
 
     public record ActivityView(String eventType, String summary, Instant createdAt) {
@@ -384,7 +525,7 @@ public class WorkspaceService {
     public record InsightView(String severity, String title, String description, String actionSection, String actionLabel) {
     }
 
-    public record OnboardingView(int completion, boolean accountActivated, boolean propertyCreated, boolean unitsCreated, boolean financeCreated, boolean taskCreated, boolean decisionCreated) {
+    public record OnboardingView(int completion, boolean accountActivated, boolean propertyCreated, boolean unitsCreated, boolean financeCreated, boolean taskCreated, boolean decisionCreated, boolean annualPlanCreated, boolean meetingCreated) {
     }
 
     public record CreatePropertyCommand(String name, String address, String city, int unitCount, BigDecimal cashBalance, BigDecimal reserveBalance) {
@@ -399,7 +540,16 @@ public class WorkspaceService {
     public record CreateFinanceCommand(UUID propertyId, String label, BigDecimal amount, String category, LocalDate bookedOn, String status) {
     }
 
+    public record CreateAnnualPlanCommand(UUID propertyId, int fiscalYear, BigDecimal houseMoneyBudget, BigDecimal maintenanceBudget, BigDecimal reserveContribution, AnnualPlanStatus status) {
+    }
+
     public record CreateDocumentCommand(UUID propertyId, String title, String documentType, String fileName, LocalDate documentDate) {
+    }
+
+    public record CreateMeetingCommand(UUID propertyId, String title, LocalDate meetingDate, String location, String agenda, MeetingStatus status) {
+    }
+
+    public record CreateMessageCommand(UUID propertyId, String audience, String subject, String message) {
     }
 
     public record CreateDecisionCommand(UUID propertyId, String title, String resolutionText, LocalDate meetingDate, String meetingLocation, DecisionStatus status, int yesVotes, int noVotes, int abstentions) {

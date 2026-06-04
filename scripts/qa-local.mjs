@@ -61,9 +61,17 @@ await page.getByPlaceholder('Betrag').fill('-1250');
 await page.getByLabel('Kategorie').selectOption('Instandhaltung');
 await page.locator('input[formcontrolname="bookedOn"]').fill('05.06.2026');
 await page.getByPlaceholder('Beschreibung').fill('Rechnung Hausmeisterservice');
-await page.locator('select[formcontrolname="status"]').selectOption('OPEN');
+await page.getByLabel('Buchungsstatus').selectOption('OPEN');
 await page.getByRole('button', { name: 'Buchung erfassen', exact: true }).click();
 await page.getByText('Rechnung Hausmeisterservice').waitFor();
+await page.locator('form.plan-form').getByLabel('Wirtschaftsjahr').fill('2026');
+await page.locator('form.plan-form').getByPlaceholder('Hausgeld-Budget').fill('64000');
+await page.locator('form.plan-form').getByPlaceholder('Instandhaltung').fill('18500');
+await page.locator('form.plan-form').getByPlaceholder('Rücklagenzuführung').fill('12000');
+await page.locator('form.plan-form').getByLabel('Planstatus').selectOption('APPROVED');
+await page.getByRole('button', { name: 'Wirtschaftsplan anlegen', exact: true }).click();
+await page.getByText('Wirtschaftsplan 2026').waitFor();
+await page.screenshot({ path: fileURLToPath(new URL('realestate-finances-desktop.png', outputDir)), fullPage: true });
 
 await page.getByRole('button', { name: 'Dokumente', exact: true }).click();
 await page.getByPlaceholder('Dokumenttitel').fill('Protokoll JHV 2026');
@@ -73,8 +81,15 @@ await page.getByRole('button', { name: 'Ablegen', exact: true }).click();
 await page.getByText('Protokoll JHV 2026').waitFor();
 
 await page.getByRole('button', { name: 'Beschlüsse', exact: true }).click();
+await page.locator('form.meeting-form').getByPlaceholder('Versammlungstitel').fill('Eigentümerversammlung 2026');
+await page.locator('form.meeting-form').getByLabel('Versammlungsdatum').fill('10.07.2026');
+await page.locator('form.meeting-form').getByPlaceholder('Ort oder Videolink').fill('Stuttgart und digital');
+await page.locator('form.meeting-form').getByLabel('Versammlungsstatus').selectOption('INVITED');
+await page.locator('form.meeting-form').getByPlaceholder('Tagesordnung, Unterlagen und offene Beschlussvorlagen').fill('Jahresabrechnung, Wirtschaftsplan, Treppenhaus-Sanierung');
+await page.getByRole('button', { name: 'Versammlung planen', exact: true }).click();
+await page.getByText('Eigentümerversammlung 2026').waitFor();
 await page.getByPlaceholder('Beschlusstitel').fill('Sanierung Treppenhaus beauftragen');
-await page.locator('input[formcontrolname="meetingDate"]').fill('03.06.2026');
+await page.getByLabel('Beschlussdatum').fill('03.06.2026');
 await page.getByPlaceholder('Ort oder Format').fill('Eigentümerversammlung');
 await page.getByLabel('Ja-Stimmen').fill('14');
 await page.getByLabel('Nein-Stimmen').fill('1');
@@ -84,6 +99,7 @@ await page.getByRole('button', { name: 'Eintragen', exact: true }).click();
 await page.getByText('Sanierung Treppenhaus beauftragen').waitFor();
 await page.locator('.decision-row').filter({ hasText: 'Sanierung Treppenhaus beauftragen' }).getByRole('button', { name: 'Umgesetzt' }).click();
 await page.getByText('Beschluss als umgesetzt markiert.').waitFor();
+await page.screenshot({ path: fileURLToPath(new URL('realestate-decisions-desktop.png', outputDir)), fullPage: true });
 
 await page.getByRole('button', { name: 'Aufgaben', exact: true }).click();
 await page.getByRole('textbox', { name: 'Aufgabe' }).fill('Eigentümerversammlung vorbereiten');
@@ -138,6 +154,7 @@ await page.getByPlaceholder('Nachricht an die Gemeinschaft').fill('Die Unterlage
 await page.getByRole('button', { name: 'Mitteilung vorbereiten', exact: true }).click();
 await page.getByText('Mitteilung wurde vorbereitet.').waitFor();
 await page.getByText('Eigentümerinformation').waitFor();
+await page.screenshot({ path: fileURLToPath(new URL('realestate-communication-desktop.png', outputDir)), fullPage: true });
 
 await page.getByRole('button', { name: 'Einstellungen', exact: true }).click();
 await page.getByRole('button', { name: 'Einstellungen speichern', exact: true }).click();
@@ -180,6 +197,9 @@ console.log(JSON.stringify({
   email: user.email,
   screenshots: [
     'output/qa/realestate-register-desktop.png',
+    'output/qa/realestate-finances-desktop.png',
+    'output/qa/realestate-decisions-desktop.png',
+    'output/qa/realestate-communication-desktop.png',
     'output/qa/realestate-dashboard-desktop.png',
     'output/qa/realestate-dashboard-mobile.png'
   ]

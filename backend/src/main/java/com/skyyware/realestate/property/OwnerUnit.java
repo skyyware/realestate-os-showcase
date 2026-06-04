@@ -40,6 +40,10 @@ public class OwnerUnit {
         this.shareValue = shareValue;
     }
 
+    public UUID id() {
+        return id;
+    }
+
     public String ownerName() {
         return ownerName;
     }

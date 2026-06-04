@@ -13,7 +13,11 @@ Das Backend ist bewusst modular geschnitten:
 - `identity`: Registrierung, Passwort-Setup, Session/JWT
 - `property`: Immobilien, Einheiten, Eigentümerdaten
 - `finance`: Buchungsfeed und Zahlungsübersicht
+- `planning`: Wirtschaftspläne, Budgets und Rücklagenzuführung
 - `task`: Aufgabensteuerung
+- `meeting`: Eigentümerversammlungen, Tagesordnung und Einladungsstatus
+- `communication`: vorbereitete Mitteilungen an Eigentümer, Beirat oder Verwaltung
+- `audit`: technische Nachvollziehbarkeit schreibender Commands
 - `activity`: Audit-Trail
 - `workspace`: produktorientierte Read-/Command-API für das Frontend
 - `security`, `mail`, `config`, `common`: Infrastruktur und Querschnitt
@@ -61,14 +65,19 @@ ablegen, sondern Entscheidungen sauber dokumentieren und in Arbeit übersetzen.
 
 ## Identity
 
-Die Anwendung nutzt eine app-native Registrierung mit einmaligem Token, BCrypt und
-kurzlebigem HMAC-JWT. Das macht die Anwendung lokal und auf Stage direkt
-testbar. Die Boundary ist so gehalten, dass sie in einer internen Übernahme
-gegen Keycloak/OIDC ausgetauscht werden kann:
+Die Anwendung nutzt lokal eine app-native Registrierung mit einmaligem Token,
+BCrypt und kurzlebigem HMAC-JWT. Das macht die Anwendung lokal und auf Stage
+direkt testbar. Zusätzlich ist die produktive Identity Boundary Keycloak/OIDC-
+fähig:
 
 - Token-Validierung sitzt zentral in `security`
 - User-Kontext wird nur als Principal ins Produkt gereicht
 - `docker-compose --profile identity` startet Keycloak für Integrationsarbeit
+- `REALESTATE_IDENTITY_MODE=keycloak` aktiviert den OIDC-Resource-Server
+- Keycloak-Rollen werden auf `OWNER_ADMIN`, `PROPERTY_MANAGER` und
+  `BOARD_MEMBER` gemappt
+- externe Subjects werden in `app_user.identity_provider` und
+  `app_user.external_subject` nachvollziehbar gespeichert
 
 ## Database
 
@@ -83,6 +92,16 @@ Zugangsdaten werden nicht in Git gespeichert. Lokal gibt die API bei
 deaktiviertem Mailversand einen Setup-Link zurück; Stage versendet echte
 Transaktionsmails.
 
+## Datenhaltung, Rollen und Audit
+
+Produktrelevante Daten liegen serverseitig in PostgreSQL/Aurora-kompatiblen
+Tabellen. Browser-only-Zustand ist nur für lokale UI-Präferenzen erlaubt.
+Schreibende Workspace-Commands sind rollenbasiert geschützt und schreiben zwei
+Spuren:
+
+- `activity_event` für den sichtbaren Produktverlauf
+- `audit_log` für technische Nachvollziehbarkeit und spätere Betreiberprüfungen
+
 ## AWS/Stage
 
 Der Stage-Betrieb ist bewusst pragmatisch:
@@ -96,3 +115,13 @@ Der Stage-Betrieb ist bewusst pragmatisch:
 
 Das ist nah an einem Seed/Pre-Series-A Setup: wenig Over-Engineering, aber
 klare Upgrade-Pfade zu ECS/App Runner, Aurora, SES und Keycloak.
+
+Ein Terraform-Blueprint liegt unter `infra/aws`. Er modelliert Aurora
+PostgreSQL, S3-Dokumentablage, SES, CloudWatch und App Runner als Managed-
+Service-Zielbild.
+
+## ADRs und Betrieb
+
+- `docs/adr/0001-modular-monolith.md`
+- `docs/test-strategy.md`
+- `docs/handover.md`

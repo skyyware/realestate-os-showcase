@@ -26,7 +26,6 @@ export class App implements OnInit, OnDestroy {
   protected readonly searchTerm = signal('');
   protected readonly selectedPropertyId = signal<string | null>(null);
   protected readonly insightHidden = signal(false);
-  protected readonly communicationPosts = signal<CommunicationPost[]>([]);
 
   protected readonly selectedProperty = computed(() => {
     const dashboard = this.dashboard();
@@ -56,11 +55,20 @@ export class App implements OnInit, OnDestroy {
   protected readonly filteredFinances = computed(() => (this.dashboard()?.finances ?? []).filter(item =>
     this.matchesSearch(item.label, item.category, item.status, item.bookedOn, item.amount)
   ));
+  protected readonly filteredAnnualPlans = computed(() => (this.dashboard()?.annualPlans ?? []).filter(plan =>
+    this.matchesSearch(plan.fiscalYear, plan.status, plan.houseMoneyBudget, plan.maintenanceBudget, plan.reserveContribution)
+  ));
   protected readonly filteredDocuments = computed(() => (this.dashboard()?.documents ?? []).filter(document =>
     this.matchesSearch(document.title, document.documentType, document.fileName, document.documentDate)
   ));
   protected readonly filteredDecisions = computed(() => (this.dashboard()?.decisions ?? []).filter(decision =>
     this.matchesSearch(decision.title, decision.resolutionText, decision.meetingLocation, decision.status, decision.meetingDate)
+  ));
+  protected readonly filteredMeetings = computed(() => (this.dashboard()?.meetings ?? []).filter(meeting =>
+    this.matchesSearch(meeting.title, meeting.location, meeting.agenda, meeting.status, meeting.meetingDate)
+  ));
+  protected readonly filteredMessages = computed(() => (this.dashboard()?.messages ?? []).filter(message =>
+    this.matchesSearch(message.audience, message.subject, message.message, message.status, message.createdAt)
   ));
   protected readonly filteredActivity = computed(() => (this.dashboard()?.activity ?? []).filter(event =>
     this.matchesSearch(event.eventType, event.summary, event.createdAt)
@@ -111,6 +119,14 @@ export class App implements OnInit, OnDestroy {
     status: ['BOOKED', [Validators.required, Validators.maxLength(32)]]
   });
 
+  protected readonly annualPlanForm = this.fb.nonNullable.group({
+    fiscalYear: [new Date().getFullYear(), [Validators.required, Validators.min(2020)]],
+    houseMoneyBudget: [0, [Validators.required, Validators.min(0)]],
+    maintenanceBudget: [0, [Validators.required, Validators.min(0)]],
+    reserveContribution: [0, [Validators.required, Validators.min(0)]],
+    status: ['DRAFT' as AnnualPlanStatus, [Validators.required]]
+  });
+
   protected readonly documentForm = this.fb.nonNullable.group({
     title: ['', [Validators.required, Validators.maxLength(180)]],
     documentType: ['PDF', [Validators.required, Validators.maxLength(80)]],
@@ -127,6 +143,14 @@ export class App implements OnInit, OnDestroy {
     yesVotes: [0, [Validators.required, Validators.min(0)]],
     noVotes: [0, [Validators.required, Validators.min(0)]],
     abstentions: [0, [Validators.required, Validators.min(0)]]
+  });
+
+  protected readonly meetingForm = this.fb.nonNullable.group({
+    title: ['', [Validators.required, Validators.maxLength(180)]],
+    meetingDate: [this.today(), [Validators.required, germanDateValidator]],
+    location: ['', [Validators.required, Validators.maxLength(180)]],
+    agenda: ['', [Validators.required, Validators.maxLength(1800)]],
+    status: ['SCHEDULED' as MeetingStatus, [Validators.required]]
   });
 
   protected readonly communicationForm = this.fb.nonNullable.group({
@@ -248,6 +272,13 @@ export class App implements OnInit, OnDestroy {
     this.submitDashboardRequest('finances', { ...formValue, bookedOn: this.toIsoDate(formValue.bookedOn), propertyId }, 'Finanzereignis wurde erfasst.');
   }
 
+  protected createAnnualPlan(): void {
+    if (this.annualPlanForm.invalid) return;
+    const propertyId = this.requireSelectedPropertyId();
+    if (!propertyId) return;
+    this.submitDashboardRequest('annual-plans', { ...this.annualPlanForm.getRawValue(), propertyId }, 'Wirtschaftsplan wurde angelegt.');
+  }
+
   protected createDocument(): void {
     if (this.documentForm.invalid) return;
     const propertyId = this.requireSelectedPropertyId();
@@ -262,6 +293,14 @@ export class App implements OnInit, OnDestroy {
     if (!propertyId) return;
     const formValue = this.decisionForm.getRawValue();
     this.submitDashboardRequest('decisions', { ...formValue, meetingDate: this.toIsoDate(formValue.meetingDate), propertyId }, 'Beschluss wurde in die Sammlung aufgenommen.');
+  }
+
+  protected createMeeting(): void {
+    if (this.meetingForm.invalid) return;
+    const propertyId = this.requireSelectedPropertyId();
+    if (!propertyId) return;
+    const formValue = this.meetingForm.getRawValue();
+    this.submitDashboardRequest('meetings', { ...formValue, meetingDate: this.toIsoDate(formValue.meetingDate), propertyId }, 'Eigentümerversammlung wurde vorbereitet.');
   }
 
   protected logout(): void {
@@ -321,7 +360,10 @@ export class App implements OnInit, OnDestroy {
       TASK: 'Aufgabe',
       FINANCE: 'Finanzen',
       DOCUMENT: 'Dokument',
-      DECISION: 'Beschluss'
+      DECISION: 'Beschluss',
+      PLAN: 'Wirtschaftsplan',
+      MEETING: 'Versammlung',
+      COMMUNICATION: 'Kommunikation'
     }[eventType] ?? 'Aktivität';
   }
 
@@ -330,13 +372,9 @@ export class App implements OnInit, OnDestroy {
       this.error.set('Bitte Empfänger, Betreff und Nachricht ausfüllen.');
       return;
     }
-    const post = { ...this.communicationForm.getRawValue(), createdAt: new Date().toISOString() };
-    const posts = [post, ...this.communicationPosts()].slice(0, 8);
-    this.communicationPosts.set(posts);
-    localStorage.setItem('realestate.communicationDrafts', JSON.stringify(posts));
-    this.communicationForm.reset({ audience: 'Eigentümer', subject: '', message: '' });
-    this.info.set('Mitteilung wurde vorbereitet.');
-    this.error.set('');
+    const propertyId = this.requireSelectedPropertyId();
+    if (!propertyId) return;
+    this.submitDashboardRequest('messages', { ...this.communicationForm.getRawValue(), propertyId }, 'Mitteilung wurde vorbereitet.');
   }
 
   protected saveSettings(): void {
@@ -391,7 +429,13 @@ export class App implements OnInit, OnDestroy {
       DRAFT: 'Entwurf',
       PASSED: 'Beschlossen',
       REJECTED: 'Abgelehnt',
-      IMPLEMENTED: 'Umgesetzt'
+      IMPLEMENTED: 'Umgesetzt',
+      APPROVED: 'Freigegeben',
+      ACTIVE: 'Aktiv',
+      SCHEDULED: 'Geplant',
+      INVITED: 'Eingeladen',
+      COMPLETED: 'Abgeschlossen',
+      PREPARED: 'Vorbereitet'
     }[status] ?? status;
   }
 
@@ -404,7 +448,7 @@ export class App implements OnInit, OnDestroy {
     }[severity] ?? severity;
   }
 
-  private submitDashboardRequest(path: 'properties' | 'units' | 'tasks' | 'finances' | 'documents' | 'decisions', payload: Record<string, unknown>, success: string): void {
+  private submitDashboardRequest(path: 'properties' | 'units' | 'tasks' | 'finances' | 'annual-plans' | 'documents' | 'meetings' | 'decisions' | 'messages', payload: Record<string, unknown>, success: string): void {
     this.begin();
     this.http.post<Dashboard>(`${API_BASE_URL}/workspace/${path}`, payload)
       .subscribe({
@@ -416,8 +460,11 @@ export class App implements OnInit, OnDestroy {
           if (path === 'units') this.unitForm.reset({ ownerName: '', unitLabel: '', shareValue: 0 });
           if (path === 'tasks') this.taskForm.reset({ title: '', description: '', priority: 'MEDIUM', dueDate: '' });
           if (path === 'finances') this.financeForm.reset({ label: '', amount: 0, category: 'Hausgeld', bookedOn: this.today(), status: 'BOOKED' });
+          if (path === 'annual-plans') this.annualPlanForm.reset({ fiscalYear: new Date().getFullYear(), houseMoneyBudget: 0, maintenanceBudget: 0, reserveContribution: 0, status: 'DRAFT' });
           if (path === 'documents') this.documentForm.reset({ title: '', documentType: 'PDF', fileName: '', documentDate: this.today() });
+          if (path === 'meetings') this.meetingForm.reset({ title: '', meetingDate: this.today(), location: '', agenda: '', status: 'SCHEDULED' });
           if (path === 'decisions') this.decisionForm.reset({ title: '', resolutionText: '', meetingDate: this.today(), meetingLocation: 'Eigentümerversammlung', status: 'PASSED', yesVotes: 0, noVotes: 0, abstentions: 0 });
+          if (path === 'messages') this.communicationForm.reset({ audience: 'Eigentümer', subject: '', message: '' });
         },
         error: error => this.fail(error)
       });
@@ -471,14 +518,6 @@ export class App implements OnInit, OnDestroy {
   }
 
   private restoreLocalState(): void {
-    const communicationDrafts = localStorage.getItem('realestate.communicationDrafts');
-    if (communicationDrafts) {
-      try {
-        this.communicationPosts.set(JSON.parse(communicationDrafts));
-      } catch {
-        localStorage.removeItem('realestate.communicationDrafts');
-      }
-    }
     const settings = localStorage.getItem('realestate.workspaceSettings');
     if (settings) {
       try {
@@ -561,6 +600,8 @@ type Section = 'overview' | 'properties' | 'units' | 'finances' | 'tasks' | 'doc
 type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 type TaskStatus = 'OPEN' | 'IN_REVIEW' | 'DONE';
 type DecisionStatus = 'DRAFT' | 'PASSED' | 'REJECTED' | 'IMPLEMENTED';
+type AnnualPlanStatus = 'DRAFT' | 'APPROVED' | 'ACTIVE';
+type MeetingStatus = 'SCHEDULED' | 'INVITED' | 'COMPLETED';
 type InsightSeverity = 'HIGH' | 'MEDIUM' | 'LOW' | 'GOOD';
 
 interface RegistrationResult {
@@ -609,8 +650,11 @@ interface Dashboard {
   units: Array<{ ownerName: string; unitLabel: string; shareValue: number }>;
   tasks: WorkTaskView[];
   finances: Array<{ label: string; amount: number; category: string; bookedOn: string; status: string }>;
+  annualPlans: AnnualPlanView[];
   documents: Array<{ id: string; title: string; documentType: string; fileName: string; documentDate: string }>;
   decisions: DecisionView[];
+  meetings: MeetingView[];
+  messages: MessageView[];
   activity: Array<{ eventType: string; summary: string; createdAt: string }>;
   insights: InsightView[];
   onboarding: {
@@ -621,6 +665,8 @@ interface Dashboard {
     financeCreated: boolean;
     taskCreated: boolean;
     decisionCreated: boolean;
+    annualPlanCreated: boolean;
+    meetingCreated: boolean;
   };
 }
 
@@ -653,9 +699,29 @@ interface DecisionView {
   abstentions: number;
 }
 
-interface CommunicationPost {
+interface AnnualPlanView {
+  id: string;
+  fiscalYear: number;
+  houseMoneyBudget: number;
+  maintenanceBudget: number;
+  reserveContribution: number;
+  status: AnnualPlanStatus;
+}
+
+interface MeetingView {
+  id: string;
+  title: string;
+  meetingDate: string;
+  location: string;
+  agenda: string;
+  status: MeetingStatus;
+}
+
+interface MessageView {
+  id: string;
   audience: string;
   subject: string;
   message: string;
+  status: string;
   createdAt: string;
 }

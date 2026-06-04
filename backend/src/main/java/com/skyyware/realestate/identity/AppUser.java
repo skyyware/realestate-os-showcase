@@ -35,6 +35,11 @@ public class AppUser {
     private UserRole role;
 
     @Column(nullable = false)
+    private String identityProvider;
+
+    private String externalSubject;
+
+    @Column(nullable = false)
     private Instant createdAt;
 
     private Instant activatedAt;
@@ -49,6 +54,7 @@ public class AppUser {
         this.organizationName = organizationName;
         this.status = UserStatus.PENDING;
         this.role = UserRole.OWNER_ADMIN;
+        this.identityProvider = "local";
         this.createdAt = Instant.now();
     }
 
@@ -89,5 +95,33 @@ public class AppUser {
         this.passwordHash = passwordHash;
         this.status = UserStatus.ACTIVE;
         this.activatedAt = Instant.now();
+    }
+
+    public String identityProvider() {
+        return identityProvider;
+    }
+
+    public String externalSubject() {
+        return externalSubject;
+    }
+
+    public void linkExternalIdentity(String identityProvider, String externalSubject) {
+        this.identityProvider = identityProvider;
+        this.externalSubject = externalSubject;
+        this.status = UserStatus.ACTIVE;
+        if (this.activatedAt == null) {
+            this.activatedAt = Instant.now();
+        }
+    }
+
+    public void updateRole(UserRole role) {
+        this.role = role;
+    }
+
+    public static AppUser external(String email, String fullName, String organizationName, String identityProvider, String externalSubject, UserRole role) {
+        AppUser user = new AppUser(email, fullName, organizationName);
+        user.linkExternalIdentity(identityProvider, externalSubject);
+        user.updateRole(role);
+        return user;
     }
 }

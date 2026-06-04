@@ -2,6 +2,8 @@ package com.skyyware.realestate.workspace;
 
 import com.skyyware.realestate.security.CurrentUser;
 import com.skyyware.realestate.decision.DecisionStatus;
+import com.skyyware.realestate.meeting.MeetingStatus;
+import com.skyyware.realestate.planning.AnnualPlanStatus;
 import com.skyyware.realestate.task.TaskPriority;
 import com.skyyware.realestate.task.TaskStatus;
 import jakarta.validation.Valid;
@@ -13,6 +15,7 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,6 +40,7 @@ public class WorkspaceController {
     }
 
     @PostMapping("/properties")
+    @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER')")
     WorkspaceService.DashboardView createProperty(@Valid @RequestBody CreatePropertyRequest request) {
         return workspaceService.createProperty(CurrentUser.require().userId(), new WorkspaceService.CreatePropertyCommand(
                 request.name(),
@@ -49,6 +53,7 @@ public class WorkspaceController {
     }
 
     @PostMapping("/units")
+    @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER')")
     WorkspaceService.DashboardView createUnit(@Valid @RequestBody CreateUnitRequest request) {
         return workspaceService.createUnit(CurrentUser.require().userId(), new WorkspaceService.CreateUnitCommand(
                 request.propertyId(),
@@ -59,6 +64,7 @@ public class WorkspaceController {
     }
 
     @PostMapping("/tasks")
+    @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER','BOARD_MEMBER')")
     WorkspaceService.DashboardView addTask(@Valid @RequestBody CreateTaskRequest request) {
         return workspaceService.addTask(CurrentUser.require().userId(), new WorkspaceService.CreateTaskCommand(
                 request.propertyId(),
@@ -70,11 +76,13 @@ public class WorkspaceController {
     }
 
     @PatchMapping("/tasks/{taskId}/status")
+    @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER','BOARD_MEMBER')")
     WorkspaceService.DashboardView updateTaskStatus(@PathVariable UUID taskId, @Valid @RequestBody UpdateTaskStatusRequest request) {
         return workspaceService.updateTaskStatus(CurrentUser.require().userId(), taskId, request.status());
     }
 
     @PostMapping("/finances")
+    @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER')")
     WorkspaceService.DashboardView createFinance(@Valid @RequestBody CreateFinanceRequest request) {
         return workspaceService.createFinance(CurrentUser.require().userId(), new WorkspaceService.CreateFinanceCommand(
                 request.propertyId(),
@@ -86,7 +94,21 @@ public class WorkspaceController {
         ));
     }
 
+    @PostMapping("/annual-plans")
+    @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER')")
+    WorkspaceService.DashboardView createAnnualPlan(@Valid @RequestBody CreateAnnualPlanRequest request) {
+        return workspaceService.createAnnualPlan(CurrentUser.require().userId(), new WorkspaceService.CreateAnnualPlanCommand(
+                request.propertyId(),
+                request.fiscalYear(),
+                request.houseMoneyBudget(),
+                request.maintenanceBudget(),
+                request.reserveContribution(),
+                request.status()
+        ));
+    }
+
     @PostMapping("/documents")
+    @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER','BOARD_MEMBER')")
     WorkspaceService.DashboardView createDocument(@Valid @RequestBody CreateDocumentRequest request) {
         return workspaceService.createDocument(CurrentUser.require().userId(), new WorkspaceService.CreateDocumentCommand(
                 request.propertyId(),
@@ -97,7 +119,32 @@ public class WorkspaceController {
         ));
     }
 
+    @PostMapping("/meetings")
+    @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER')")
+    WorkspaceService.DashboardView createMeeting(@Valid @RequestBody CreateMeetingRequest request) {
+        return workspaceService.createMeeting(CurrentUser.require().userId(), new WorkspaceService.CreateMeetingCommand(
+                request.propertyId(),
+                request.title(),
+                request.meetingDate(),
+                request.location(),
+                request.agenda(),
+                request.status()
+        ));
+    }
+
+    @PostMapping("/messages")
+    @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER','BOARD_MEMBER')")
+    WorkspaceService.DashboardView createMessage(@Valid @RequestBody CreateMessageRequest request) {
+        return workspaceService.createMessage(CurrentUser.require().userId(), new WorkspaceService.CreateMessageCommand(
+                request.propertyId(),
+                request.audience(),
+                request.subject(),
+                request.message()
+        ));
+    }
+
     @PostMapping("/decisions")
+    @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER')")
     WorkspaceService.DashboardView createDecision(@Valid @RequestBody CreateDecisionRequest request) {
         return workspaceService.createDecision(CurrentUser.require().userId(), new WorkspaceService.CreateDecisionCommand(
                 request.propertyId(),
@@ -113,6 +160,7 @@ public class WorkspaceController {
     }
 
     @PatchMapping("/decisions/{decisionId}/status")
+    @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER')")
     WorkspaceService.DashboardView updateDecisionStatus(@PathVariable UUID decisionId, @Valid @RequestBody UpdateDecisionStatusRequest request) {
         return workspaceService.updateDecisionStatus(CurrentUser.require().userId(), decisionId, request.status());
     }
@@ -157,12 +205,40 @@ public class WorkspaceController {
     ) {
     }
 
+    public record CreateAnnualPlanRequest(
+            UUID propertyId,
+            @Min(2020) int fiscalYear,
+            @NotNull @DecimalMin("0.00") BigDecimal houseMoneyBudget,
+            @NotNull @DecimalMin("0.00") BigDecimal maintenanceBudget,
+            @NotNull @DecimalMin("0.00") BigDecimal reserveContribution,
+            @NotNull AnnualPlanStatus status
+    ) {
+    }
+
     public record CreateDocumentRequest(
             UUID propertyId,
             @NotBlank @Size(max = 180) String title,
             @NotBlank @Size(max = 80) String documentType,
             @NotBlank @Size(max = 240) String fileName,
             @NotNull LocalDate documentDate
+    ) {
+    }
+
+    public record CreateMeetingRequest(
+            UUID propertyId,
+            @NotBlank @Size(max = 180) String title,
+            @NotNull LocalDate meetingDate,
+            @NotBlank @Size(max = 180) String location,
+            @NotBlank @Size(max = 1800) String agenda,
+            @NotNull MeetingStatus status
+    ) {
+    }
+
+    public record CreateMessageRequest(
+            UUID propertyId,
+            @NotBlank @Size(max = 120) String audience,
+            @NotBlank @Size(max = 180) String subject,
+            @NotBlank @Size(max = 1200) String message
     ) {
     }
 

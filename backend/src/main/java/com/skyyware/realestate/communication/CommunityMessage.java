@@ -1,4 +1,4 @@
-package com.skyyware.realestate.finance;
+package com.skyyware.realestate.communication;
 
 import com.skyyware.realestate.property.PropertyAsset;
 import jakarta.persistence.Column;
@@ -8,13 +8,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "finance_event")
-public class FinanceEvent {
+@Table(name = "community_message")
+public class CommunityMessage {
     @Id
     private UUID id;
 
@@ -23,54 +22,54 @@ public class FinanceEvent {
     private PropertyAsset property;
 
     @Column(nullable = false)
-    private String label;
+    private String audience;
 
     @Column(nullable = false)
-    private BigDecimal amount;
+    private String subject;
 
     @Column(nullable = false)
-    private String category;
-
-    @Column(nullable = false)
-    private LocalDate bookedOn;
+    private String message;
 
     @Column(nullable = false)
     private String status;
 
-    protected FinanceEvent() {
+    @Column(nullable = false)
+    private Instant createdAt;
+
+    protected CommunityMessage() {
     }
 
-    public FinanceEvent(PropertyAsset property, String label, BigDecimal amount, String category, LocalDate bookedOn, String status) {
+    public CommunityMessage(PropertyAsset property, String audience, String subject, String message, String status) {
         this.id = UUID.randomUUID();
         this.property = property;
-        this.label = label;
-        this.amount = amount;
-        this.category = category;
-        this.bookedOn = bookedOn;
+        this.audience = audience;
+        this.subject = subject;
+        this.message = message;
         this.status = status;
+        this.createdAt = Instant.now();
     }
 
     public UUID id() {
         return id;
     }
 
-    public String label() {
-        return label;
+    public String audience() {
+        return audience;
     }
 
-    public BigDecimal amount() {
-        return amount;
+    public String subject() {
+        return subject;
     }
 
-    public String category() {
-        return category;
-    }
-
-    public LocalDate bookedOn() {
-        return bookedOn;
+    public String message() {
+        return message;
     }
 
     public String status() {
         return status;
+    }
+
+    public Instant createdAt() {
+        return createdAt;
     }
 }

@@ -6,6 +6,8 @@ import com.skyyware.realestate.identity.AppUser;
 import com.skyyware.realestate.identity.AppUserRepository;
 import com.skyyware.realestate.identity.AuthService;
 import com.skyyware.realestate.decision.DecisionStatus;
+import com.skyyware.realestate.meeting.MeetingStatus;
+import com.skyyware.realestate.planning.AnnualPlanStatus;
 import com.skyyware.realestate.task.TaskPriority;
 import com.skyyware.realestate.task.TaskStatus;
 import java.math.BigDecimal;
@@ -65,12 +67,34 @@ class WorkspaceFlowTest {
                 LocalDate.of(2026, 6, 5),
                 "OPEN"
         ));
+        workspaceService.createAnnualPlan(user.id(), new WorkspaceService.CreateAnnualPlanCommand(
+                withProperty.selectedPropertyId(),
+                2026,
+                new BigDecimal("64000.00"),
+                new BigDecimal("18500.00"),
+                new BigDecimal("12000.00"),
+                AnnualPlanStatus.APPROVED
+        ));
         workspaceService.createDocument(user.id(), new WorkspaceService.CreateDocumentCommand(
                 withProperty.selectedPropertyId(),
                 "Protokoll JHV 2026",
                 "PDF",
                 "protokoll-jhv-2026.pdf",
                 LocalDate.of(2026, 6, 3)
+        ));
+        workspaceService.createMeeting(user.id(), new WorkspaceService.CreateMeetingCommand(
+                withProperty.selectedPropertyId(),
+                "Eigentümerversammlung 2026",
+                LocalDate.of(2026, 7, 10),
+                "Stuttgart und digital",
+                "Jahresabrechnung, Wirtschaftsplan, Treppenhaus-Sanierung",
+                MeetingStatus.INVITED
+        ));
+        workspaceService.createMessage(user.id(), new WorkspaceService.CreateMessageCommand(
+                withProperty.selectedPropertyId(),
+                "Eigentümer",
+                "Unterlagen zur Versammlung",
+                "Die Unterlagen für die nächste Eigentümerversammlung sind vorbereitet."
         ));
         WorkspaceService.DashboardView withDecision = workspaceService.createDecision(user.id(), new WorkspaceService.CreateDecisionCommand(
                 withProperty.selectedPropertyId(),
@@ -94,7 +118,10 @@ class WorkspaceFlowTest {
 
         assertThat(complete.units()).hasSize(1);
         assertThat(complete.finances()).hasSize(1);
+        assertThat(complete.annualPlans()).hasSize(1);
         assertThat(complete.documents()).hasSize(1);
+        assertThat(complete.meetings()).hasSize(1);
+        assertThat(complete.messages()).hasSize(1);
         assertThat(complete.decisions()).hasSize(1);
         assertThat(complete.tasks()).hasSize(1);
         assertThat(complete.metrics().pendingPayments()).isEqualByComparingTo("1250.00");

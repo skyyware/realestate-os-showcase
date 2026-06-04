@@ -13,9 +13,10 @@ Eine shipbare Product-Engineering-Codebasis für moderne digitale WEG-Verwaltung
 - Java 21 target, Spring Boot 3.5, Spring Security, JPA, Flyway, Mail, Actuator
 - Angular 21, standalone components, typed reactive forms, functional HTTP interceptor
 - PostgreSQL 16 lokal und Aurora-kompatibles Schema
-- Keycloak-ready Identity Boundary via `docker-compose --profile identity`
+- Keycloak/OIDC-ready Identity Boundary via `docker-compose --profile identity`
 - Onboarding mit Registrierung, E-Mail-Link, Passwortvergabe und leerem Workspace
-- Produktflows für Immobilien, Einheiten, Finanzen, Aufgaben, Dokumente und Aktivität
+- Produktflows für Immobilien, Einheiten, Finanzen, Wirtschaftspläne, Versammlungen, Kommunikation, Aufgaben, Dokumente und Aktivität
+- Rollenbasierte Workspace-Commands und Audit-Log für schreibende Vorgänge
 - Operatives Command Center mit priorisierten nächsten Schritten je Immobilie
 - Beschluss-Sammlung mit Datum, Ort, Wortlaut, Abstimmungsergebnis und Umsetzungsstatus
 - Aufgaben-Lifecycle von offen über Prüfung bis erledigt mit Audit-Trail
@@ -71,3 +72,10 @@ Aufgabe ab, wechselt zwischen zwei Immobilien und schreibt Screenshots nach
 ## Architektur
 
 Siehe [docs/architecture.md](docs/architecture.md).
+
+Weitere Übergabeartefakte:
+
+- [docs/adr/0001-modular-monolith.md](docs/adr/0001-modular-monolith.md)
+- [docs/test-strategy.md](docs/test-strategy.md)
+- [docs/handover.md](docs/handover.md)
+- [infra/aws](infra/aws)
