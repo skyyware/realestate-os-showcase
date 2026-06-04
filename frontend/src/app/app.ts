@@ -54,7 +54,7 @@ export class App implements OnInit, OnDestroy {
     this.matchesSearch(member.fullName, member.email, member.role, member.status)
   ));
   protected readonly filteredTasks = computed(() => (this.dashboard()?.tasks ?? []).filter(task =>
-    this.matchesSearch(task.title, task.description, task.priority, task.status, task.dueDate)
+    this.matchesSearch(task.title, task.description, task.priority, task.status, task.assigneeRole, task.sourceType, task.dueDate, task.reminderDate)
   ));
   protected readonly filteredFinances = computed(() => (this.dashboard()?.finances ?? []).filter(item =>
     this.matchesSearch(item.label, item.category, item.status, item.bookedOn, item.amount, item.eventType, item.allocationKey, item.ownerUnitLabel, item.counterparty, item.invoiceNumber)
@@ -78,7 +78,7 @@ export class App implements OnInit, OnDestroy {
     this.matchesSearch(meeting.title, meeting.location, meeting.agenda, meeting.quorumRequirement, meeting.responseDeadline, meeting.invitationSentOn, meeting.status, meeting.meetingDate)
   ));
   protected readonly filteredMessages = computed(() => (this.dashboard()?.messages ?? []).filter(message =>
-    this.matchesSearch(message.audience, message.subject, message.message, message.status, message.createdAt)
+    this.matchesSearch(message.audience, message.subject, message.message, message.status, message.channel, message.sourceType, message.followUpTaskTitle, message.readyToSendOn, message.createdAt)
   ));
   protected readonly filteredActivity = computed(() => (this.dashboard()?.activity ?? []).filter(event =>
     this.matchesSearch(event.eventType, event.summary, event.createdAt)
@@ -131,7 +131,11 @@ export class App implements OnInit, OnDestroy {
     title: ['', [Validators.required, Validators.maxLength(180)]],
     description: ['', [Validators.required, Validators.maxLength(1000)]],
     priority: ['MEDIUM' as TaskPriority, [Validators.required]],
-    dueDate: ['', [Validators.required, germanDateValidator]]
+    assigneeRole: ['Verwaltung', [Validators.required, Validators.maxLength(80)]],
+    sourceType: ['MANUAL' as WorkContextType, [Validators.required]],
+    sourceId: [''],
+    dueDate: ['', [Validators.required, germanDateValidator]],
+    reminderDate: ['', [germanDateValidator]]
   });
 
   protected readonly financeForm = this.fb.nonNullable.group({
@@ -210,7 +214,19 @@ export class App implements OnInit, OnDestroy {
   protected readonly communicationForm = this.fb.nonNullable.group({
     audience: ['Eigentümer', [Validators.required]],
     subject: ['', [Validators.required, Validators.maxLength(180)]],
-    message: ['', [Validators.required, Validators.maxLength(1200)]]
+    message: ['', [Validators.required, Validators.maxLength(1200)]],
+    status: ['READY_TO_SEND' as MessageStatus, [Validators.required]],
+    channel: ['EMAIL' as MessageChannel, [Validators.required]],
+    sourceType: ['MANUAL' as WorkContextType, [Validators.required]],
+    sourceId: [''],
+    readyToSendOn: [this.today(), [germanDateValidator]],
+    createFollowUpTask: [true],
+    followUpTitle: ['Rückfrage nachhalten', [Validators.maxLength(180)]],
+    followUpDescription: ['Rückmeldung prüfen und nächsten Schritt dokumentieren.', [Validators.maxLength(1000)]],
+    followUpPriority: ['MEDIUM' as TaskPriority, [Validators.required]],
+    followUpAssigneeRole: ['Verwaltung', [Validators.maxLength(80)]],
+    followUpDueDate: ['', [germanDateValidator]],
+    followUpReminderDate: ['', [germanDateValidator]]
   });
 
   protected readonly settingsForm = this.fb.nonNullable.group({
@@ -332,7 +348,18 @@ export class App implements OnInit, OnDestroy {
     const propertyId = this.requireSelectedPropertyId();
     if (!propertyId) return;
     const formValue = this.taskForm.getRawValue();
-    this.submitDashboardRequest('tasks', { ...formValue, dueDate: this.toIsoDate(formValue.dueDate), propertyId }, 'Aufgabe wurde erstellt und protokolliert.');
+    if (formValue.sourceType !== 'MANUAL' && !formValue.sourceId) {
+      this.error.set('Bitte Zielobjekt für die Aufgabe auswählen.');
+      this.info.set('');
+      return;
+    }
+    this.submitDashboardRequest('tasks', {
+      ...formValue,
+      sourceId: formValue.sourceType === 'MANUAL' ? null : formValue.sourceId || null,
+      dueDate: this.toIsoDate(formValue.dueDate),
+      reminderDate: formValue.reminderDate ? this.toIsoDate(formValue.reminderDate) : null,
+      propertyId
+    }, 'Aufgabe wurde erstellt und protokolliert.');
   }
 
   protected createFinance(): void {
@@ -491,7 +518,25 @@ export class App implements OnInit, OnDestroy {
     }
     const propertyId = this.requireSelectedPropertyId();
     if (!propertyId) return;
-    this.submitDashboardRequest('messages', { ...this.communicationForm.getRawValue(), propertyId }, 'Mitteilung wurde vorbereitet.');
+    const formValue = this.communicationForm.getRawValue();
+    if (formValue.sourceType !== 'MANUAL' && !formValue.sourceId) {
+      this.error.set('Bitte Zielobjekt für die Mitteilung auswählen.');
+      this.info.set('');
+      return;
+    }
+    if (formValue.createFollowUpTask && (!formValue.followUpTitle || !formValue.followUpDescription || !formValue.followUpAssigneeRole || !formValue.followUpDueDate)) {
+      this.error.set('Bitte Folgeaufgabe mit Titel, Beschreibung, Verantwortlichkeit und Fälligkeit ausfüllen.');
+      this.info.set('');
+      return;
+    }
+    this.submitDashboardRequest('messages', {
+      ...formValue,
+      sourceId: formValue.sourceType === 'MANUAL' ? null : formValue.sourceId || null,
+      readyToSendOn: formValue.readyToSendOn ? this.toIsoDate(formValue.readyToSendOn) : null,
+      followUpDueDate: formValue.followUpDueDate ? this.toIsoDate(formValue.followUpDueDate) : null,
+      followUpReminderDate: formValue.followUpReminderDate ? this.toIsoDate(formValue.followUpReminderDate) : null,
+      propertyId
+    }, formValue.createFollowUpTask ? 'Mitteilung und Folgeaufgabe wurden vorbereitet.' : 'Mitteilung wurde vorbereitet.');
   }
 
   protected saveSettings(): void {
@@ -591,8 +636,51 @@ export class App implements OnInit, OnDestroy {
       UPLOAD: 'Upload',
       EMAIL: 'E-Mail',
       SCAN: 'Scan',
-      MANUAL: 'Manuell'
+      MANUAL: 'Manuell',
+      DOCUMENT: 'Dokument',
+      READY_TO_SEND: 'Versandbereit',
+      SENT: 'Versendet',
+      PORTAL: 'Portal'
     }[status] ?? status;
+  }
+
+  protected clearTaskSource(): void {
+    this.taskForm.controls.sourceId.setValue('');
+  }
+
+  protected clearMessageSource(): void {
+    this.communicationForm.controls.sourceId.setValue('');
+  }
+
+  protected taskRequiresSource(): boolean {
+    return this.taskForm.controls.sourceType.value !== 'MANUAL';
+  }
+
+  protected messageRequiresSource(): boolean {
+    return this.communicationForm.controls.sourceType.value !== 'MANUAL';
+  }
+
+  protected workContextOptions(sourceType: WorkContextType): Array<{ id: string; label: string }> {
+    const dashboard = this.dashboard();
+    if (!dashboard) return [];
+    switch (sourceType) {
+      case 'FINANCE':
+        return dashboard.finances.map(item => ({ id: item.id, label: `${item.label} · ${this.currency(item.amount)}` }));
+      case 'DOCUMENT':
+        return dashboard.documents.map(item => ({ id: item.id, label: item.title }));
+      case 'DECISION':
+        return dashboard.decisions.map(item => ({ id: item.id, label: item.title }));
+      case 'MEETING':
+        return dashboard.meetings.map(item => ({ id: item.id, label: item.title }));
+      default:
+        return [];
+    }
+  }
+
+  protected workContextLabel(sourceType: WorkContextType, sourceId?: string): string {
+    if (sourceType === 'MANUAL' || !sourceId) return 'Manuell';
+    const match = this.workContextOptions(sourceType).find(item => item.id === sourceId);
+    return match?.label ?? this.statusLabel(sourceType);
   }
 
   protected clearDocumentLink(): void {
@@ -654,7 +742,7 @@ export class App implements OnInit, OnDestroy {
           if (path === 'properties') this.propertyForm.reset({ name: '', address: '', city: '', unitCount: 1, fiscalYear: new Date().getFullYear(), cashBalance: 0, reserveBalance: 0, reserveTarget: 0, shareTotal: 1000, managementMode: 'SELF_MANAGED' });
           if (path === 'units') this.unitForm.reset({ ownerName: '', ownerEmail: '', unitLabel: '', shareValue: 0, votingWeight: 0, occupancyType: 'OWNER_OCCUPIED' });
           if (path === 'members') this.memberForm.reset({ fullName: '', email: '', role: 'BOARD_MEMBER' });
-          if (path === 'tasks') this.taskForm.reset({ title: '', description: '', priority: 'MEDIUM', dueDate: '' });
+          if (path === 'tasks') this.taskForm.reset({ title: '', description: '', priority: 'MEDIUM', assigneeRole: 'Verwaltung', sourceType: 'MANUAL', sourceId: '', dueDate: '', reminderDate: '' });
           if (path === 'finances') {
             this.financeForm.reset({ label: '', eventType: 'EXPENSE', amount: 0, category: 'Instandhaltung', allocationKey: 'MEA', ownerUnitId: '', bookedOn: this.today(), dueDate: '', paidOn: '', counterparty: '', invoiceNumber: '', documentReference: '', status: 'BOOKED' });
             this.financePanelTab.set('history');
@@ -664,7 +752,7 @@ export class App implements OnInit, OnDestroy {
           if (path === 'documents') this.documentForm.reset({ title: '', documentType: 'Rechnung', fileName: '', documentDate: this.today(), status: 'RECEIVED', visibility: 'ALL_OWNERS', source: 'UPLOAD', description: '', linkedEntityType: 'GENERAL', linkedEntityId: '' });
           if (path === 'meetings') this.meetingForm.reset({ title: '', meetingDate: this.today(), location: '', agenda: '', invitationSentOn: '', responseDeadline: '', quorumRequirement: 'Einfache Mehrheit nach MEA', status: 'SCHEDULED' });
           if (path === 'decisions') this.decisionForm.reset({ meetingId: '', title: '', resolutionText: '', meetingDate: this.today(), meetingLocation: 'Eigentümerversammlung', agendaItem: 'TOP 1', implementationDueDate: '', responsibleRole: 'Verwaltung', costImpact: 0, status: 'PASSED', yesVotes: 0, noVotes: 0, abstentions: 0 });
-          if (path === 'messages') this.communicationForm.reset({ audience: 'Eigentümer', subject: '', message: '' });
+          if (path === 'messages') this.communicationForm.reset({ audience: 'Eigentümer', subject: '', message: '', status: 'READY_TO_SEND', channel: 'EMAIL', sourceType: 'MANUAL', sourceId: '', readyToSendOn: this.today(), createFollowUpTask: true, followUpTitle: 'Rückfrage nachhalten', followUpDescription: 'Rückmeldung prüfen und nächsten Schritt dokumentieren.', followUpPriority: 'MEDIUM', followUpAssigneeRole: 'Verwaltung', followUpDueDate: '', followUpReminderDate: '' });
         },
         error: error => this.fail(error)
       });
@@ -803,6 +891,9 @@ function germanDateValidator(control: AbstractControl): ValidationErrors | null 
 type Section = 'overview' | 'properties' | 'units' | 'finances' | 'tasks' | 'documents' | 'decisions' | 'activity' | 'communication' | 'settings';
 type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 type TaskStatus = 'OPEN' | 'IN_REVIEW' | 'DONE';
+type WorkContextType = 'MANUAL' | 'FINANCE' | 'DOCUMENT' | 'DECISION' | 'MEETING';
+type MessageStatus = 'PREPARED' | 'READY_TO_SEND' | 'SENT';
+type MessageChannel = 'EMAIL' | 'PORTAL';
 type DecisionStatus = 'DRAFT' | 'PASSED' | 'REJECTED' | 'IMPLEMENTED';
 type AnnualPlanStatus = 'DRAFT' | 'APPROVED' | 'ACTIVE';
 type MeetingStatus = 'SCHEDULED' | 'INVITED' | 'COMPLETED';
@@ -983,7 +1074,12 @@ interface WorkTaskView {
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
+  assigneeRole: string;
+  sourceType: WorkContextType;
+  sourceId?: string;
   dueDate?: string;
+  reminderDate?: string;
+  completedAt?: string;
 }
 
 interface InsightView {
@@ -1038,6 +1134,13 @@ interface MessageView {
   audience: string;
   subject: string;
   message: string;
-  status: string;
+  status: MessageStatus;
+  channel: MessageChannel;
+  sourceType: WorkContextType;
+  sourceId?: string;
+  followUpTaskId?: string;
+  followUpTaskTitle?: string;
+  readyToSendOn?: string;
   createdAt: string;
+  sentAt?: string;
 }

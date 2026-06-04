@@ -1,6 +1,8 @@
 package com.skyyware.realestate.workspace;
 
-import com.skyyware.realestate.security.CurrentUser;
+import com.skyyware.realestate.common.WorkContextType;
+import com.skyyware.realestate.communication.MessageChannel;
+import com.skyyware.realestate.communication.MessageStatus;
 import com.skyyware.realestate.decision.DecisionStatus;
 import com.skyyware.realestate.document.DocumentLinkType;
 import com.skyyware.realestate.document.DocumentStatus;
@@ -13,6 +15,7 @@ import com.skyyware.realestate.planning.AnnualPlanStatus;
 import com.skyyware.realestate.property.CommunityRole;
 import com.skyyware.realestate.property.ManagementMode;
 import com.skyyware.realestate.property.OccupancyType;
+import com.skyyware.realestate.security.CurrentUser;
 import com.skyyware.realestate.task.TaskPriority;
 import com.skyyware.realestate.task.TaskStatus;
 import jakarta.validation.Valid;
@@ -99,7 +102,11 @@ public class WorkspaceController {
                 request.title(),
                 request.description(),
                 request.priority(),
-                request.dueDate()
+                request.assigneeRole(),
+                request.sourceType(),
+                request.sourceId(),
+                request.dueDate(),
+                request.reminderDate()
         ));
     }
 
@@ -198,7 +205,19 @@ public class WorkspaceController {
                 request.propertyId(),
                 request.audience(),
                 request.subject(),
-                request.message()
+                request.message(),
+                request.status(),
+                request.channel(),
+                request.sourceType(),
+                request.sourceId(),
+                request.readyToSendOn(),
+                request.createFollowUpTask(),
+                request.followUpTitle(),
+                request.followUpDescription(),
+                request.followUpPriority(),
+                request.followUpAssigneeRole(),
+                request.followUpDueDate(),
+                request.followUpReminderDate()
         ));
     }
 
@@ -267,7 +286,11 @@ public class WorkspaceController {
             @NotBlank @Size(max = 180) String title,
             @NotBlank @Size(max = 1000) String description,
             @NotNull TaskPriority priority,
-            LocalDate dueDate
+            @NotBlank @Size(max = 80) String assigneeRole,
+            @NotNull WorkContextType sourceType,
+            UUID sourceId,
+            LocalDate dueDate,
+            LocalDate reminderDate
     ) {
     }
 
@@ -345,7 +368,19 @@ public class WorkspaceController {
             UUID propertyId,
             @NotBlank @Size(max = 120) String audience,
             @NotBlank @Size(max = 180) String subject,
-            @NotBlank @Size(max = 1200) String message
+            @NotBlank @Size(max = 1200) String message,
+            @NotNull MessageStatus status,
+            @NotNull MessageChannel channel,
+            @NotNull WorkContextType sourceType,
+            UUID sourceId,
+            LocalDate readyToSendOn,
+            boolean createFollowUpTask,
+            @Size(max = 180) String followUpTitle,
+            @Size(max = 1000) String followUpDescription,
+            TaskPriority followUpPriority,
+            @Size(max = 80) String followUpAssigneeRole,
+            LocalDate followUpDueDate,
+            LocalDate followUpReminderDate
     ) {
     }
 

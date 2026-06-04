@@ -3,8 +3,11 @@ package com.skyyware.realestate.workspace;
 import com.skyyware.realestate.activity.ActivityEvent;
 import com.skyyware.realestate.activity.ActivityEventRepository;
 import com.skyyware.realestate.audit.AuditService;
+import com.skyyware.realestate.common.WorkContextType;
 import com.skyyware.realestate.communication.CommunityMessage;
 import com.skyyware.realestate.communication.CommunityMessageRepository;
+import com.skyyware.realestate.communication.MessageChannel;
+import com.skyyware.realestate.communication.MessageStatus;
 import com.skyyware.realestate.config.RealEstateProperties;
 import com.skyyware.realestate.decision.CommunityDecision;
 import com.skyyware.realestate.decision.CommunityDecisionRepository;
@@ -269,7 +272,18 @@ public class WorkspaceService {
     public DashboardView addTask(UUID userId, CreateTaskCommand command) {
         AppUser user = user(userId);
         PropertyAsset property = propertyForCollaborator(user, command.propertyId());
-        WorkTask task = tasks.save(new WorkTask(property, command.title(), command.description(), command.priority(), command.dueDate()));
+        validateWorkContext(property, command.sourceType(), command.sourceId());
+        WorkTask task = tasks.save(new WorkTask(
+                property,
+                command.title(),
+                command.description(),
+                command.priority(),
+                command.assigneeRole(),
+                command.sourceType(),
+                command.sourceId(),
+                command.dueDate(),
+                command.reminderDate()
+        ));
         activities.save(new ActivityEvent(user, property, "TASK", "Neue Aufgabe erstellt: " + command.title()));
         audit.record(user, "task.create", "work_task", task.id(), "Aufgabe angelegt: " + command.title());
         return dashboard(userId, property.id());
@@ -396,16 +410,46 @@ public class WorkspaceService {
     public DashboardView createMessage(UUID userId, CreateMessageCommand command) {
         AppUser user = user(userId);
         PropertyAsset property = propertyForCollaborator(user, command.propertyId());
+        validateWorkContext(property, command.sourceType(), command.sourceId());
+        WorkTask followUpTask = null;
+        if (command.createFollowUpTask()) {
+            validateFollowUp(command);
+            followUpTask = tasks.save(new WorkTask(
+                    property,
+                    command.followUpTitle(),
+                    command.followUpDescription(),
+                    command.followUpPriority(),
+                    command.followUpAssigneeRole(),
+                    command.sourceType(),
+                    command.sourceId(),
+                    command.followUpDueDate(),
+                    command.followUpReminderDate()
+            ));
+            activities.save(new ActivityEvent(user, property, "TASK", "Folgeaufgabe aus Mitteilung erstellt: " + followUpTask.title()));
+            audit.record(user, "task.create", "work_task", followUpTask.id(), "Folgeaufgabe aus Mitteilung angelegt: " + followUpTask.title());
+        }
         CommunityMessage message = messages.save(new CommunityMessage(
                 property,
                 command.audience(),
                 command.subject(),
                 command.message(),
-                "PREPARED"
+                command.status(),
+                command.channel(),
+                command.sourceType(),
+                command.sourceId(),
+                followUpTask,
+                command.readyToSendOn()
         ));
-        activities.save(new ActivityEvent(user, property, "COMMUNICATION", "Mitteilung vorbereitet: " + message.subject()));
+        activities.save(new ActivityEvent(user, property, "COMMUNICATION", "Mitteilung vorbereitet: " + message.subject() + " an " + message.audience()));
         audit.record(user, "message.create", "community_message", message.id(), "Mitteilung vorbereitet: " + message.subject());
         return dashboard(userId, property.id());
+    }
+
+    private static void validateFollowUp(CreateMessageCommand command) {
+        if (isBlank(command.followUpTitle()) || isBlank(command.followUpDescription()) || isBlank(command.followUpAssigneeRole())
+                || command.followUpPriority() == null || command.followUpDueDate() == null) {
+            throw new IllegalArgumentException("Folgeaufgabe braucht Titel, Beschreibung, Priorität, Verantwortlichkeit und Fälligkeit.");
+        }
     }
 
     @Transactional
@@ -527,6 +571,36 @@ public class WorkspaceService {
         };
         if (!sameProperty) {
             throw new IllegalArgumentException("Dokument-Zuordnung gehört nicht zu dieser WEG.");
+        }
+    }
+
+    private void validateWorkContext(PropertyAsset property, WorkContextType sourceType, UUID sourceId) {
+        if (sourceType == WorkContextType.MANUAL) {
+            if (sourceId != null) {
+                throw new IllegalArgumentException("Manuelle Vorgänge dürfen kein Zielobjekt setzen.");
+            }
+            return;
+        }
+        if (sourceId == null) {
+            throw new IllegalArgumentException("Bitte ein Zielobjekt für den Vorgang auswählen.");
+        }
+        boolean sameProperty = switch (sourceType) {
+            case FINANCE -> finances.findById(sourceId)
+                    .map(finance -> finance.property().id().equals(property.id()))
+                    .orElse(false);
+            case DOCUMENT -> documents.findById(sourceId)
+                    .map(document -> document.property().id().equals(property.id()))
+                    .orElse(false);
+            case DECISION -> decisions.findById(sourceId)
+                    .map(decision -> decision.property().id().equals(property.id()))
+                    .orElse(false);
+            case MEETING -> ownerMeetings.findById(sourceId)
+                    .map(meeting -> meeting.property().id().equals(property.id()))
+                    .orElse(false);
+            case MANUAL -> true;
+        };
+        if (!sameProperty) {
+            throw new IllegalArgumentException("Vorgangs-Zuordnung gehört nicht zu dieser WEG.");
         }
     }
 
@@ -668,8 +742,19 @@ public class WorkspaceService {
             result.add(new InsightView("MEDIUM", "Einladungen nachhalten", readiness.invitedMembers() + " Rollen sind eingeladen und sollten vor der ersten Versammlung bestätigt werden.", "units", "Einladungen prüfen"));
         }
         boolean hasOpenTask = workTasks.stream().anyMatch(task -> task.status() != TaskStatus.DONE);
+        LocalDate today = LocalDate.now();
+        boolean hasOverdueTask = workTasks.stream()
+                .filter(task -> task.status() != TaskStatus.DONE)
+                .anyMatch(task -> task.dueDate() != null && task.dueDate().isBefore(today));
+        boolean hasUpcomingReminder = workTasks.stream()
+                .filter(task -> task.status() != TaskStatus.DONE)
+                .anyMatch(task -> task.reminderDate() != null && !task.reminderDate().isAfter(today.plusDays(7)));
         boolean hasOpenDecision = decisions.stream().anyMatch(decision -> decision.status() == DecisionStatus.PASSED || decision.status() == DecisionStatus.DRAFT);
-        if (hasOpenTask) {
+        if (hasOverdueTask) {
+            result.add(new InsightView("HIGH", "Frist überfällig", "Mindestens eine Aufgabe ist überfällig und sollte Eigentümern oder Beirat transparent nachgehalten werden.", "tasks", "Fristen prüfen"));
+        } else if (hasUpcomingReminder) {
+            result.add(new InsightView("MEDIUM", "Wiedervorlage steht an", "Eine Aufgabe erreicht bald die Wiedervorlage. Verantwortlichkeit und nächste Kommunikation prüfen.", "tasks", "Aufgaben prüfen"));
+        } else if (hasOpenTask) {
             result.add(new InsightView("MEDIUM", "Nächste Aufgabe steuern", "Offene Vorgänge brauchen einen klaren Status, damit Beirat und Eigentümer folgen können.", "tasks", "Aufgaben öffnen"));
         }
         if (decisions.isEmpty()) {
@@ -705,6 +790,10 @@ public class WorkspaceService {
 
     private static String normalizeEmail(String email) {
         return email.trim().toLowerCase();
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     private static String roleLabel(CommunityRole role) {
@@ -757,7 +846,19 @@ public class WorkspaceService {
     }
 
     private static TaskView toTask(WorkTask task) {
-        return new TaskView(task.id(), task.title(), task.description(), task.status().name(), task.priority().name(), task.dueDate());
+        return new TaskView(
+                task.id(),
+                task.title(),
+                task.description(),
+                task.status().name(),
+                task.priority().name(),
+                task.assigneeRole(),
+                task.sourceType().name(),
+                task.sourceId(),
+                task.dueDate(),
+                task.reminderDate(),
+                task.completedAt()
+        );
     }
 
     private static FinanceView toFinance(FinanceEvent finance) {
@@ -890,7 +991,22 @@ public class WorkspaceService {
     }
 
     private static MessageView toMessage(CommunityMessage message) {
-        return new MessageView(message.id(), message.audience(), message.subject(), message.message(), message.status(), message.createdAt());
+        WorkTask followUpTask = message.followUpTask();
+        return new MessageView(
+                message.id(),
+                message.audience(),
+                message.subject(),
+                message.message(),
+                message.status().name(),
+                message.channel().name(),
+                message.sourceType().name(),
+                message.sourceId(),
+                followUpTask == null ? null : followUpTask.id(),
+                followUpTask == null ? null : followUpTask.title(),
+                message.readyToSendOn(),
+                message.createdAt(),
+                message.sentAt()
+        );
     }
 
     private static MemberView toMember(CommunityMember member) {
@@ -939,7 +1055,7 @@ public class WorkspaceService {
     public record UnitView(UUID id, String ownerName, String ownerEmail, String unitLabel, BigDecimal shareValue, BigDecimal votingWeight, String occupancyType) {
     }
 
-    public record TaskView(UUID id, String title, String description, String status, String priority, LocalDate dueDate) {
+    public record TaskView(UUID id, String title, String description, String status, String priority, String assigneeRole, String sourceType, UUID sourceId, LocalDate dueDate, LocalDate reminderDate, Instant completedAt) {
     }
 
     public record FinanceView(UUID id, String label, String eventType, BigDecimal amount, String category, String allocationKey, UUID ownerUnitId, String ownerUnitLabel, LocalDate bookedOn, LocalDate dueDate, LocalDate paidOn, String counterparty, String invoiceNumber, String documentReference, String status) {
@@ -963,7 +1079,7 @@ public class WorkspaceService {
     public record MeetingView(UUID id, String title, LocalDate meetingDate, String location, String agenda, LocalDate invitationSentOn, LocalDate responseDeadline, String quorumRequirement, String status) {
     }
 
-    public record MessageView(UUID id, String audience, String subject, String message, String status, Instant createdAt) {
+    public record MessageView(UUID id, String audience, String subject, String message, String status, String channel, String sourceType, UUID sourceId, UUID followUpTaskId, String followUpTaskTitle, LocalDate readyToSendOn, Instant createdAt, Instant sentAt) {
     }
 
     public record MemberView(UUID id, String fullName, String email, String role, String status, Instant invitedAt, Instant acceptedAt) {
@@ -993,7 +1109,7 @@ public class WorkspaceService {
     public record InviteMemberCommand(UUID propertyId, String fullName, String email, CommunityRole role) {
     }
 
-    public record CreateTaskCommand(UUID propertyId, String title, String description, TaskPriority priority, LocalDate dueDate) {
+    public record CreateTaskCommand(UUID propertyId, String title, String description, TaskPriority priority, String assigneeRole, WorkContextType sourceType, UUID sourceId, LocalDate dueDate, LocalDate reminderDate) {
     }
 
     public record CreateFinanceCommand(UUID propertyId, String label, FinanceEventType eventType, BigDecimal amount, String category, AllocationKey allocationKey, UUID ownerUnitId, LocalDate bookedOn, LocalDate dueDate, LocalDate paidOn, String counterparty, String invoiceNumber, String documentReference, String status) {
@@ -1011,7 +1127,7 @@ public class WorkspaceService {
     public record CreateMeetingCommand(UUID propertyId, String title, LocalDate meetingDate, String location, String agenda, LocalDate invitationSentOn, LocalDate responseDeadline, String quorumRequirement, MeetingStatus status) {
     }
 
-    public record CreateMessageCommand(UUID propertyId, String audience, String subject, String message) {
+    public record CreateMessageCommand(UUID propertyId, String audience, String subject, String message, MessageStatus status, MessageChannel channel, WorkContextType sourceType, UUID sourceId, LocalDate readyToSendOn, boolean createFollowUpTask, String followUpTitle, String followUpDescription, TaskPriority followUpPriority, String followUpAssigneeRole, LocalDate followUpDueDate, LocalDate followUpReminderDate) {
     }
 
     public record CreateDecisionCommand(UUID propertyId, UUID meetingId, String title, String resolutionText, LocalDate meetingDate, String meetingLocation, String agendaItem, LocalDate implementationDueDate, String responsibleRole, BigDecimal costImpact, DecisionStatus status, int yesVotes, int noVotes, int abstentions) {

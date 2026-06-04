@@ -165,15 +165,32 @@ await page.getByRole('button', { name: 'Ablegen', exact: true }).click();
 await page.locator('.row').filter({ hasText: 'Protokoll JHV 2026' }).filter({ hasText: 'Beschlussprotokoll' }).waitFor();
 await page.screenshot({ path: fileURLToPath(new URL('realestate-documents-desktop.png', outputDir)), fullPage: true });
 
+await page.getByRole('button', { name: 'Kommunikation', exact: true }).click();
+await page.getByLabel('Empfänger').selectOption('Beirat');
+await page.getByLabel('Kanal').selectOption('EMAIL');
+await page.getByLabel('Mitteilungsstatus').selectOption('READY_TO_SEND');
+await page.getByLabel('Versandbereit ab').fill('10.06.2026');
+await page.getByLabel('Mitteilungskontext').selectOption('MEETING');
+const messageTarget = await page.getByLabel('Mitteilungs-Zielobjekt').locator('option').nth(1).getAttribute('value');
+await page.getByLabel('Mitteilungs-Zielobjekt').selectOption(messageTarget);
+await page.getByPlaceholder('Betreff').fill('Eigentümerinformation zur Versammlung');
+await page.getByPlaceholder('Nachricht an die Gemeinschaft').fill('Die Unterlagen für die nächste Eigentümerversammlung sind vorbereitet.');
+await page.locator('form.communication-form').getByPlaceholder('Folgeaufgabe', { exact: true }).fill('Eigentümerversammlung vorbereiten');
+await page.getByLabel('Priorität der Folgeaufgabe').selectOption('HIGH');
+await page.locator('form.communication-form').getByPlaceholder('Verantwortlich').fill('Verwaltung');
+await page.getByLabel('Folgeaufgabe fällig am').fill('12.06.2026');
+await page.getByLabel('Folgeaufgabe Wiedervorlage').fill('09.06.2026');
+await page.getByPlaceholder('Arbeitsanweisung für die Folgeaufgabe').fill('Einladungspaket finalisieren und Beschlüsse vorbereiten.');
+await page.getByRole('button', { name: 'Mitteilung vorbereiten', exact: true }).click();
+await page.getByText('Mitteilung und Folgeaufgabe wurden vorbereitet.').waitFor();
+await page.getByText('Eigentümerinformation zur Versammlung').waitFor();
+await page.getByText('Folgeaufgabe: Eigentümerversammlung vorbereiten').waitFor();
+await page.screenshot({ path: fileURLToPath(new URL('realestate-communication-desktop.png', outputDir)), fullPage: true });
+
 await page.getByRole('button', { name: 'Aufgaben', exact: true }).click();
-await page.getByRole('textbox', { name: 'Aufgabe' }).fill('Eigentümerversammlung vorbereiten');
-await page.locator('select[formcontrolname="priority"]').selectOption('HIGH');
 if (await page.locator('input[formcontrolname="dueDate"]').getAttribute('type') === 'date') {
   throw new Error('Due-date input still uses native browser date UI instead of German date entry.');
 }
-await page.locator('input[formcontrolname="dueDate"]').fill('12.06.2026');
-await page.getByPlaceholder('Beschreibung').fill('Einladungspaket finalisieren und Beschlüsse vorbereiten.');
-await page.locator('.task-card').getByRole('button', { name: 'Anlegen', exact: true }).click();
 await page.getByText('Eigentümerversammlung vorbereiten').waitFor();
 let taskRow = page.locator('.task-row').filter({ hasText: 'Eigentümerversammlung vorbereiten' });
 await taskRow.getByRole('button', { name: 'In Prüfung' }).click();
@@ -217,15 +234,6 @@ await page.getByRole('button', { name: 'Übersicht', exact: true }).click();
 await page.getByPlaceholder('Dokumente, Aufgaben oder Einheiten suchen').fill('Neckarblick');
 await page.locator('.property-row').filter({ hasText: 'Neckarblick 4' }).waitFor();
 await page.getByPlaceholder('Dokumente, Aufgaben oder Einheiten suchen').fill('');
-
-await page.getByRole('button', { name: 'Kommunikation', exact: true }).click();
-await page.getByLabel('Empfänger').selectOption('Beirat');
-await page.getByPlaceholder('Betreff').fill('Eigentümerinformation');
-await page.getByPlaceholder('Nachricht an die Gemeinschaft').fill('Die Unterlagen für die nächste Eigentümerversammlung sind vorbereitet.');
-await page.getByRole('button', { name: 'Mitteilung vorbereiten', exact: true }).click();
-await page.getByText('Mitteilung wurde vorbereitet.').waitFor();
-await page.getByText('Eigentümerinformation').waitFor();
-await page.screenshot({ path: fileURLToPath(new URL('realestate-communication-desktop.png', outputDir)), fullPage: true });
 
 await page.getByRole('button', { name: 'Einstellungen', exact: true }).click();
 await page.getByRole('button', { name: 'Einstellungen speichern', exact: true }).click();

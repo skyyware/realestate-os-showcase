@@ -449,7 +449,24 @@
                 <form class="compact-form" [formGroup]="taskForm" (ngSubmit)="addTask()">
                   <input formControlName="title" placeholder="Aufgabe" />
                   <select formControlName="priority"><option value="LOW">Niedrig</option><option value="MEDIUM">Mittel</option><option value="HIGH">Hoch</option><option value="URGENT">Dringend</option></select>
+                  <input formControlName="assigneeRole" placeholder="Verantwortlich" />
                   <input formControlName="dueDate" inputmode="numeric" placeholder="TT.MM.JJJJ" aria-label="Fälligkeitsdatum" />
+                  <input formControlName="reminderDate" inputmode="numeric" placeholder="Wiedervorlage" aria-label="Wiedervorlage" />
+                  <select formControlName="sourceType" aria-label="Aufgabenkontext" (change)="clearTaskSource()">
+                    <option value="MANUAL">Manuell</option>
+                    <option value="FINANCE">Finanzen</option>
+                    <option value="DOCUMENT">Dokument</option>
+                    <option value="DECISION">Beschluss</option>
+                    <option value="MEETING">Versammlung</option>
+                  </select>
+                  @if (taskRequiresSource()) {
+                    <select formControlName="sourceId" aria-label="Aufgaben-Zielobjekt">
+                      <option value="">Zielobjekt wählen</option>
+                      @for (target of workContextOptions(taskForm.controls.sourceType.value); track target.id) {
+                        <option [value]="target.id">{{ target.label }}</option>
+                      }
+                    </select>
+                  }
                   <button type="submit">Anlegen</button>
                   <textarea formControlName="description" placeholder="Beschreibung"></textarea>
                 </form>
@@ -467,7 +484,7 @@
                     <div class="row task-row" [class.done]="task.status === 'DONE'">
                       <div>
                         <strong>{{ task.title }}</strong>
-                        <small>{{ task.description }} @if (task.dueDate) { · {{ task.dueDate | date:'dd.MM.yyyy' }} } · {{ statusLabel(task.status) }}</small>
+                        <small>{{ task.description }} @if (task.dueDate) { · fällig {{ task.dueDate | date:'dd.MM.yyyy' }} } @if (task.reminderDate) { · Wiedervorlage {{ task.reminderDate | date:'dd.MM.yyyy' }} } · {{ task.assigneeRole }} · {{ workContextLabel(task.sourceType, task.sourceId) }} · {{ statusLabel(task.status) }}</small>
                       </div>
                       <div class="task-controls">
                         <span class="badge" [class.urgent]="task.priority === 'URGENT'">{{ priorityLabel(task.priority) }}</span>
@@ -781,14 +798,53 @@
                   <option>Beirat</option>
                   <option>Verwaltung</option>
                 </select>
+                <select formControlName="channel" aria-label="Kanal">
+                  <option value="EMAIL">E-Mail</option>
+                  <option value="PORTAL">Portal</option>
+                </select>
+                <select formControlName="status" aria-label="Mitteilungsstatus">
+                  <option value="PREPARED">Entwurf</option>
+                  <option value="READY_TO_SEND">Versandbereit</option>
+                  <option value="SENT">Versendet</option>
+                </select>
+                <input formControlName="readyToSendOn" inputmode="numeric" placeholder="Versand ab" aria-label="Versandbereit ab" />
+                <select formControlName="sourceType" aria-label="Mitteilungskontext" (change)="clearMessageSource()">
+                  <option value="MANUAL">Manuell</option>
+                  <option value="FINANCE">Finanzen</option>
+                  <option value="DOCUMENT">Dokument</option>
+                  <option value="DECISION">Beschluss</option>
+                  <option value="MEETING">Versammlung</option>
+                </select>
+                @if (messageRequiresSource()) {
+                  <select formControlName="sourceId" aria-label="Mitteilungs-Zielobjekt">
+                    <option value="">Zielobjekt wählen</option>
+                    @for (target of workContextOptions(communicationForm.controls.sourceType.value); track target.id) {
+                      <option [value]="target.id">{{ target.label }}</option>
+                    }
+                  </select>
+                }
                 <input formControlName="subject" placeholder="Betreff" />
                 <textarea formControlName="message" placeholder="Nachricht an die Gemeinschaft"></textarea>
+                <label class="toggle-line"><input type="checkbox" formControlName="createFollowUpTask" /> Folgeaufgabe erzeugen</label>
+                @if (communicationForm.controls.createFollowUpTask.value) {
+                  <input formControlName="followUpTitle" placeholder="Folgeaufgabe" />
+                  <select formControlName="followUpPriority" aria-label="Priorität der Folgeaufgabe"><option value="LOW">Niedrig</option><option value="MEDIUM">Mittel</option><option value="HIGH">Hoch</option><option value="URGENT">Dringend</option></select>
+                  <input formControlName="followUpAssigneeRole" placeholder="Verantwortlich" />
+                  <input formControlName="followUpDueDate" inputmode="numeric" placeholder="Fällig am" aria-label="Folgeaufgabe fällig am" />
+                  <input formControlName="followUpReminderDate" inputmode="numeric" placeholder="Wiedervorlage" aria-label="Folgeaufgabe Wiedervorlage" />
+                  <textarea formControlName="followUpDescription" placeholder="Arbeitsanweisung für die Folgeaufgabe"></textarea>
+                }
                 <button type="submit">Mitteilung vorbereiten</button>
               </form>
               <div class="list">
                 @for (post of filteredMessages(); track post.id) {
                   <div class="row">
-                    <div><strong>{{ post.subject }}</strong><small>{{ post.audience }} · {{ post.createdAt | date:'dd.MM.yyyy HH:mm' }}</small><p>{{ post.message }}</p></div>
+                    <div>
+                      <strong>{{ post.subject }}</strong>
+                      <small>{{ post.audience }} · {{ statusLabel(post.channel) }} · {{ statusLabel(post.status) }} @if (post.readyToSendOn) { · ab {{ post.readyToSendOn | date:'dd.MM.yyyy' }} } · {{ workContextLabel(post.sourceType, post.sourceId) }}</small>
+                      <p>{{ post.message }}</p>
+                      @if (post.followUpTaskTitle) { <small>Folgeaufgabe: {{ post.followUpTaskTitle }}</small> }
+                    </div>
                     <span class="file-type">{{ statusLabel(post.status) }}</span>
                   </div>
                 } @empty {

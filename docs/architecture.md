@@ -134,6 +134,24 @@ Damit wird aus "Beschluss als Text" ein pruefbarer Eigentuemerversammlungs-
 Prozess, der spaeter Benachrichtigungen, Aufgaben, Fristen und Exportlogik
 tragen kann.
 
+## Slice 5: Kommunikation, Aufgaben und Fristen
+
+Kommunikation und operative Nacharbeit wurden verbunden:
+
+- Aufgaben fuehren Verantwortlichkeit, Ursprung, Zielobjekt, Faelligkeit,
+  Wiedervorlage und Abschlusszeitpunkt
+- Mitteilungen fuehren Empfaenger, Kanal, Status, Versandbereitschaft, Ursprung
+  und optionalen Link auf eine Folgeaufgabe
+- `WorkContextType` verbindet manuelle Vorgange, Finanzen, Dokumente,
+  Beschluesse und Versammlungen ohne zusaetzliche Infrastruktur
+- der Workspace-Service validiert, dass Quellen und Zielobjekte zur aktuellen
+  WEG gehoeren
+- eine Mitteilung kann atomar eine Folgeaufgabe erzeugen
+- Insights priorisieren ueberfaellige Aufgaben und anstehende Wiedervorlagen
+
+Damit wird Kommunikation nicht als isolierter Entwurf gespeichert, sondern als
+steuerbarer Arbeitsnachweis im Eigentuemerkontext.
+
 ## Identity
 
 Die Anwendung nutzt lokal eine app-native Registrierung mit einmaligem Token,

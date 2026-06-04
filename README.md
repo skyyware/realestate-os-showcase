@@ -19,7 +19,8 @@ Eine shipbare Product-Engineering-Codebasis für moderne digitale WEG-Verwaltung
 - Rollenbasierte Workspace-Commands und Audit-Log für schreibende Vorgänge
 - Operatives Command Center mit priorisierten nächsten Schritten je Immobilie
 - Beschluss-Sammlung mit Datum, Ort, Wortlaut, Abstimmungsergebnis und Umsetzungsstatus
-- Aufgaben-Lifecycle von offen über Prüfung bis erledigt mit Audit-Trail
+- Kommunikations-Workflow mit Kontext, Kanal, Versandstatus und optionaler Folgeaufgabe
+- Aufgaben-Lifecycle von offen über Prüfung bis erledigt mit Verantwortlichkeit, Wiedervorlage und Audit-Trail
 - Consumer-grade UI mit ruhiger Finanz-/Eigentümer-Optik, leerem Startzustand und responsiver Arbeitsfläche
 
 ## Lokal starten
@@ -83,6 +84,7 @@ Weitere Übergabeartefakte:
 - [docs/case-study/slice-2-finance-foundation.md](docs/case-study/slice-2-finance-foundation.md)
 - [docs/case-study/slice-3-document-evidence-chain.md](docs/case-study/slice-3-document-evidence-chain.md)
 - [docs/case-study/slice-4-meeting-decision-workflow.md](docs/case-study/slice-4-meeting-decision-workflow.md)
+- [docs/case-study/slice-5-communication-task-deadline-workflow.md](docs/case-study/slice-5-communication-task-deadline-workflow.md)
 - [docs/adr/0001-modular-monolith.md](docs/adr/0001-modular-monolith.md)
 - [docs/test-strategy.md](docs/test-strategy.md)
 - [docs/handover.md](docs/handover.md)

@@ -2,9 +2,9 @@ package com.skyyware.realestate.workspace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.skyyware.realestate.identity.AppUser;
-import com.skyyware.realestate.identity.AppUserRepository;
-import com.skyyware.realestate.identity.AuthService;
+import com.skyyware.realestate.common.WorkContextType;
+import com.skyyware.realestate.communication.MessageChannel;
+import com.skyyware.realestate.communication.MessageStatus;
 import com.skyyware.realestate.decision.DecisionStatus;
 import com.skyyware.realestate.document.DocumentLinkType;
 import com.skyyware.realestate.document.DocumentStatus;
@@ -12,6 +12,9 @@ import com.skyyware.realestate.document.DocumentVisibility;
 import com.skyyware.realestate.finance.AllocationKey;
 import com.skyyware.realestate.finance.AssessmentStatus;
 import com.skyyware.realestate.finance.FinanceEventType;
+import com.skyyware.realestate.identity.AppUser;
+import com.skyyware.realestate.identity.AppUserRepository;
+import com.skyyware.realestate.identity.AuthService;
 import com.skyyware.realestate.meeting.MeetingStatus;
 import com.skyyware.realestate.planning.AnnualPlanStatus;
 import com.skyyware.realestate.property.CommunityRole;
@@ -148,12 +151,30 @@ class WorkspaceFlowTest {
                 MeetingStatus.INVITED
         ));
         UUID meetingId = withMeeting.meetings().getFirst().id();
-        workspaceService.createMessage(user.id(), new WorkspaceService.CreateMessageCommand(
+        WorkspaceService.DashboardView withMessage = workspaceService.createMessage(user.id(), new WorkspaceService.CreateMessageCommand(
                 withProperty.selectedPropertyId(),
                 "Eigentümer",
                 "Unterlagen zur Versammlung",
-                "Die Unterlagen für die nächste Eigentümerversammlung sind vorbereitet."
+                "Die Unterlagen für die nächste Eigentümerversammlung sind vorbereitet.",
+                MessageStatus.READY_TO_SEND,
+                MessageChannel.EMAIL,
+                WorkContextType.MEETING,
+                meetingId,
+                LocalDate.of(2026, 6, 10),
+                true,
+                "Einladungspaket prüfen",
+                "Einladung, Unterlagen und Rückmeldefrist für die Eigentümer nachhalten.",
+                TaskPriority.HIGH,
+                "Verwaltung",
+                LocalDate.of(2026, 6, 12),
+                LocalDate.of(2026, 6, 9)
         ));
+        assertThat(withMessage.messages()).hasSize(1);
+        assertThat(withMessage.messages().getFirst().sourceType()).isEqualTo("MEETING");
+        assertThat(withMessage.messages().getFirst().followUpTaskTitle()).isEqualTo("Einladungspaket prüfen");
+        assertThat(withMessage.tasks()).hasSize(1);
+        assertThat(withMessage.tasks().getFirst().assigneeRole()).isEqualTo("Verwaltung");
+        assertThat(withMessage.tasks().getFirst().sourceType()).isEqualTo("MEETING");
         WorkspaceService.DashboardView withDecision = workspaceService.createDecision(user.id(), new WorkspaceService.CreateDecisionCommand(
                 withProperty.selectedPropertyId(),
                 meetingId,
@@ -187,13 +208,7 @@ class WorkspaceFlowTest {
                 DocumentLinkType.DECISION,
                 withDecision.decisions().getFirst().id()
         ));
-        WorkspaceService.DashboardView complete = workspaceService.addTask(user.id(), new WorkspaceService.CreateTaskCommand(
-                withProperty.selectedPropertyId(),
-                "Versammlung vorbereiten",
-                "Einladungspaket prüfen und versenden.",
-                TaskPriority.HIGH,
-                LocalDate.of(2026, 6, 12)
-        ));
+        WorkspaceService.DashboardView complete = withDecisionDocument;
 
         assertThat(complete.units()).hasSize(1);
         assertThat(complete.finances()).hasSize(1);
@@ -216,7 +231,7 @@ class WorkspaceFlowTest {
         assertThat(complete.metrics().openTasks()).isEqualTo(1);
         assertThat(complete.onboarding().completion()).isEqualTo(100);
         assertThat(complete.insights()).extracting(WorkspaceService.InsightView::title)
-                .contains("Offene Forderungen klären", "Nächste Aufgabe steuern", "Beschluss umsetzen");
+                .contains("Offene Forderungen klären", "Wiedervorlage steht an", "Beschluss umsetzen");
 
         WorkspaceService.DashboardView decisionDone = workspaceService.updateDecisionStatus(
                 user.id(),
@@ -241,7 +256,7 @@ class WorkspaceFlowTest {
         assertThat(taskDone.tasks().getFirst().status()).isEqualTo("DONE");
         assertThat(taskDone.metrics().openTasks()).isZero();
         assertThat(taskDone.insights()).extracting(WorkspaceService.InsightView::title)
-                .doesNotContain("Nächste Aufgabe steuern");
+                .doesNotContain("Nächste Aufgabe steuern", "Wiedervorlage steht an", "Frist überfällig");
 
         WorkspaceService.DashboardView secondProperty = workspaceService.createProperty(user.id(), new WorkspaceService.CreatePropertyCommand(
                 "Neckarblick 4",
