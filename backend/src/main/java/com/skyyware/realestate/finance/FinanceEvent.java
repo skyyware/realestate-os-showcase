@@ -102,6 +102,10 @@ public class FinanceEvent {
         return id;
     }
 
+    public PropertyAsset property() {
+        return property;
+    }
+
     public String label() {
         return label;
     }

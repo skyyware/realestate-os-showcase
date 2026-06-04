@@ -69,7 +69,7 @@ export class App implements OnInit, OnDestroy {
     this.matchesSearch(plan.fiscalYear, plan.status, plan.houseMoneyBudget, plan.maintenanceBudget, plan.reserveContribution)
   ));
   protected readonly filteredDocuments = computed(() => (this.dashboard()?.documents ?? []).filter(document =>
-    this.matchesSearch(document.title, document.documentType, document.fileName, document.documentDate)
+    this.matchesSearch(document.title, document.documentType, document.fileName, document.documentDate, document.status, document.visibility, document.source, document.description, document.linkedEntityType)
   ));
   protected readonly filteredDecisions = computed(() => (this.dashboard()?.decisions ?? []).filter(decision =>
     this.matchesSearch(decision.title, decision.resolutionText, decision.meetingLocation, decision.status, decision.meetingDate)
@@ -169,9 +169,15 @@ export class App implements OnInit, OnDestroy {
 
   protected readonly documentForm = this.fb.nonNullable.group({
     title: ['', [Validators.required, Validators.maxLength(180)]],
-    documentType: ['PDF', [Validators.required, Validators.maxLength(80)]],
+    documentType: ['Rechnung', [Validators.required, Validators.maxLength(80)]],
     fileName: ['', [Validators.required, Validators.maxLength(240)]],
-    documentDate: [this.today(), [Validators.required, germanDateValidator]]
+    documentDate: [this.today(), [Validators.required, germanDateValidator]],
+    status: ['RECEIVED' as DocumentStatus, [Validators.required]],
+    visibility: ['ALL_OWNERS' as DocumentVisibility, [Validators.required]],
+    source: ['UPLOAD', [Validators.required, Validators.maxLength(80)]],
+    description: ['', [Validators.maxLength(1000)]],
+    linkedEntityType: ['GENERAL' as DocumentLinkType, [Validators.required]],
+    linkedEntityId: ['']
   });
 
   protected readonly decisionForm = this.fb.nonNullable.group({
@@ -360,7 +366,17 @@ export class App implements OnInit, OnDestroy {
     const propertyId = this.requireSelectedPropertyId();
     if (!propertyId) return;
     const formValue = this.documentForm.getRawValue();
-    this.submitDashboardRequest('documents', { ...formValue, documentDate: this.toIsoDate(formValue.documentDate), propertyId }, 'Dokument wurde abgelegt.');
+    if (formValue.linkedEntityType !== 'GENERAL' && !formValue.linkedEntityId) {
+      this.error.set('Bitte Zielobjekt für das Dokument auswählen.');
+      this.info.set('');
+      return;
+    }
+    this.submitDashboardRequest('documents', {
+      ...formValue,
+      documentDate: this.toIsoDate(formValue.documentDate),
+      linkedEntityId: formValue.linkedEntityType === 'GENERAL' ? null : formValue.linkedEntityId || null,
+      propertyId
+    }, 'Dokument wurde mit Kontext abgelegt.');
   }
 
   protected createDecision(): void {
@@ -541,8 +557,61 @@ export class App implements OnInit, OnDestroy {
       UNIT: 'Einheit',
       CONSUMPTION: 'Verbrauch',
       EQUAL: 'Gleich verteilt',
-      DIRECT: 'Direkt'
+      DIRECT: 'Direkt',
+      RECEIVED: 'Eingegangen',
+      ARCHIVED: 'Archiviert',
+      ALL_OWNERS: 'Alle Eigentümer',
+      BOARD_ONLY: 'Beirat',
+      MANAGEMENT_ONLY: 'Verwaltung',
+      PRIVATE: 'Privat',
+      GENERAL: 'Allgemein',
+      FINANCE: 'Finanzen',
+      DECISION: 'Beschluss',
+      MEETING: 'Versammlung',
+      UPLOAD: 'Upload',
+      EMAIL: 'E-Mail',
+      SCAN: 'Scan',
+      MANUAL: 'Manuell'
     }[status] ?? status;
+  }
+
+  protected clearDocumentLink(): void {
+    this.documentForm.controls.linkedEntityId.setValue('');
+  }
+
+  protected documentRequiresLink(): boolean {
+    return this.documentForm.controls.linkedEntityType.value !== 'GENERAL';
+  }
+
+  protected documentLinkOptions(): Array<{ id: string; label: string }> {
+    const dashboard = this.dashboard();
+    if (!dashboard) return [];
+    switch (this.documentForm.controls.linkedEntityType.value) {
+      case 'FINANCE':
+        return dashboard.finances.map(item => ({ id: item.id, label: `${item.label} · ${this.currency(item.amount)}` }));
+      case 'DECISION':
+        return dashboard.decisions.map(item => ({ id: item.id, label: item.title }));
+      case 'MEETING':
+        return dashboard.meetings.map(item => ({ id: item.id, label: item.title }));
+      default:
+        return [];
+    }
+  }
+
+  protected documentLinkLabel(document: DocumentView): string {
+    if (document.linkedEntityType === 'GENERAL' || !document.linkedEntityId) return 'Allgemein';
+    const dashboard = this.dashboard();
+    if (!dashboard) return this.statusLabel(document.linkedEntityType);
+    if (document.linkedEntityType === 'FINANCE') {
+      return dashboard.finances.find(item => item.id === document.linkedEntityId)?.label ?? 'Finanzereignis';
+    }
+    if (document.linkedEntityType === 'DECISION') {
+      return dashboard.decisions.find(item => item.id === document.linkedEntityId)?.title ?? 'Beschluss';
+    }
+    if (document.linkedEntityType === 'MEETING') {
+      return dashboard.meetings.find(item => item.id === document.linkedEntityId)?.title ?? 'Versammlung';
+    }
+    return this.statusLabel(document.linkedEntityType);
   }
 
   protected insightSeverityLabel(severity: string): string {
@@ -572,7 +641,7 @@ export class App implements OnInit, OnDestroy {
           }
           if (path === 'house-money') this.houseMoneyForm.reset({ unitId: '', fiscalYear: new Date().getFullYear(), monthlyHouseMoney: 0, monthlyReserveContribution: 0, validFrom: `01.01.${new Date().getFullYear()}`, status: 'ACTIVE' });
           if (path === 'annual-plans') this.annualPlanForm.reset({ fiscalYear: new Date().getFullYear(), houseMoneyBudget: 0, maintenanceBudget: 0, reserveContribution: 0, status: 'DRAFT' });
-          if (path === 'documents') this.documentForm.reset({ title: '', documentType: 'PDF', fileName: '', documentDate: this.today() });
+          if (path === 'documents') this.documentForm.reset({ title: '', documentType: 'Rechnung', fileName: '', documentDate: this.today(), status: 'RECEIVED', visibility: 'ALL_OWNERS', source: 'UPLOAD', description: '', linkedEntityType: 'GENERAL', linkedEntityId: '' });
           if (path === 'meetings') this.meetingForm.reset({ title: '', meetingDate: this.today(), location: '', agenda: '', status: 'SCHEDULED' });
           if (path === 'decisions') this.decisionForm.reset({ title: '', resolutionText: '', meetingDate: this.today(), meetingLocation: 'Eigentümerversammlung', status: 'PASSED', yesVotes: 0, noVotes: 0, abstentions: 0 });
           if (path === 'messages') this.communicationForm.reset({ audience: 'Eigentümer', subject: '', message: '' });
@@ -639,10 +708,14 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
-  private matchesSearch(...values: Array<string | number | undefined>): boolean {
+  private matchesSearch(...values: Array<unknown>): boolean {
     const term = this.searchTerm().trim().toLowerCase();
     if (!term) return true;
-    return values.filter(value => value !== undefined).join(' ').toLowerCase().includes(term);
+    return values.filter(value => value !== undefined && value !== null).join(' ').toLowerCase().includes(term);
+  }
+
+  private currency(amount: number): string {
+    return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(amount);
   }
 
   private requireSelectedPropertyId(): string | null {
@@ -720,6 +793,9 @@ type CommunityRole = 'OWNER_ADMIN' | 'SELF_MANAGER' | 'PROPERTY_MANAGER' | 'BOAR
 type FinanceEventType = 'HOUSE_MONEY_CHARGE' | 'OWNER_PAYMENT' | 'EXPENSE' | 'RESERVE_TRANSFER' | 'SPECIAL_ASSESSMENT' | 'REFUND';
 type AllocationKey = 'MEA' | 'UNIT' | 'CONSUMPTION' | 'EQUAL' | 'DIRECT';
 type AssessmentStatus = 'DRAFT' | 'ACTIVE' | 'SUPERSEDED';
+type DocumentStatus = 'RECEIVED' | 'IN_REVIEW' | 'APPROVED' | 'ARCHIVED';
+type DocumentVisibility = 'ALL_OWNERS' | 'BOARD_ONLY' | 'MANAGEMENT_ONLY' | 'PRIVATE';
+type DocumentLinkType = 'GENERAL' | 'FINANCE' | 'DECISION' | 'MEETING';
 
 interface RegistrationResult {
   emailSent: boolean;
@@ -774,7 +850,7 @@ interface Dashboard {
   houseMoneyAssessments: AssessmentView[];
   unitBalances: UnitBalanceView[];
   annualPlans: AnnualPlanView[];
-  documents: Array<{ id: string; title: string; documentType: string; fileName: string; documentDate: string }>;
+  documents: DocumentView[];
   decisions: DecisionView[];
   meetings: MeetingView[];
   messages: MessageView[];
@@ -865,6 +941,20 @@ interface UnitBalanceView {
   expectedAnnual: number;
   paid: number;
   outstanding: number;
+}
+
+interface DocumentView {
+  id: string;
+  title: string;
+  documentType: string;
+  fileName: string;
+  documentDate: string;
+  status: DocumentStatus;
+  visibility: DocumentVisibility;
+  source: string;
+  description?: string;
+  linkedEntityType: DocumentLinkType;
+  linkedEntityId?: string;
 }
 
 interface WorkTaskView {

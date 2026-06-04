@@ -9,6 +9,9 @@ import com.skyyware.realestate.config.RealEstateProperties;
 import com.skyyware.realestate.decision.CommunityDecision;
 import com.skyyware.realestate.decision.CommunityDecisionRepository;
 import com.skyyware.realestate.decision.DecisionStatus;
+import com.skyyware.realestate.document.DocumentLinkType;
+import com.skyyware.realestate.document.DocumentStatus;
+import com.skyyware.realestate.document.DocumentVisibility;
 import com.skyyware.realestate.document.PropertyDocument;
 import com.skyyware.realestate.document.PropertyDocumentRepository;
 import com.skyyware.realestate.finance.AllocationKey;
@@ -350,7 +353,20 @@ public class WorkspaceService {
     public DashboardView createDocument(UUID userId, CreateDocumentCommand command) {
         AppUser user = user(userId);
         PropertyAsset property = propertyForCollaborator(user, command.propertyId());
-        PropertyDocument document = documents.save(new PropertyDocument(property, command.title(), command.documentType(), command.fileName(), command.documentDate()));
+        validateDocumentLink(property, command.linkedEntityType(), command.linkedEntityId());
+        PropertyDocument document = documents.save(new PropertyDocument(
+                property,
+                command.title(),
+                command.documentType(),
+                command.fileName(),
+                command.documentDate(),
+                command.status(),
+                command.visibility(),
+                command.source(),
+                command.description(),
+                command.linkedEntityType(),
+                command.linkedEntityId()
+        ));
         activities.save(new ActivityEvent(user, property, "DOCUMENT", "Dokument abgelegt: " + command.title()));
         audit.record(user, "document.create", "property_document", document.id(), "Dokument abgelegt: " + command.title());
         return dashboard(userId, property.id());
@@ -467,6 +483,33 @@ public class WorkspaceService {
             throw new IllegalArgumentException("Einheit gehört nicht zu dieser WEG.");
         }
         return unit;
+    }
+
+    private void validateDocumentLink(PropertyAsset property, DocumentLinkType linkType, UUID linkedEntityId) {
+        if (linkType == DocumentLinkType.GENERAL) {
+            if (linkedEntityId != null) {
+                throw new IllegalArgumentException("Allgemeine Dokumente dürfen kein Zielobjekt setzen.");
+            }
+            return;
+        }
+        if (linkedEntityId == null) {
+            throw new IllegalArgumentException("Bitte ein Zielobjekt für das Dokument auswählen.");
+        }
+        boolean sameProperty = switch (linkType) {
+            case FINANCE -> finances.findById(linkedEntityId)
+                    .map(finance -> finance.property().id().equals(property.id()))
+                    .orElse(false);
+            case DECISION -> decisions.findById(linkedEntityId)
+                    .map(decision -> decision.property().id().equals(property.id()))
+                    .orElse(false);
+            case MEETING -> ownerMeetings.findById(linkedEntityId)
+                    .map(meeting -> meeting.property().id().equals(property.id()))
+                    .orElse(false);
+            case GENERAL -> true;
+        };
+        if (!sameProperty) {
+            throw new IllegalArgumentException("Dokument-Zuordnung gehört nicht zu dieser WEG.");
+        }
     }
 
     private void requireAdmin(AppUser user, PropertyAsset property) {
@@ -778,7 +821,19 @@ public class WorkspaceService {
     }
 
     private static DocumentView toDocument(PropertyDocument document) {
-        return new DocumentView(document.id(), document.title(), document.documentType(), document.fileName(), document.documentDate());
+        return new DocumentView(
+                document.id(),
+                document.title(),
+                document.documentType(),
+                document.fileName(),
+                document.documentDate(),
+                document.status().name(),
+                document.visibility().name(),
+                document.source(),
+                document.description(),
+                document.linkedEntityType().name(),
+                document.linkedEntityId()
+        );
     }
 
     private static DecisionView toDecision(CommunityDecision decision) {
@@ -871,7 +926,7 @@ public class WorkspaceService {
     public record AnnualPlanView(UUID id, int fiscalYear, BigDecimal houseMoneyBudget, BigDecimal maintenanceBudget, BigDecimal reserveContribution, String status) {
     }
 
-    public record DocumentView(UUID id, String title, String documentType, String fileName, LocalDate documentDate) {
+    public record DocumentView(UUID id, String title, String documentType, String fileName, LocalDate documentDate, String status, String visibility, String source, String description, String linkedEntityType, UUID linkedEntityId) {
     }
 
     public record DecisionView(UUID id, String title, String resolutionText, LocalDate meetingDate, String meetingLocation, String status, int yesVotes, int noVotes, int abstentions) {
@@ -922,7 +977,7 @@ public class WorkspaceService {
     public record CreateAnnualPlanCommand(UUID propertyId, int fiscalYear, BigDecimal houseMoneyBudget, BigDecimal maintenanceBudget, BigDecimal reserveContribution, AnnualPlanStatus status) {
     }
 
-    public record CreateDocumentCommand(UUID propertyId, String title, String documentType, String fileName, LocalDate documentDate) {
+    public record CreateDocumentCommand(UUID propertyId, String title, String documentType, String fileName, LocalDate documentDate, DocumentStatus status, DocumentVisibility visibility, String source, String description, DocumentLinkType linkedEntityType, UUID linkedEntityId) {
     }
 
     public record CreateMeetingCommand(UUID propertyId, String title, LocalDate meetingDate, String location, String agenda, MeetingStatus status) {

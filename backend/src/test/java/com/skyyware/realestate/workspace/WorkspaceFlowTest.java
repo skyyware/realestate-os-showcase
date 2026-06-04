@@ -6,6 +6,9 @@ import com.skyyware.realestate.identity.AppUser;
 import com.skyyware.realestate.identity.AppUserRepository;
 import com.skyyware.realestate.identity.AuthService;
 import com.skyyware.realestate.decision.DecisionStatus;
+import com.skyyware.realestate.document.DocumentLinkType;
+import com.skyyware.realestate.document.DocumentStatus;
+import com.skyyware.realestate.document.DocumentVisibility;
 import com.skyyware.realestate.finance.AllocationKey;
 import com.skyyware.realestate.finance.AssessmentStatus;
 import com.skyyware.realestate.finance.FinanceEventType;
@@ -95,7 +98,7 @@ class WorkspaceFlowTest {
         ));
         assertThat(withAssessment.houseMoneyAssessments()).hasSize(1);
         assertThat(withAssessment.unitBalances().getFirst().expectedAnnual()).isEqualByComparingTo("6060.00");
-        workspaceService.createFinance(user.id(), new WorkspaceService.CreateFinanceCommand(
+        WorkspaceService.DashboardView withFinance = workspaceService.createFinance(user.id(), new WorkspaceService.CreateFinanceCommand(
                 withProperty.selectedPropertyId(),
                 "Rechnung Hausmeisterservice",
                 FinanceEventType.EXPENSE,
@@ -111,6 +114,7 @@ class WorkspaceFlowTest {
                 "rechnung-hm-2026-118.pdf",
                 "OPEN"
         ));
+        UUID financeId = withFinance.finances().getFirst().id();
         workspaceService.createAnnualPlan(user.id(), new WorkspaceService.CreateAnnualPlanCommand(
                 withProperty.selectedPropertyId(),
                 2026,
@@ -121,10 +125,16 @@ class WorkspaceFlowTest {
         ));
         workspaceService.createDocument(user.id(), new WorkspaceService.CreateDocumentCommand(
                 withProperty.selectedPropertyId(),
-                "Protokoll JHV 2026",
-                "PDF",
-                "protokoll-jhv-2026.pdf",
-                LocalDate.of(2026, 6, 3)
+                "Rechnung Hausmeisterservice",
+                "Rechnung",
+                "rechnung-hm-2026-118.pdf",
+                LocalDate.of(2026, 6, 5),
+                DocumentStatus.APPROVED,
+                DocumentVisibility.ALL_OWNERS,
+                "UPLOAD",
+                "Geprüfter Beleg zur offenen Forderung.",
+                DocumentLinkType.FINANCE,
+                financeId
         ));
         workspaceService.createMeeting(user.id(), new WorkspaceService.CreateMeetingCommand(
                 withProperty.selectedPropertyId(),
@@ -152,6 +162,19 @@ class WorkspaceFlowTest {
                 1
         ));
         assertThat(withDecision.decisions()).hasSize(1);
+        WorkspaceService.DashboardView withDecisionDocument = workspaceService.createDocument(user.id(), new WorkspaceService.CreateDocumentCommand(
+                withProperty.selectedPropertyId(),
+                "Protokoll JHV 2026",
+                "Protokoll",
+                "protokoll-jhv-2026.pdf",
+                LocalDate.of(2026, 6, 3),
+                DocumentStatus.APPROVED,
+                DocumentVisibility.ALL_OWNERS,
+                "UPLOAD",
+                "Beschlussprotokoll zur Sanierung.",
+                DocumentLinkType.DECISION,
+                withDecision.decisions().getFirst().id()
+        ));
         WorkspaceService.DashboardView complete = workspaceService.addTask(user.id(), new WorkspaceService.CreateTaskCommand(
                 withProperty.selectedPropertyId(),
                 "Versammlung vorbereiten",
@@ -167,7 +190,10 @@ class WorkspaceFlowTest {
         assertThat(complete.houseMoneyAssessments()).hasSize(1);
         assertThat(complete.unitBalances().getFirst().outstanding()).isEqualByComparingTo("6060.00");
         assertThat(complete.annualPlans()).hasSize(1);
-        assertThat(complete.documents()).hasSize(1);
+        assertThat(withDecisionDocument.documents()).hasSize(2);
+        assertThat(withDecisionDocument.documents()).extracting(WorkspaceService.DocumentView::linkedEntityType)
+                .contains("FINANCE", "DECISION");
+        assertThat(complete.documents()).hasSize(2);
         assertThat(complete.meetings()).hasSize(1);
         assertThat(complete.messages()).hasSize(1);
         assertThat(complete.decisions()).hasSize(1);

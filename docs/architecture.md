@@ -14,6 +14,7 @@ Das Backend ist bewusst modular geschnitten:
 - `property`: WEG-Profil, Einheiten, MEA, Rollen, Mitgliedschaften und
   Einladungsstatus
 - `finance`: Buchungsfeed, Belegkette, Hausgeld-Soll und Einheitensalden
+- `document`: Dokumentenablage, Sichtbarkeit, Status und Zielobjekt-Verknuepfung
 - `planning`: Wirtschaftspläne, Budgets und Rücklagenzuführung
 - `task`: Aufgabensteuerung
 - `meeting`: Eigentümerversammlungen, Tagesordnung und Einladungsstatus
@@ -97,6 +98,23 @@ Der Finanzraum wurde als naechster fachlicher Kern ausgebaut:
 
 Damit ist der Finanzbereich nicht nur eine Liste, sondern ein belastbarer
 Soll/Ist-Arbeitsraum fuer Selbstverwaltung, Beirat und Verwaltung.
+
+## Slice 3: Dokumente und Belegkette
+
+Die Dokumentenablage wurde von einer Dateiliste zu einer Nachweiskette
+ausgebaut:
+
+- Dokumente fuehren Status, Sichtbarkeit, Quelle, Beschreibung und fachlichen
+  Linktyp
+- Zielobjekte koennen Finanzereignisse, Beschluesse oder Versammlungen sein
+- der Workspace-Service validiert, dass ein Dokument nur auf Objekte derselben
+  WEG zeigt
+- allgemeine Dokumente bleiben moeglich, duerfen aber kein Zielobjekt setzen
+- die UI zeigt Belegkontext direkt in der Dokumentliste und macht ihn suchbar
+
+Damit entsteht die Grundlage fuer spaetere Dateiablage in S3-kompatiblem
+Storage, ohne heute Infrastrukturkosten oder Scheindateien ins Produkt zu
+ziehen.
 
 ## Identity
 

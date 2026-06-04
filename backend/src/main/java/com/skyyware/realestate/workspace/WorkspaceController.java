@@ -2,6 +2,9 @@ package com.skyyware.realestate.workspace;
 
 import com.skyyware.realestate.security.CurrentUser;
 import com.skyyware.realestate.decision.DecisionStatus;
+import com.skyyware.realestate.document.DocumentLinkType;
+import com.skyyware.realestate.document.DocumentStatus;
+import com.skyyware.realestate.document.DocumentVisibility;
 import com.skyyware.realestate.finance.AllocationKey;
 import com.skyyware.realestate.finance.AssessmentStatus;
 import com.skyyware.realestate.finance.FinanceEventType;
@@ -162,7 +165,13 @@ public class WorkspaceController {
                 request.title(),
                 request.documentType(),
                 request.fileName(),
-                request.documentDate()
+                request.documentDate(),
+                request.status(),
+                request.visibility(),
+                request.source(),
+                request.description(),
+                request.linkedEntityType(),
+                request.linkedEntityId()
         ));
     }
 
@@ -301,7 +310,13 @@ public class WorkspaceController {
             @NotBlank @Size(max = 180) String title,
             @NotBlank @Size(max = 80) String documentType,
             @NotBlank @Size(max = 240) String fileName,
-            @NotNull LocalDate documentDate
+            @NotNull LocalDate documentDate,
+            @NotNull DocumentStatus status,
+            @NotNull DocumentVisibility visibility,
+            @NotBlank @Size(max = 80) String source,
+            @Size(max = 1000) String description,
+            @NotNull DocumentLinkType linkedEntityType,
+            UUID linkedEntityId
     ) {
     }
 

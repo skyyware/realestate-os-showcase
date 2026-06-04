@@ -61,6 +61,10 @@ public class OwnerMeeting {
         return id;
     }
 
+    public PropertyAsset property() {
+        return property;
+    }
+
     public String title() {
         return title;
     }

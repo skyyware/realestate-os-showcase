@@ -588,14 +588,63 @@
               </div>
               <form class="compact-form" [formGroup]="documentForm" (ngSubmit)="createDocument()">
                 <input formControlName="title" placeholder="Dokumenttitel" />
-                <input formControlName="documentType" placeholder="Typ" />
+                <select formControlName="documentType" aria-label="Dokumenttyp">
+                  <option>Rechnung</option>
+                  <option>Protokoll</option>
+                  <option>Wirtschaftsplan</option>
+                  <option>Vertrag</option>
+                  <option>Angebot</option>
+                  <option>Foto</option>
+                </select>
                 <input formControlName="fileName" placeholder="Dateiname" />
                 <input formControlName="documentDate" inputmode="numeric" placeholder="TT.MM.JJJJ" aria-label="Dokumentdatum" />
+                <select formControlName="status" aria-label="Dokumentenstatus">
+                  <option value="RECEIVED">Eingegangen</option>
+                  <option value="IN_REVIEW">In Prüfung</option>
+                  <option value="APPROVED">Freigegeben</option>
+                  <option value="ARCHIVED">Archiviert</option>
+                </select>
+                <select formControlName="visibility" aria-label="Sichtbarkeit">
+                  <option value="ALL_OWNERS">Alle Eigentümer</option>
+                  <option value="BOARD_ONLY">Beirat</option>
+                  <option value="MANAGEMENT_ONLY">Verwaltung</option>
+                  <option value="PRIVATE">Privat</option>
+                </select>
+                <select formControlName="source" aria-label="Quelle">
+                  <option value="UPLOAD">Upload</option>
+                  <option value="EMAIL">E-Mail</option>
+                  <option value="SCAN">Scan</option>
+                  <option value="MANUAL">Manuell</option>
+                </select>
+                <select formControlName="linkedEntityType" aria-label="Zuordnung" (change)="clearDocumentLink()">
+                  <option value="GENERAL">Allgemein</option>
+                  <option value="FINANCE">Finanzereignis</option>
+                  <option value="DECISION">Beschluss</option>
+                  <option value="MEETING">Versammlung</option>
+                </select>
+                @if (documentRequiresLink()) {
+                  <select formControlName="linkedEntityId" aria-label="Zielobjekt">
+                    <option value="">Ziel auswählen</option>
+                    @for (option of documentLinkOptions(); track option.id) {
+                      <option [value]="option.id">{{ option.label }}</option>
+                    }
+                  </select>
+                }
+                <textarea formControlName="description" placeholder="Kontext für Suche und Prüfung"></textarea>
                 <button type="submit">Ablegen</button>
               </form>
               <div class="list">
                 @for (document of filteredDocuments(); track document.id) {
-                  <div class="row"><div><strong>{{ document.title }}</strong><small>{{ document.fileName }} · {{ document.documentDate | date:'dd.MM.yyyy' }}</small></div><span class="file-type">{{ document.documentType }}</span></div>
+                  <div class="row">
+                    <div>
+                      <strong>{{ document.title }}</strong>
+                      <small>
+                        {{ document.fileName }} · {{ document.documentDate | date:'dd.MM.yyyy' }} · {{ statusLabel(document.status) }} · {{ statusLabel(document.visibility) }}
+                      </small>
+                      <p>{{ statusLabel(document.linkedEntityType) }}: {{ documentLinkLabel(document) }} @if (document.description) { · {{ document.description }} }</p>
+                    </div>
+                    <span class="file-type">{{ document.documentType }}</span>
+                  </div>
                 } @empty {
                   <p class="empty">Noch keine Dokumente.</p>
                 }

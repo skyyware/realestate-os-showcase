@@ -105,11 +105,19 @@ await page.getByText('Wirtschaftsplan 2026').waitFor();
 await page.screenshot({ path: fileURLToPath(new URL('realestate-finances-desktop.png', outputDir)), fullPage: true });
 
 await page.getByRole('button', { name: 'Dokumente', exact: true }).click();
-await page.getByPlaceholder('Dokumenttitel').fill('Protokoll JHV 2026');
-await page.getByPlaceholder('Dateiname').fill('protokoll-jhv-2026.pdf');
+await page.getByPlaceholder('Dokumenttitel').fill('Rechnung Hausmeisterservice');
+await page.getByLabel('Dokumenttyp').selectOption('Rechnung');
+await page.getByPlaceholder('Dateiname').fill('rechnung-hm-2026-118.pdf');
 await page.locator('input[formcontrolname="documentDate"]').fill('03.06.2026');
+await page.getByLabel('Dokumentenstatus').selectOption('APPROVED');
+await page.getByLabel('Sichtbarkeit').selectOption('ALL_OWNERS');
+await page.getByLabel('Quelle').selectOption('UPLOAD');
+await page.getByLabel('Zuordnung').selectOption('FINANCE');
+const financeDocumentTarget = await page.getByLabel('Zielobjekt').locator('option').nth(1).getAttribute('value');
+await page.getByLabel('Zielobjekt').selectOption(financeDocumentTarget);
+await page.getByPlaceholder('Kontext für Suche und Prüfung').fill('Geprüfter Beleg zur offenen Forderung.');
 await page.getByRole('button', { name: 'Ablegen', exact: true }).click();
-await page.getByText('Protokoll JHV 2026').waitFor();
+await page.locator('.row').filter({ hasText: 'Rechnung Hausmeisterservice' }).filter({ hasText: 'Geprüfter Beleg' }).waitFor();
 
 await page.getByRole('button', { name: 'Beschlüsse', exact: true }).click();
 await page.locator('form.meeting-form').getByPlaceholder('Versammlungstitel').fill('Eigentümerversammlung 2026');
@@ -131,6 +139,22 @@ await page.getByText('Sanierung Treppenhaus beauftragen').waitFor();
 await page.locator('.decision-row').filter({ hasText: 'Sanierung Treppenhaus beauftragen' }).getByRole('button', { name: 'Umgesetzt' }).click();
 await page.getByText('Beschluss als umgesetzt markiert.').waitFor();
 await page.screenshot({ path: fileURLToPath(new URL('realestate-decisions-desktop.png', outputDir)), fullPage: true });
+
+await page.getByRole('button', { name: 'Dokumente', exact: true }).click();
+await page.getByPlaceholder('Dokumenttitel').fill('Protokoll JHV 2026');
+await page.getByLabel('Dokumenttyp').selectOption('Protokoll');
+await page.getByPlaceholder('Dateiname').fill('protokoll-jhv-2026.pdf');
+await page.locator('input[formcontrolname="documentDate"]').fill('03.06.2026');
+await page.getByLabel('Dokumentenstatus').selectOption('APPROVED');
+await page.getByLabel('Sichtbarkeit').selectOption('ALL_OWNERS');
+await page.getByLabel('Quelle').selectOption('UPLOAD');
+await page.getByLabel('Zuordnung').selectOption('DECISION');
+const decisionDocumentTarget = await page.getByLabel('Zielobjekt').locator('option').nth(1).getAttribute('value');
+await page.getByLabel('Zielobjekt').selectOption(decisionDocumentTarget);
+await page.getByPlaceholder('Kontext für Suche und Prüfung').fill('Beschlussprotokoll zur Sanierung.');
+await page.getByRole('button', { name: 'Ablegen', exact: true }).click();
+await page.locator('.row').filter({ hasText: 'Protokoll JHV 2026' }).filter({ hasText: 'Beschlussprotokoll' }).waitFor();
+await page.screenshot({ path: fileURLToPath(new URL('realestate-documents-desktop.png', outputDir)), fullPage: true });
 
 await page.getByRole('button', { name: 'Aufgaben', exact: true }).click();
 await page.getByRole('textbox', { name: 'Aufgabe' }).fill('Eigentümerversammlung vorbereiten');
@@ -237,6 +261,7 @@ console.log(JSON.stringify({
     'output/qa/realestate-register-desktop.png',
     'output/qa/realestate-units-desktop.png',
     'output/qa/realestate-finances-desktop.png',
+    'output/qa/realestate-documents-desktop.png',
     'output/qa/realestate-decisions-desktop.png',
     'output/qa/realestate-communication-desktop.png',
     'output/qa/realestate-dashboard-desktop.png',
