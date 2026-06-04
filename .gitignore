@@ -4,6 +4,11 @@ backend/target/
 frontend/dist/
 dist/
 output/
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
 .DS_Store
 .env
 .env.*
