@@ -75,6 +75,10 @@ Siehe [docs/architecture.md](docs/architecture.md).
 
 Weitere Übergabeartefakte:
 
+- [docs/research/weg-market-2026.md](docs/research/weg-market-2026.md)
+- [docs/product/weg-customer-problem-map.md](docs/product/weg-customer-problem-map.md)
+- [docs/product/weg-product-brief.md](docs/product/weg-product-brief.md)
+- [docs/design/figma-case-study-workflow.md](docs/design/figma-case-study-workflow.md)
 - [docs/adr/0001-modular-monolith.md](docs/adr/0001-modular-monolith.md)
 - [docs/test-strategy.md](docs/test-strategy.md)
 - [docs/handover.md](docs/handover.md)
