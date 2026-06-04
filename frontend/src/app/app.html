@@ -783,6 +783,28 @@
                   <p class="empty">Aktivitäten erscheinen automatisch.</p>
                 }
               </div>
+              @if (activeSection() === 'activity') {
+                <div class="subsection">
+                  <div class="subsection-heading">
+                    <div><span>Audit</span><h3>Technischer Nachweis</h3></div>
+                    <small>{{ dashboard()?.audit?.length || 0 }} Einträge</small>
+                  </div>
+                  <div class="activity-list">
+                    @for (event of filteredAudit(); track event.occurredAt) {
+                      <div class="activity-item">
+                        <span class="activity-dot"></span>
+                        <div>
+                          <strong>{{ event.summary }}</strong>
+                          <small>{{ event.actorName }} · {{ statusLabel(event.actorRole) }} · {{ event.action }} · {{ event.occurredAt | date:'dd.MM.yyyy HH:mm' }}</small>
+                        </div>
+                        <span class="file-type">{{ event.targetType }}</span>
+                      </div>
+                    } @empty {
+                      <p class="empty">Audit-Einträge erscheinen nach der nächsten schreibenden Aktion.</p>
+                    }
+                  </div>
+                </div>
+              }
             </aside>
           }
 
@@ -867,6 +889,17 @@
                 <label>Startansicht <select formControlName="defaultView"><option>Übersicht</option><option>Finanzen</option><option>Aufgaben</option><option>Beschlüsse</option></select></label>
                 <button type="submit">Einstellungen speichern</button>
               </form>
+              <div class="subsection">
+                <div class="subsection-heading">
+                  <div><span>Rollen & Rechte</span><h3>{{ statusLabel(dashboard()?.access?.role || 'OWNER_ADMIN') }}</h3></div>
+                  <small>@if (dashboard()?.access?.canAdmin) { Admin } @else if (dashboard()?.access?.canCollaborate) { Bearbeitung } @else { Lesen }</small>
+                </div>
+                <div class="chip-list">
+                  @for (command of dashboard()?.access?.allowedCommands || []; track command) {
+                    <span>{{ command }}</span>
+                  }
+                </div>
+              </div>
             </article>
           }
 

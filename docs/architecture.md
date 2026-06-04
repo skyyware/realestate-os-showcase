@@ -152,6 +152,24 @@ Kommunikation und operative Nacharbeit wurden verbunden:
 Damit wird Kommunikation nicht als isolierter Entwurf gespeichert, sondern als
 steuerbarer Arbeitsnachweis im Eigentuemerkontext.
 
+## Slice 6: Rollen, Rechte, Audit und Betrieb
+
+Rollen und technische Nachvollziehbarkeit wurden review-faehig gemacht:
+
+- `audit_log` fuehrt nun einen optionalen WEG-Kontext mit Index nach
+  Immobilie und Zeitpunkt
+- alle Workspace-Commands schreiben Audit mit Akteur, Zieltyp, Ziel-ID,
+  Zusammenfassung und WEG
+- das Dashboard liefert `access` mit Rolle, Admin-/Bearbeitungsrecht und
+  erlaubten Command-Gruppen
+- das Dashboard liefert technische Audit-Eintraege der aktuellen WEG
+- die UI zeigt Rechte in den Einstellungen und Audit-Nachweise in der
+  Aktivitaetsansicht
+- direkte Aktivierungslinks auf `/set-password` sind routerseitig abgedeckt
+
+Damit ist der Vertical Slice nicht nur bedienbar, sondern auch fuer Code-Review,
+Support und spaetere Betreiberpruefungen nachvollziehbar.
+
 ## Identity
 
 Die Anwendung nutzt lokal eine app-native Registrierung mit einmaligem Token,

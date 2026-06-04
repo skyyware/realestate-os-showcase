@@ -1,6 +1,7 @@
 package com.skyyware.realestate.audit;
 
 import com.skyyware.realestate.identity.AppUser;
+import com.skyyware.realestate.property.PropertyAsset;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -21,6 +22,10 @@ public class AuditLog {
     @JoinColumn(name = "actor_id")
     private AppUser actor;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "property_id")
+    private PropertyAsset property;
+
     @Column(nullable = false)
     private String action;
 
@@ -38,13 +43,42 @@ public class AuditLog {
     protected AuditLog() {
     }
 
-    public AuditLog(AppUser actor, String action, String targetType, UUID targetId, String summary) {
+    public AuditLog(AppUser actor, PropertyAsset property, String action, String targetType, UUID targetId, String summary) {
         this.id = UUID.randomUUID();
         this.actor = actor;
+        this.property = property;
         this.action = action;
         this.targetType = targetType;
         this.targetId = targetId;
         this.summary = summary;
         this.occurredAt = Instant.now();
+    }
+
+    public AppUser actor() {
+        return actor;
+    }
+
+    public PropertyAsset property() {
+        return property;
+    }
+
+    public String action() {
+        return action;
+    }
+
+    public String targetType() {
+        return targetType;
+    }
+
+    public UUID targetId() {
+        return targetId;
+    }
+
+    public String summary() {
+        return summary;
+    }
+
+    public Instant occurredAt() {
+        return occurredAt;
     }
 }

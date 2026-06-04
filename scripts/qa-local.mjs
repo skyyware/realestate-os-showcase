@@ -33,7 +33,13 @@ await page.screenshot({ path: fileURLToPath(new URL('realestate-register-desktop
 await page.getByLabel('Name').fill(user.fullName);
 await page.getByLabel('E-Mail').fill(user.email);
 await page.getByLabel('Organisation').fill(user.organizationName);
+const registrationResponse = page.waitForResponse(response => response.url().includes('/api/auth/register') && response.status() === 200);
 await page.getByRole('button', { name: 'Aktivierungslink senden' }).click();
+const registrationResult = await (await registrationResponse).json();
+if (registrationResult.localSetupLink) {
+  const token = new URL(registrationResult.localSetupLink).searchParams.get('token');
+  await page.goto(`${baseUrl}/set-password?token=${token}`, { waitUntil: 'networkidle' });
+}
 await page.getByRole('heading', { name: 'Passwort vergeben' }).waitFor();
 await page.getByLabel('Neues Passwort').fill(user.password);
 await page.getByRole('button', { name: 'Account aktivieren' }).click();
@@ -235,7 +241,16 @@ await page.getByPlaceholder('Dokumente, Aufgaben oder Einheiten suchen').fill('N
 await page.locator('.property-row').filter({ hasText: 'Neckarblick 4' }).waitFor();
 await page.getByPlaceholder('Dokumente, Aufgaben oder Einheiten suchen').fill('');
 
+await page.getByRole('button', { name: 'Aktivität', exact: true }).click();
+await page.getByText('Technischer Nachweis').waitFor();
+await page.getByText('Mitteilung vorbereitet: Eigentümerinformation zur Versammlung', { exact: true }).waitFor();
+await page.getByText('Folgeaufgabe aus Mitteilung angelegt: Eigentümerversammlung vorbereiten', { exact: true }).waitFor();
+await page.screenshot({ path: fileURLToPath(new URL('realestate-audit-desktop.png', outputDir)), fullPage: true });
+
 await page.getByRole('button', { name: 'Einstellungen', exact: true }).click();
+await page.getByText('Rollen & Rechte').waitFor();
+await page.getByText('WEG-Admin').waitFor();
+await page.getByText('Finanzen steuern').waitFor();
 await page.getByRole('button', { name: 'Einstellungen speichern', exact: true }).click();
 await page.getByText('Einstellungen wurden gespeichert.').waitFor();
 
@@ -281,6 +296,7 @@ console.log(JSON.stringify({
     'output/qa/realestate-documents-desktop.png',
     'output/qa/realestate-decisions-desktop.png',
     'output/qa/realestate-communication-desktop.png',
+    'output/qa/realestate-audit-desktop.png',
     'output/qa/realestate-dashboard-desktop.png',
     'output/qa/realestate-dashboard-mobile.png'
   ]

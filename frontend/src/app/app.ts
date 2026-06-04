@@ -83,6 +83,9 @@ export class App implements OnInit, OnDestroy {
   protected readonly filteredActivity = computed(() => (this.dashboard()?.activity ?? []).filter(event =>
     this.matchesSearch(event.eventType, event.summary, event.createdAt)
   ));
+  protected readonly filteredAudit = computed(() => (this.dashboard()?.audit ?? []).filter(event =>
+    this.matchesSearch(event.actorName, event.actorRole, event.action, event.targetType, event.summary, event.occurredAt)
+  ));
 
   protected readonly registerForm = this.fb.nonNullable.group({
     fullName: ['', [Validators.required, Validators.minLength(2)]],
@@ -979,6 +982,13 @@ interface Dashboard {
     readyForFinance: boolean;
     blockers: string[];
   };
+  access: {
+    role: CommunityRole;
+    canAdmin: boolean;
+    canCollaborate: boolean;
+    allowedCommands: string[];
+  };
+  audit: AuditView[];
   activity: Array<{ eventType: string; summary: string; createdAt: string }>;
   insights: InsightView[];
   onboarding: {
@@ -1143,4 +1153,14 @@ interface MessageView {
   readyToSendOn?: string;
   createdAt: string;
   sentAt?: string;
+}
+
+interface AuditView {
+  actorName: string;
+  actorRole: CommunityRole;
+  action: string;
+  targetType: string;
+  targetId?: string;
+  summary: string;
+  occurredAt: string;
 }

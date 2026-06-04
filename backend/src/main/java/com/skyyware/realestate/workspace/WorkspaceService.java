@@ -2,6 +2,7 @@ package com.skyyware.realestate.workspace;
 
 import com.skyyware.realestate.activity.ActivityEvent;
 import com.skyyware.realestate.activity.ActivityEventRepository;
+import com.skyyware.realestate.audit.AuditLog;
 import com.skyyware.realestate.audit.AuditService;
 import com.skyyware.realestate.common.WorkContextType;
 import com.skyyware.realestate.communication.CommunityMessage;
@@ -140,6 +141,8 @@ public class WorkspaceService {
                     List.of(),
                     List.of(),
                     ReadinessView.empty(),
+                    AccessView.empty(),
+                    List.of(),
                     activityEvents.stream().map(WorkspaceService::toActivity).toList(),
                     List.of(new InsightView("HIGH", "Immobilie anlegen", "Lege die erste WEG mit Kontostand, Rücklage und Einheiten an.", "properties", "Immobilie starten")),
                     new OnboardingView(10, true, false, false, false, false, false, false, false, false, false)
@@ -158,6 +161,7 @@ public class WorkspaceService {
         List<CommunityDecision> communityDecisions = decisions.findTop8ByPropertyOrderByMeetingDateDesc(selected);
         List<OwnerMeeting> meetingViews = ownerMeetings.findTop6ByPropertyOrderByMeetingDateDesc(selected);
         List<CommunityMessage> messageViews = messages.findTop8ByPropertyOrderByCreatedAtDesc(selected);
+        List<AuditLog> auditViews = audit.findForProperty(selected);
 
         BigDecimal pendingPayments = allFinanceEvents.stream()
                 .map(FinanceEvent::amount)
@@ -203,6 +207,8 @@ public class WorkspaceService {
                 messageViews.stream().map(WorkspaceService::toMessage).toList(),
                 communityMembers.stream().map(WorkspaceService::toMember).toList(),
                 readiness,
+                accessView(user, selected),
+                auditViews.stream().map(WorkspaceService::toAudit).toList(),
                 activityEvents.stream().map(WorkspaceService::toActivity).toList(),
                 insights(selected, ownerUnits, communityMembers, workTasks, financeEvents, planViews, documentViews, communityDecisions, meetingViews, pendingPayments, readiness),
                 onboarding
@@ -227,8 +233,8 @@ public class WorkspaceService {
         ));
         members.save(CommunityMember.active(property, user, CommunityRole.OWNER_ADMIN));
         activities.save(new ActivityEvent(user, property, "PROPERTY", "Immobilie hinzugefügt: " + property.name()));
-        audit.record(user, "property.create", "property_asset", property.id(), "Immobilie angelegt: " + property.name());
-        audit.record(user, "member.create", "community_member", property.id(), "Eigene Administratorrolle für WEG angelegt.");
+        audit.record(user, property, "property.create", "property_asset", property.id(), "Immobilie angelegt: " + property.name());
+        audit.record(user, property, "member.create", "community_member", property.id(), "Eigene Administratorrolle für WEG angelegt.");
         return dashboard(userId, property.id());
     }
 
@@ -247,7 +253,7 @@ public class WorkspaceService {
         ));
         upsertMemberFromUnit(property, user, command.ownerName(), command.ownerEmail());
         activities.save(new ActivityEvent(user, property, "UNIT", "Einheit hinzugefügt: " + command.unitLabel()));
-        audit.record(user, "unit.create", "owner_unit", unit.id(), "Einheit angelegt: " + command.unitLabel());
+        audit.record(user, property, "unit.create", "owner_unit", unit.id(), "Einheit angelegt: " + command.unitLabel());
         return dashboard(userId, property.id());
     }
 
@@ -264,7 +270,7 @@ public class WorkspaceService {
                 .orElseGet(() -> members.save(CommunityMember.invited(property, command.fullName(), email, command.role())));
         mailService.sendCommunityInvitation(email, command.fullName(), property.name(), roleLabel(command.role()), workspaceUrl());
         activities.save(new ActivityEvent(user, property, "MEMBER", "Rolle eingeladen: " + command.fullName() + " als " + roleLabel(command.role())));
-        audit.record(user, "member.invite", "community_member", member.id(), "Mitglied eingeladen: " + email + " als " + command.role().name());
+        audit.record(user, property, "member.invite", "community_member", member.id(), "Mitglied eingeladen: " + email + " als " + command.role().name());
         return dashboard(userId, property.id());
     }
 
@@ -285,7 +291,7 @@ public class WorkspaceService {
                 command.reminderDate()
         ));
         activities.save(new ActivityEvent(user, property, "TASK", "Neue Aufgabe erstellt: " + command.title()));
-        audit.record(user, "task.create", "work_task", task.id(), "Aufgabe angelegt: " + command.title());
+        audit.record(user, property, "task.create", "work_task", task.id(), "Aufgabe angelegt: " + command.title());
         return dashboard(userId, property.id());
     }
 
@@ -297,7 +303,7 @@ public class WorkspaceService {
         requireCollaborator(user, property);
         task.transitionTo(status);
         activities.save(new ActivityEvent(user, property, "TASK", "Aufgabe aktualisiert: " + task.title() + " ist " + taskStatusLabel(status) + "."));
-        audit.record(user, "task.status", "work_task", task.id(), "Aufgabenstatus gesetzt: " + status.name());
+        audit.record(user, property, "task.status", "work_task", task.id(), "Aufgabenstatus gesetzt: " + status.name());
         return dashboard(userId, property.id());
     }
 
@@ -323,7 +329,7 @@ public class WorkspaceService {
                 command.status()
         ));
         activities.save(new ActivityEvent(user, property, "FINANCE", "Finanzereignis erfasst: " + command.label()));
-        audit.record(user, "finance.create", "finance_event", finance.id(), "Finanzereignis erfasst: " + command.label());
+        audit.record(user, property, "finance.create", "finance_event", finance.id(), "Finanzereignis erfasst: " + command.label());
         return dashboard(userId, property.id());
     }
 
@@ -342,7 +348,7 @@ public class WorkspaceService {
                 command.status()
         ));
         activities.save(new ActivityEvent(user, property, "FINANCE", "Hausgeld-Soll angelegt: " + unit.unitLabel() + " " + command.fiscalYear()));
-        audit.record(user, "house_money.create", "house_money_assessment", assessment.id(), "Hausgeld-Soll angelegt: " + unit.unitLabel());
+        audit.record(user, property, "house_money.create", "house_money_assessment", assessment.id(), "Hausgeld-Soll angelegt: " + unit.unitLabel());
         return dashboard(userId, property.id());
     }
 
@@ -359,7 +365,7 @@ public class WorkspaceService {
                 command.status()
         ));
         activities.save(new ActivityEvent(user, property, "PLAN", "Wirtschaftsplan erfasst: " + command.fiscalYear()));
-        audit.record(user, "annual_plan.create", "annual_plan", plan.id(), "Wirtschaftsplan angelegt: " + command.fiscalYear());
+        audit.record(user, property, "annual_plan.create", "annual_plan", plan.id(), "Wirtschaftsplan angelegt: " + command.fiscalYear());
         return dashboard(userId, property.id());
     }
 
@@ -382,7 +388,7 @@ public class WorkspaceService {
                 command.linkedEntityId()
         ));
         activities.save(new ActivityEvent(user, property, "DOCUMENT", "Dokument abgelegt: " + command.title()));
-        audit.record(user, "document.create", "property_document", document.id(), "Dokument abgelegt: " + command.title());
+        audit.record(user, property, "document.create", "property_document", document.id(), "Dokument abgelegt: " + command.title());
         return dashboard(userId, property.id());
     }
 
@@ -402,7 +408,7 @@ public class WorkspaceService {
                 command.status()
         ));
         activities.save(new ActivityEvent(user, property, "MEETING", "Eigentümerversammlung geplant: " + meeting.title()));
-        audit.record(user, "meeting.create", "owner_meeting", meeting.id(), "Eigentümerversammlung angelegt: " + meeting.title());
+        audit.record(user, property, "meeting.create", "owner_meeting", meeting.id(), "Eigentümerversammlung angelegt: " + meeting.title());
         return dashboard(userId, property.id());
     }
 
@@ -426,7 +432,7 @@ public class WorkspaceService {
                     command.followUpReminderDate()
             ));
             activities.save(new ActivityEvent(user, property, "TASK", "Folgeaufgabe aus Mitteilung erstellt: " + followUpTask.title()));
-            audit.record(user, "task.create", "work_task", followUpTask.id(), "Folgeaufgabe aus Mitteilung angelegt: " + followUpTask.title());
+            audit.record(user, property, "task.create", "work_task", followUpTask.id(), "Folgeaufgabe aus Mitteilung angelegt: " + followUpTask.title());
         }
         CommunityMessage message = messages.save(new CommunityMessage(
                 property,
@@ -441,7 +447,7 @@ public class WorkspaceService {
                 command.readyToSendOn()
         ));
         activities.save(new ActivityEvent(user, property, "COMMUNICATION", "Mitteilung vorbereitet: " + message.subject() + " an " + message.audience()));
-        audit.record(user, "message.create", "community_message", message.id(), "Mitteilung vorbereitet: " + message.subject());
+        audit.record(user, property, "message.create", "community_message", message.id(), "Mitteilung vorbereitet: " + message.subject());
         return dashboard(userId, property.id());
     }
 
@@ -474,7 +480,7 @@ public class WorkspaceService {
                 command.abstentions()
         ));
         activities.save(new ActivityEvent(user, property, "DECISION", "Beschluss dokumentiert: " + decision.title()));
-        audit.record(user, "decision.create", "community_decision", decision.id(), "Beschluss dokumentiert: " + decision.title());
+        audit.record(user, property, "decision.create", "community_decision", decision.id(), "Beschluss dokumentiert: " + decision.title());
         return dashboard(userId, property.id());
     }
 
@@ -486,7 +492,7 @@ public class WorkspaceService {
         requireAdmin(user, property);
         decision.transitionTo(status);
         activities.save(new ActivityEvent(user, property, "DECISION", "Beschluss aktualisiert: " + decision.title() + " ist " + decisionStatusLabel(status) + "."));
-        audit.record(user, "decision.status", "community_decision", decision.id(), "Beschlussstatus gesetzt: " + status.name());
+        audit.record(user, property, "decision.status", "community_decision", decision.id(), "Beschlussstatus gesetzt: " + status.name());
         return dashboard(userId, property.id());
     }
 
@@ -1017,6 +1023,39 @@ public class WorkspaceService {
         return new ActivityView(event.eventType(), event.summary(), event.createdAt());
     }
 
+    private static AuditView toAudit(AuditLog log) {
+        return new AuditView(
+                log.actor().fullName(),
+                log.actor().role().name(),
+                log.action(),
+                log.targetType(),
+                log.targetId(),
+                log.summary(),
+                log.occurredAt()
+        );
+    }
+
+    private AccessView accessView(AppUser user, PropertyAsset property) {
+        boolean admin = canAdmin(user, property);
+        boolean collaborator = canCollaborate(user, property);
+        String role = propertyRole(user, property);
+        List<String> commands = admin
+                ? List.of("WEG verwalten", "Einheiten pflegen", "Finanzen steuern", "Beschlüsse führen", "Rollen einladen", "Dokumente ablegen", "Kommunikation und Aufgaben")
+                : collaborator
+                ? List.of("Dokumente ablegen", "Kommunikation vorbereiten", "Aufgaben steuern")
+                : List.of("Workspace lesen");
+        return new AccessView(role, admin, collaborator, commands);
+    }
+
+    private String propertyRole(AppUser user, PropertyAsset property) {
+        if (property.owner().id().equals(user.id())) {
+            return "OWNER_ADMIN";
+        }
+        return members.findByPropertyAndEmailIgnoreCase(property, user.email())
+                .map(member -> member.role().name())
+                .orElse(user.role().name());
+    }
+
     public record DashboardView(
             UserView user,
             UUID selectedPropertyId,
@@ -1034,6 +1073,8 @@ public class WorkspaceService {
             List<MessageView> messages,
             List<MemberView> members,
             ReadinessView readiness,
+            AccessView access,
+            List<AuditView> audit,
             List<ActivityView> activity,
             List<InsightView> insights,
             OnboardingView onboarding
@@ -1089,6 +1130,15 @@ public class WorkspaceService {
         static ReadinessView empty() {
             return new ReadinessView(BigDecimal.ZERO, BigDecimal.ZERO, false, BigDecimal.ZERO, 0, 0, 0, 0, false, false, List.of("Bitte zuerst eine WEG anlegen."));
         }
+    }
+
+    public record AccessView(String role, boolean canAdmin, boolean canCollaborate, List<String> allowedCommands) {
+        static AccessView empty() {
+            return new AccessView("OWNER_ADMIN", false, false, List.of("Immobilie anlegen"));
+        }
+    }
+
+    public record AuditView(String actorName, String actorRole, String action, String targetType, UUID targetId, String summary, Instant occurredAt) {
     }
 
     public record ActivityView(String eventType, String summary, Instant createdAt) {

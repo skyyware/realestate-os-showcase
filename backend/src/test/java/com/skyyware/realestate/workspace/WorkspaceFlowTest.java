@@ -230,6 +230,11 @@ class WorkspaceFlowTest {
         assertThat(complete.metrics().pendingPayments()).isEqualByComparingTo("1250.00");
         assertThat(complete.metrics().openTasks()).isEqualTo(1);
         assertThat(complete.onboarding().completion()).isEqualTo(100);
+        assertThat(complete.access().role()).isEqualTo("OWNER_ADMIN");
+        assertThat(complete.access().canAdmin()).isTrue();
+        assertThat(complete.access().allowedCommands()).contains("Finanzen steuern", "Beschlüsse führen", "Kommunikation und Aufgaben");
+        assertThat(complete.audit()).extracting(WorkspaceService.AuditView::action)
+                .contains("property.create", "finance.create", "message.create", "task.create");
         assertThat(complete.insights()).extracting(WorkspaceService.InsightView::title)
                 .contains("Offene Forderungen klären", "Wiedervorlage steht an", "Beschluss umsetzen");
 

@@ -55,6 +55,7 @@ wurde:
 | 2026-06-04 | Slice 3 Documents And Evidence Chain | [FigJam öffnen](https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8) | Erstellt, lokal getestet und deploybereit |
 | 2026-06-04 | Slice 4 Meeting Decision Workflow | [FigJam öffnen](https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8) | Erstellt, lokal getestet und deploybereit |
 | 2026-06-04 | Slice 5 Communication Task Deadline Workflow | [FigJam öffnen](https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8) | Erstellt, lokal getestet und deploybereit |
+| 2026-06-04 | Slice 6 Roles Rights Audit Operations | [FigJam öffnen](https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8) | Erstellt, lokal getestet und deploybereit |
 
 ## Integration ins Bewerbungsdeck
 

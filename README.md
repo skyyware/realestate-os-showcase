@@ -21,6 +21,7 @@ Eine shipbare Product-Engineering-Codebasis für moderne digitale WEG-Verwaltung
 - Beschluss-Sammlung mit Datum, Ort, Wortlaut, Abstimmungsergebnis und Umsetzungsstatus
 - Kommunikations-Workflow mit Kontext, Kanal, Versandstatus und optionaler Folgeaufgabe
 - Aufgaben-Lifecycle von offen über Prüfung bis erledigt mit Verantwortlichkeit, Wiedervorlage und Audit-Trail
+- Sichtbare Rollen/Rechte und technischer Audit-Nachweis pro WEG
 - Consumer-grade UI mit ruhiger Finanz-/Eigentümer-Optik, leerem Startzustand und responsiver Arbeitsfläche
 
 ## Lokal starten
@@ -85,6 +86,7 @@ Weitere Übergabeartefakte:
 - [docs/case-study/slice-3-document-evidence-chain.md](docs/case-study/slice-3-document-evidence-chain.md)
 - [docs/case-study/slice-4-meeting-decision-workflow.md](docs/case-study/slice-4-meeting-decision-workflow.md)
 - [docs/case-study/slice-5-communication-task-deadline-workflow.md](docs/case-study/slice-5-communication-task-deadline-workflow.md)
+- [docs/case-study/slice-6-roles-rights-audit-ops.md](docs/case-study/slice-6-roles-rights-audit-ops.md)
 - [docs/adr/0001-modular-monolith.md](docs/adr/0001-modular-monolith.md)
 - [docs/test-strategy.md](docs/test-strategy.md)
 - [docs/handover.md](docs/handover.md)

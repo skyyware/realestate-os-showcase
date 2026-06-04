@@ -1225,6 +1225,21 @@ button.table-row.selected {
   font-weight: 850;
 }
 
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-list span {
+  border-radius: 999px;
+  padding: 7px 11px;
+  color: #0b294f;
+  background: #eef5ff;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
 .task-controls {
   display: flex;
   flex-wrap: wrap;
