@@ -51,6 +51,7 @@ wurde:
 | --- | --- | --- | --- |
 | 2026-06-04 | WEG Market Problem Map | [FigJam öffnen](https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8?utm_source=chatgpt&utm_content=edit_in_figjam&oai_id=&request_id=d10a8ab9-bc1f-4f99-828b-94eab9cee443) | Erstellt |
 | 2026-06-04 | Slice 1 WEG Onboarding And Roles | [FigJam öffnen](https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8) | Erstellt und lokal umgesetzt |
+| 2026-06-04 | Slice 2 Finance Foundation | [FigJam öffnen](https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8) | Erstellt, lokal getestet und deploybereit |
 
 ## Integration ins Bewerbungsdeck
 

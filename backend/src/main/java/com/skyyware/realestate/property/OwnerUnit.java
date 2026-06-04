@@ -59,6 +59,10 @@ public class OwnerUnit {
         return id;
     }
 
+    public PropertyAsset property() {
+        return property;
+    }
+
     public String ownerName() {
         return ownerName;
     }

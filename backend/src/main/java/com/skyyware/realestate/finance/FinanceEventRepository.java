@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface FinanceEventRepository extends JpaRepository<FinanceEvent, UUID> {
     List<FinanceEvent> findTop8ByPropertyOrderByBookedOnDesc(PropertyAsset property);
+
+    List<FinanceEvent> findByProperty(PropertyAsset property);
 }

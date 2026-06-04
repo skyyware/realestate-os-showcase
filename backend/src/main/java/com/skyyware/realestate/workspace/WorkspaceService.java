@@ -11,8 +11,13 @@ import com.skyyware.realestate.decision.CommunityDecisionRepository;
 import com.skyyware.realestate.decision.DecisionStatus;
 import com.skyyware.realestate.document.PropertyDocument;
 import com.skyyware.realestate.document.PropertyDocumentRepository;
+import com.skyyware.realestate.finance.AllocationKey;
+import com.skyyware.realestate.finance.AssessmentStatus;
 import com.skyyware.realestate.finance.FinanceEvent;
 import com.skyyware.realestate.finance.FinanceEventRepository;
+import com.skyyware.realestate.finance.FinanceEventType;
+import com.skyyware.realestate.finance.HouseMoneyAssessment;
+import com.skyyware.realestate.finance.HouseMoneyAssessmentRepository;
 import com.skyyware.realestate.identity.AppUser;
 import com.skyyware.realestate.identity.AppUserRepository;
 import com.skyyware.realestate.mail.TransactionalMailService;
@@ -54,6 +59,7 @@ public class WorkspaceService {
     private final CommunityMemberRepository members;
     private final WorkTaskRepository tasks;
     private final FinanceEventRepository finances;
+    private final HouseMoneyAssessmentRepository houseMoneyAssessments;
     private final ActivityEventRepository activities;
     private final PropertyDocumentRepository documents;
     private final CommunityDecisionRepository decisions;
@@ -71,6 +77,7 @@ public class WorkspaceService {
             CommunityMemberRepository members,
             WorkTaskRepository tasks,
             FinanceEventRepository finances,
+            HouseMoneyAssessmentRepository houseMoneyAssessments,
             ActivityEventRepository activities,
             PropertyDocumentRepository documents,
             CommunityDecisionRepository decisions,
@@ -87,6 +94,7 @@ public class WorkspaceService {
         this.members = members;
         this.tasks = tasks;
         this.finances = finances;
+        this.houseMoneyAssessments = houseMoneyAssessments;
         this.activities = activities;
         this.documents = documents;
         this.decisions = decisions;
@@ -123,6 +131,8 @@ public class WorkspaceService {
                     List.of(),
                     List.of(),
                     List.of(),
+                    List.of(),
+                    List.of(),
                     ReadinessView.empty(),
                     activityEvents.stream().map(WorkspaceService::toActivity).toList(),
                     List.of(new InsightView("HIGH", "Immobilie anlegen", "Lege die erste WEG mit Kontostand, Rücklage und Einheiten an.", "properties", "Immobilie starten")),
@@ -135,13 +145,15 @@ public class WorkspaceService {
         List<CommunityMember> communityMembers = members.findByPropertyOrderByCreatedAtAsc(selected);
         List<WorkTask> workTasks = tasks.findTop8ByPropertyOrderByCreatedAtDesc(selected);
         List<FinanceEvent> financeEvents = finances.findTop8ByPropertyOrderByBookedOnDesc(selected);
+        List<FinanceEvent> allFinanceEvents = finances.findByProperty(selected);
+        List<HouseMoneyAssessment> assessments = houseMoneyAssessments.findTop8ByPropertyOrderByFiscalYearDescCreatedAtDesc(selected);
         List<AnnualPlan> planViews = annualPlans.findTop4ByPropertyOrderByFiscalYearDesc(selected);
         List<PropertyDocument> documentViews = documents.findTop8ByPropertyOrderByDocumentDateDesc(selected);
         List<CommunityDecision> communityDecisions = decisions.findTop8ByPropertyOrderByMeetingDateDesc(selected);
         List<OwnerMeeting> meetingViews = ownerMeetings.findTop6ByPropertyOrderByMeetingDateDesc(selected);
         List<CommunityMessage> messageViews = messages.findTop8ByPropertyOrderByCreatedAtDesc(selected);
 
-        BigDecimal pendingPayments = financeEvents.stream()
+        BigDecimal pendingPayments = allFinanceEvents.stream()
                 .map(FinanceEvent::amount)
                 .filter(amount -> amount.signum() < 0)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
@@ -176,6 +188,8 @@ public class WorkspaceService {
                 ownerUnits.stream().map(WorkspaceService::toUnit).toList(),
                 workTasks.stream().map(WorkspaceService::toTask).toList(),
                 financeEvents.stream().map(WorkspaceService::toFinance).toList(),
+                assessments.stream().map(WorkspaceService::toAssessment).toList(),
+                unitBalances(ownerUnits, assessments, allFinanceEvents),
                 planViews.stream().map(WorkspaceService::toAnnualPlan).toList(),
                 documentViews.stream().map(WorkspaceService::toDocument).toList(),
                 communityDecisions.stream().map(WorkspaceService::toDecision).toList(),
@@ -274,9 +288,44 @@ public class WorkspaceService {
     public DashboardView createFinance(UUID userId, CreateFinanceCommand command) {
         AppUser user = user(userId);
         PropertyAsset property = propertyForAdmin(user, command.propertyId());
-        FinanceEvent finance = finances.save(new FinanceEvent(property, command.label(), command.amount(), command.category(), command.bookedOn(), command.status()));
+        OwnerUnit unit = command.ownerUnitId() == null ? null : unitFor(property, command.ownerUnitId());
+        FinanceEvent finance = finances.save(new FinanceEvent(
+                property,
+                command.label(),
+                command.eventType(),
+                normalizedFinanceAmount(command.eventType(), command.amount()),
+                command.category(),
+                command.allocationKey(),
+                unit,
+                command.bookedOn(),
+                command.dueDate(),
+                command.paidOn(),
+                command.counterparty(),
+                command.invoiceNumber(),
+                command.documentReference(),
+                command.status()
+        ));
         activities.save(new ActivityEvent(user, property, "FINANCE", "Finanzereignis erfasst: " + command.label()));
         audit.record(user, "finance.create", "finance_event", finance.id(), "Finanzereignis erfasst: " + command.label());
+        return dashboard(userId, property.id());
+    }
+
+    @Transactional
+    public DashboardView createHouseMoneyAssessment(UUID userId, CreateHouseMoneyAssessmentCommand command) {
+        AppUser user = user(userId);
+        PropertyAsset property = propertyForAdmin(user, command.propertyId());
+        OwnerUnit unit = unitFor(property, command.unitId());
+        HouseMoneyAssessment assessment = houseMoneyAssessments.save(new HouseMoneyAssessment(
+                property,
+                unit,
+                command.fiscalYear(),
+                command.monthlyHouseMoney(),
+                command.monthlyReserveContribution(),
+                command.validFrom(),
+                command.status()
+        ));
+        activities.save(new ActivityEvent(user, property, "FINANCE", "Hausgeld-Soll angelegt: " + unit.unitLabel() + " " + command.fiscalYear()));
+        audit.record(user, "house_money.create", "house_money_assessment", assessment.id(), "Hausgeld-Soll angelegt: " + unit.unitLabel());
         return dashboard(userId, property.id());
     }
 
@@ -409,6 +458,15 @@ public class WorkspaceService {
         PropertyAsset property = propertyForView(user, requestedPropertyId);
         requireCollaborator(user, property);
         return property;
+    }
+
+    private OwnerUnit unitFor(PropertyAsset property, UUID unitId) {
+        OwnerUnit unit = units.findById(unitId)
+                .orElseThrow(() -> new IllegalArgumentException("Einheit nicht gefunden."));
+        if (!unit.property().id().equals(property.id())) {
+            throw new IllegalArgumentException("Einheit gehört nicht zu dieser WEG.");
+        }
+        return unit;
     }
 
     private void requireAdmin(AppUser user, PropertyAsset property) {
@@ -642,7 +700,70 @@ public class WorkspaceService {
     }
 
     private static FinanceView toFinance(FinanceEvent finance) {
-        return new FinanceView(finance.label(), finance.amount(), finance.category(), finance.bookedOn(), finance.status());
+        OwnerUnit unit = finance.ownerUnit();
+        return new FinanceView(
+                finance.id(),
+                finance.label(),
+                finance.eventType().name(),
+                finance.amount(),
+                finance.category(),
+                finance.allocationKey().name(),
+                unit == null ? null : unit.id(),
+                unit == null ? null : unit.unitLabel(),
+                finance.bookedOn(),
+                finance.dueDate(),
+                finance.paidOn(),
+                finance.counterparty(),
+                finance.invoiceNumber(),
+                finance.documentReference(),
+                finance.status()
+        );
+    }
+
+    private static AssessmentView toAssessment(HouseMoneyAssessment assessment) {
+        return new AssessmentView(
+                assessment.id(),
+                assessment.unit().id(),
+                assessment.unit().unitLabel(),
+                assessment.fiscalYear(),
+                assessment.monthlyHouseMoney(),
+                assessment.monthlyReserveContribution(),
+                assessment.validFrom(),
+                assessment.status().name()
+        );
+    }
+
+    private static List<UnitBalanceView> unitBalances(List<OwnerUnit> ownerUnits, List<HouseMoneyAssessment> assessments, List<FinanceEvent> financeEvents) {
+        return ownerUnits.stream().map(unit -> {
+            BigDecimal expectedMonthly = assessments.stream()
+                    .filter(assessment -> assessment.unit().id().equals(unit.id()))
+                    .filter(assessment -> assessment.status() == AssessmentStatus.ACTIVE)
+                    .map(assessment -> assessment.monthlyHouseMoney().add(assessment.monthlyReserveContribution()))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal expectedAnnual = expectedMonthly.multiply(BigDecimal.valueOf(12));
+            BigDecimal paid = financeEvents.stream()
+                    .filter(finance -> finance.ownerUnit() != null && finance.ownerUnit().id().equals(unit.id()))
+                    .filter(finance -> finance.eventType() == FinanceEventType.OWNER_PAYMENT)
+                    .map(FinanceEvent::amount)
+                    .filter(amount -> amount.signum() > 0)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal outstanding = expectedAnnual.subtract(paid);
+            if (outstanding.signum() < 0) {
+                outstanding = BigDecimal.ZERO;
+            }
+            return new UnitBalanceView(unit.id(), unit.unitLabel(), unit.ownerName(), expectedAnnual, paid, outstanding);
+        }).toList();
+    }
+
+    private static BigDecimal normalizedFinanceAmount(FinanceEventType eventType, BigDecimal amount) {
+        if (amount == null) {
+            return BigDecimal.ZERO;
+        }
+        return switch (eventType) {
+            case EXPENSE, REFUND -> amount.abs().negate();
+            case OWNER_PAYMENT -> amount.abs();
+            default -> amount;
+        };
     }
 
     private static AnnualPlanView toAnnualPlan(AnnualPlan plan) {
@@ -705,6 +826,8 @@ public class WorkspaceService {
             List<UnitView> units,
             List<TaskView> tasks,
             List<FinanceView> finances,
+            List<AssessmentView> houseMoneyAssessments,
+            List<UnitBalanceView> unitBalances,
             List<AnnualPlanView> annualPlans,
             List<DocumentView> documents,
             List<DecisionView> decisions,
@@ -736,7 +859,13 @@ public class WorkspaceService {
     public record TaskView(UUID id, String title, String description, String status, String priority, LocalDate dueDate) {
     }
 
-    public record FinanceView(String label, BigDecimal amount, String category, LocalDate bookedOn, String status) {
+    public record FinanceView(UUID id, String label, String eventType, BigDecimal amount, String category, String allocationKey, UUID ownerUnitId, String ownerUnitLabel, LocalDate bookedOn, LocalDate dueDate, LocalDate paidOn, String counterparty, String invoiceNumber, String documentReference, String status) {
+    }
+
+    public record AssessmentView(UUID id, UUID unitId, String unitLabel, int fiscalYear, BigDecimal monthlyHouseMoney, BigDecimal monthlyReserveContribution, LocalDate validFrom, String status) {
+    }
+
+    public record UnitBalanceView(UUID unitId, String unitLabel, String ownerName, BigDecimal expectedAnnual, BigDecimal paid, BigDecimal outstanding) {
     }
 
     public record AnnualPlanView(UUID id, int fiscalYear, BigDecimal houseMoneyBudget, BigDecimal maintenanceBudget, BigDecimal reserveContribution, String status) {
@@ -784,7 +913,10 @@ public class WorkspaceService {
     public record CreateTaskCommand(UUID propertyId, String title, String description, TaskPriority priority, LocalDate dueDate) {
     }
 
-    public record CreateFinanceCommand(UUID propertyId, String label, BigDecimal amount, String category, LocalDate bookedOn, String status) {
+    public record CreateFinanceCommand(UUID propertyId, String label, FinanceEventType eventType, BigDecimal amount, String category, AllocationKey allocationKey, UUID ownerUnitId, LocalDate bookedOn, LocalDate dueDate, LocalDate paidOn, String counterparty, String invoiceNumber, String documentReference, String status) {
+    }
+
+    public record CreateHouseMoneyAssessmentCommand(UUID propertyId, UUID unitId, int fiscalYear, BigDecimal monthlyHouseMoney, BigDecimal monthlyReserveContribution, LocalDate validFrom, AssessmentStatus status) {
     }
 
     public record CreateAnnualPlanCommand(UUID propertyId, int fiscalYear, BigDecimal houseMoneyBudget, BigDecimal maintenanceBudget, BigDecimal reserveContribution, AnnualPlanStatus status) {

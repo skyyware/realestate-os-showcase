@@ -6,6 +6,9 @@ import com.skyyware.realestate.identity.AppUser;
 import com.skyyware.realestate.identity.AppUserRepository;
 import com.skyyware.realestate.identity.AuthService;
 import com.skyyware.realestate.decision.DecisionStatus;
+import com.skyyware.realestate.finance.AllocationKey;
+import com.skyyware.realestate.finance.AssessmentStatus;
+import com.skyyware.realestate.finance.FinanceEventType;
 import com.skyyware.realestate.meeting.MeetingStatus;
 import com.skyyware.realestate.planning.AnnualPlanStatus;
 import com.skyyware.realestate.property.CommunityRole;
@@ -15,6 +18,7 @@ import com.skyyware.realestate.task.TaskPriority;
 import com.skyyware.realestate.task.TaskStatus;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -61,7 +65,7 @@ class WorkspaceFlowTest {
         assertThat(withProperty.properties()).hasSize(1);
         assertThat(withProperty.members()).extracting(WorkspaceService.MemberView::role).contains("OWNER_ADMIN");
 
-        workspaceService.createUnit(user.id(), new WorkspaceService.CreateUnitCommand(
+        WorkspaceService.DashboardView withUnit = workspaceService.createUnit(user.id(), new WorkspaceService.CreateUnitCommand(
                 withProperty.selectedPropertyId(),
                 "Sascha Dobrochynskyy",
                 email,
@@ -70,6 +74,7 @@ class WorkspaceFlowTest {
                 new BigDecimal("1000.00"),
                 OccupancyType.OWNER_OCCUPIED
         ));
+        UUID unitId = withUnit.units().getFirst().id();
         WorkspaceService.DashboardView withBoard = workspaceService.inviteMember(user.id(), new WorkspaceService.InviteMemberCommand(
                 withProperty.selectedPropertyId(),
                 "Beirat Stuttgart",
@@ -79,12 +84,31 @@ class WorkspaceFlowTest {
         assertThat(withBoard.readiness().readyForFinance()).isTrue();
         assertThat(withBoard.members()).extracting(WorkspaceService.MemberView::role)
                 .contains("OWNER_ADMIN", "BOARD_MEMBER");
+        WorkspaceService.DashboardView withAssessment = workspaceService.createHouseMoneyAssessment(user.id(), new WorkspaceService.CreateHouseMoneyAssessmentCommand(
+                withProperty.selectedPropertyId(),
+                unitId,
+                2026,
+                new BigDecimal("410.00"),
+                new BigDecimal("95.00"),
+                LocalDate.of(2026, 1, 1),
+                AssessmentStatus.ACTIVE
+        ));
+        assertThat(withAssessment.houseMoneyAssessments()).hasSize(1);
+        assertThat(withAssessment.unitBalances().getFirst().expectedAnnual()).isEqualByComparingTo("6060.00");
         workspaceService.createFinance(user.id(), new WorkspaceService.CreateFinanceCommand(
                 withProperty.selectedPropertyId(),
                 "Rechnung Hausmeisterservice",
-                new BigDecimal("-1250.00"),
+                FinanceEventType.EXPENSE,
+                new BigDecimal("1250.00"),
                 "Instandhaltung",
+                AllocationKey.MEA,
+                null,
                 LocalDate.of(2026, 6, 5),
+                LocalDate.of(2026, 6, 20),
+                null,
+                "Hausmeisterservice Stuttgart",
+                "HM-2026-118",
+                "rechnung-hm-2026-118.pdf",
                 "OPEN"
         ));
         workspaceService.createAnnualPlan(user.id(), new WorkspaceService.CreateAnnualPlanCommand(
@@ -138,6 +162,10 @@ class WorkspaceFlowTest {
 
         assertThat(complete.units()).hasSize(1);
         assertThat(complete.finances()).hasSize(1);
+        assertThat(complete.finances().getFirst().eventType()).isEqualTo("EXPENSE");
+        assertThat(complete.finances().getFirst().amount()).isEqualByComparingTo("-1250.00");
+        assertThat(complete.houseMoneyAssessments()).hasSize(1);
+        assertThat(complete.unitBalances().getFirst().outstanding()).isEqualByComparingTo("6060.00");
         assertThat(complete.annualPlans()).hasSize(1);
         assertThat(complete.documents()).hasSize(1);
         assertThat(complete.meetings()).hasSize(1);

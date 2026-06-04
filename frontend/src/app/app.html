@@ -296,29 +296,121 @@
                 <div><span>Finanzen</span><h2>Finanzen</h2></div>
                 <button class="panel-link" type="button" (click)="selectSection('finances')">Alle Finanzen</button>
               </div>
-              <div class="tabs">
-                <span class="active">Buchung erfassen</span>
-                <span>Letzte Buchungen</span>
+              <div class="tabs" role="tablist" aria-label="Finanzansicht">
+                <button
+                  type="button"
+                  role="tab"
+                  [attr.aria-selected]="financePanelTab() === 'entry'"
+                  [class.active]="financePanelTab() === 'entry'"
+                  (click)="selectFinancePanelTab('entry')"
+                >Buchung erfassen</button>
+                <button
+                  type="button"
+                  role="tab"
+                  [attr.aria-selected]="financePanelTab() === 'history'"
+                  [class.active]="financePanelTab() === 'history'"
+                  (click)="selectFinancePanelTab('history')"
+                >Letzte Buchungen</button>
               </div>
-              <form class="compact-form" [formGroup]="financeForm" (ngSubmit)="createFinance()">
-                <select formControlName="category" aria-label="Kategorie"><option>Hausgeld</option><option>Instandhaltung</option><option>Rücklage</option><option>Versicherung</option></select>
-                <div class="amount-field"><input formControlName="amount" type="number" step="0.01" placeholder="Betrag" /><span>EUR</span></div>
-                <input formControlName="bookedOn" inputmode="numeric" placeholder="TT.MM.JJJJ" aria-label="Buchungsdatum" />
-                <input formControlName="label" placeholder="Beschreibung" />
-                <select formControlName="status" aria-label="Buchungsstatus"><option value="BOOKED">Gebucht</option><option value="OPEN">Offen</option><option value="REVIEW">Prüfung</option></select>
-                <button type="submit">Buchung erfassen</button>
-              </form>
-              <div class="list finance">
-                @for (item of filteredFinances(); track item.label + item.bookedOn) {
-                  <div class="row">
-                    <div><strong>{{ item.label }}</strong><small>{{ item.category }} · {{ item.bookedOn | date:'dd.MM.yyyy' }} · {{ statusLabel(item.status) }}</small></div>
-                    <span [class.negative]="item.amount < 0">{{ item.amount | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</span>
-                  </div>
-                } @empty {
-                  <p class="empty">Noch keine Finanzereignisse.</p>
-                }
-              </div>
+              @if (financePanelTab() === 'entry') {
+                <form class="compact-form" [formGroup]="financeForm" (ngSubmit)="createFinance()">
+                  <select formControlName="eventType" aria-label="Ereignistyp">
+                    <option value="EXPENSE">Ausgabe</option>
+                    <option value="OWNER_PAYMENT">Eigentümerzahlung</option>
+                    <option value="HOUSE_MONEY_CHARGE">Hausgeld-Soll</option>
+                    <option value="RESERVE_TRANSFER">Rücklagenbewegung</option>
+                    <option value="SPECIAL_ASSESSMENT">Sonderumlage</option>
+                    <option value="REFUND">Erstattung</option>
+                  </select>
+                  <select formControlName="category" aria-label="Kategorie"><option>Instandhaltung</option><option>Hausgeld</option><option>Rücklage</option><option>Versicherung</option></select>
+                  <div class="amount-field"><input formControlName="amount" type="number" min="0" step="0.01" placeholder="Betrag" /><span>EUR</span></div>
+                  <input formControlName="bookedOn" inputmode="numeric" placeholder="TT.MM.JJJJ" aria-label="Buchungsdatum" />
+                  <input formControlName="dueDate" inputmode="numeric" placeholder="Fällig am" aria-label="Fälligkeitsdatum" />
+                  <select formControlName="allocationKey" aria-label="Verteilerschlüssel">
+                    <option value="MEA">MEA</option>
+                    <option value="UNIT">Einheit</option>
+                    <option value="CONSUMPTION">Verbrauch</option>
+                    <option value="EQUAL">Gleich verteilt</option>
+                    <option value="DIRECT">Direkt</option>
+                  </select>
+                  <select formControlName="ownerUnitId" aria-label="Einheitsbezug">
+                    <option value="">Keine Einheit</option>
+                    @for (unit of dashboard()?.units; track unit.id) {
+                      <option [value]="unit.id">{{ unit.unitLabel }} · {{ unit.ownerName }}</option>
+                    }
+                  </select>
+                  <input formControlName="label" placeholder="Beschreibung" />
+                  <input formControlName="counterparty" placeholder="Gegenpartei" />
+                  <input formControlName="invoiceNumber" placeholder="Belegnummer" />
+                  <input formControlName="documentReference" placeholder="Dokumentreferenz" />
+                  <select formControlName="status" aria-label="Buchungsstatus"><option value="BOOKED">Gebucht</option><option value="OPEN">Offen</option><option value="REVIEW">Prüfung</option></select>
+                  <button type="submit">Buchung erfassen</button>
+                </form>
+              }
+              @if (financePanelTab() === 'history') {
+                <div class="list finance">
+                  @for (item of filteredFinances(); track item.label + item.bookedOn) {
+                    <div class="row">
+                      <div>
+                        <strong>{{ item.label }}</strong>
+                        <small>
+                          {{ statusLabel(item.eventType) }} · {{ item.category }} · {{ statusLabel(item.allocationKey) }} · {{ item.bookedOn | date:'dd.MM.yyyy' }}
+                          @if (item.dueDate) { · fällig {{ item.dueDate | date:'dd.MM.yyyy' }} }
+                          @if (item.ownerUnitLabel) { · {{ item.ownerUnitLabel }} }
+                          · {{ statusLabel(item.status) }}
+                        </small>
+                        @if (item.counterparty || item.invoiceNumber || item.documentReference) {
+                          <p>{{ item.counterparty }} @if (item.invoiceNumber) { · {{ item.invoiceNumber }} } @if (item.documentReference) { · {{ item.documentReference }} }</p>
+                        }
+                      </div>
+                      <span [class.negative]="item.amount < 0">{{ item.amount | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</span>
+                    </div>
+                  } @empty {
+                    <p class="empty">Noch keine Finanzereignisse.</p>
+                  }
+                </div>
+              }
               @if (activeSection() === 'finances') {
+                <section class="subsection">
+                  <div class="subsection-heading">
+                    <div><span>Hausgeld-Soll</span><h3>Einheiten-Salden</h3></div>
+                    <small>{{ dashboard()?.houseMoneyAssessments?.length || 0 }} Sollstellungen</small>
+                  </div>
+                  <form class="compact-form house-money-form" [formGroup]="houseMoneyForm" (ngSubmit)="createHouseMoneyAssessment()">
+                    <select formControlName="unitId" aria-label="Einheit für Hausgeld">
+                      <option value="">Einheit wählen</option>
+                      @for (unit of dashboard()?.units; track unit.id) {
+                        <option [value]="unit.id">{{ unit.unitLabel }} · {{ unit.ownerName }}</option>
+                      }
+                    </select>
+                    <input formControlName="fiscalYear" type="number" min="2020" placeholder="Jahr" aria-label="Hausgeldjahr" />
+                    <div class="amount-field"><input formControlName="monthlyHouseMoney" type="number" min="0" step="0.01" placeholder="Hausgeld mtl." /><span>EUR</span></div>
+                    <div class="amount-field"><input formControlName="monthlyReserveContribution" type="number" min="0" step="0.01" placeholder="Rücklage mtl." /><span>EUR</span></div>
+                    <input formControlName="validFrom" inputmode="numeric" placeholder="Gültig ab" aria-label="Gültig ab" />
+                    <select formControlName="status" aria-label="Sollstatus"><option value="DRAFT">Entwurf</option><option value="ACTIVE">Aktiv</option><option value="SUPERSEDED">Ersetzt</option></select>
+                    <button type="submit">Soll anlegen</button>
+                  </form>
+                  <div class="balance-grid">
+                    @for (balance of filteredUnitBalances(); track balance.unitId) {
+                      <div class="balance-card">
+                        <div><strong>{{ balance.unitLabel }}</strong><small>{{ balance.ownerName }}</small></div>
+                        <span>Jahres-Soll {{ balance.expectedAnnual | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</span>
+                        <span>Gezahlt {{ balance.paid | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</span>
+                        <b [class.negative]="balance.outstanding > 0">Offen {{ balance.outstanding | currency:'EUR':'symbol':'1.2-2':'de-DE' }}</b>
+                      </div>
+                    } @empty {
+                      <p class="empty">Noch keine Einheitensalden.</p>
+                    }
+                  </div>
+                  <div class="list">
+                    @for (assessment of filteredAssessments(); track assessment.id) {
+                      <div class="row">
+                        <div><strong>{{ assessment.unitLabel }} · Hausgeld {{ assessment.fiscalYear }}</strong><small>{{ statusLabel(assessment.status) }} · ab {{ assessment.validFrom | date:'dd.MM.yyyy' }}</small></div>
+                        <span>{{ assessment.monthlyHouseMoney + assessment.monthlyReserveContribution | currency:'EUR':'symbol':'1.2-2':'de-DE' }} / Monat</span>
+                      </div>
+                    }
+                  </div>
+                </section>
                 <section class="subsection">
                   <div class="subsection-heading">
                     <div><span>Wirtschaftsplan</span><h3>Jahresplanung</h3></div>

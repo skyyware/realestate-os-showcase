@@ -2,6 +2,9 @@ package com.skyyware.realestate.workspace;
 
 import com.skyyware.realestate.security.CurrentUser;
 import com.skyyware.realestate.decision.DecisionStatus;
+import com.skyyware.realestate.finance.AllocationKey;
+import com.skyyware.realestate.finance.AssessmentStatus;
+import com.skyyware.realestate.finance.FinanceEventType;
 import com.skyyware.realestate.meeting.MeetingStatus;
 import com.skyyware.realestate.planning.AnnualPlanStatus;
 import com.skyyware.realestate.property.CommunityRole;
@@ -109,9 +112,31 @@ public class WorkspaceController {
         return workspaceService.createFinance(CurrentUser.require().userId(), new WorkspaceService.CreateFinanceCommand(
                 request.propertyId(),
                 request.label(),
+                request.eventType(),
                 request.amount(),
                 request.category(),
+                request.allocationKey(),
+                request.ownerUnitId(),
                 request.bookedOn(),
+                request.dueDate(),
+                request.paidOn(),
+                request.counterparty(),
+                request.invoiceNumber(),
+                request.documentReference(),
+                request.status()
+        ));
+    }
+
+    @PostMapping("/house-money")
+    @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER')")
+    WorkspaceService.DashboardView createHouseMoneyAssessment(@Valid @RequestBody CreateHouseMoneyAssessmentRequest request) {
+        return workspaceService.createHouseMoneyAssessment(CurrentUser.require().userId(), new WorkspaceService.CreateHouseMoneyAssessmentCommand(
+                request.propertyId(),
+                request.unitId(),
+                request.fiscalYear(),
+                request.monthlyHouseMoney(),
+                request.monthlyReserveContribution(),
+                request.validFrom(),
                 request.status()
         ));
     }
@@ -235,10 +260,29 @@ public class WorkspaceController {
     public record CreateFinanceRequest(
             UUID propertyId,
             @NotBlank @Size(max = 180) String label,
+            @NotNull FinanceEventType eventType,
             @NotNull BigDecimal amount,
             @NotBlank @Size(max = 80) String category,
+            @NotNull AllocationKey allocationKey,
+            UUID ownerUnitId,
             @NotNull LocalDate bookedOn,
+            LocalDate dueDate,
+            LocalDate paidOn,
+            @Size(max = 180) String counterparty,
+            @Size(max = 80) String invoiceNumber,
+            @Size(max = 240) String documentReference,
             @NotBlank @Size(max = 32) String status
+    ) {
+    }
+
+    public record CreateHouseMoneyAssessmentRequest(
+            UUID propertyId,
+            @NotNull UUID unitId,
+            @Min(2020) int fiscalYear,
+            @NotNull @DecimalMin("0.00") BigDecimal monthlyHouseMoney,
+            @NotNull @DecimalMin("0.00") BigDecimal monthlyReserveContribution,
+            @NotNull LocalDate validFrom,
+            @NotNull AssessmentStatus status
     ) {
     }
 

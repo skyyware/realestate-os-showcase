@@ -832,9 +832,13 @@ button:disabled {
   border-bottom: 1px solid #e6eef5;
 }
 
-.tabs span {
+.tabs button {
   padding: 0 0 11px;
   color: #607087;
+  min-height: auto;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
   font-weight: 800;
 }
 
@@ -956,6 +960,10 @@ button:disabled {
 
 .plan-form {
   grid-template-columns: 120px minmax(180px, 1fr) minmax(180px, 1fr) minmax(180px, 1fr) 150px auto;
+}
+
+.house-money-form {
+  grid-template-columns: minmax(190px, 1fr) 120px minmax(160px, 1fr) minmax(160px, 1fr) 140px 140px auto;
 }
 
 .meeting-form {
@@ -1167,11 +1175,38 @@ button.table-row.selected {
 }
 
 .meeting-list p,
-.communication-panel .row p {
+.communication-panel .row p,
+.finance .row p {
   max-width: 820px;
   margin: 8px 0 0;
   color: #31415a;
   line-height: 1.45;
+}
+
+.balance-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.balance-card {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid #e2edf4;
+  border-radius: 8px;
+  background: #f8fbfe;
+}
+
+.balance-card strong,
+.balance-card small,
+.balance-card span,
+.balance-card b {
+  display: block;
+}
+
+.balance-card b {
+  color: #075c45;
 }
 
 .vote-strip {
@@ -1525,6 +1560,7 @@ button.table-row.selected {
   .units-form,
   .member-form,
   .readiness-grid,
+  .balance-grid,
   .task-controls {
     grid-template-columns: 1fr;
   }

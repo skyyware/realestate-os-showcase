@@ -26,6 +26,7 @@ export class App implements OnInit, OnDestroy {
   protected readonly searchTerm = signal('');
   protected readonly selectedPropertyId = signal<string | null>(null);
   protected readonly insightHidden = signal(false);
+  protected readonly financePanelTab = signal<'entry' | 'history'>('entry');
 
   protected readonly selectedProperty = computed(() => {
     const dashboard = this.dashboard();
@@ -56,7 +57,13 @@ export class App implements OnInit, OnDestroy {
     this.matchesSearch(task.title, task.description, task.priority, task.status, task.dueDate)
   ));
   protected readonly filteredFinances = computed(() => (this.dashboard()?.finances ?? []).filter(item =>
-    this.matchesSearch(item.label, item.category, item.status, item.bookedOn, item.amount)
+    this.matchesSearch(item.label, item.category, item.status, item.bookedOn, item.amount, item.eventType, item.allocationKey, item.ownerUnitLabel, item.counterparty, item.invoiceNumber)
+  ));
+  protected readonly filteredAssessments = computed(() => (this.dashboard()?.houseMoneyAssessments ?? []).filter(item =>
+    this.matchesSearch(item.unitLabel, item.fiscalYear, item.status, item.monthlyHouseMoney, item.monthlyReserveContribution)
+  ));
+  protected readonly filteredUnitBalances = computed(() => (this.dashboard()?.unitBalances ?? []).filter(item =>
+    this.matchesSearch(item.unitLabel, item.ownerName, item.expectedAnnual, item.paid, item.outstanding)
   ));
   protected readonly filteredAnnualPlans = computed(() => (this.dashboard()?.annualPlans ?? []).filter(plan =>
     this.matchesSearch(plan.fiscalYear, plan.status, plan.houseMoneyBudget, plan.maintenanceBudget, plan.reserveContribution)
@@ -129,10 +136,27 @@ export class App implements OnInit, OnDestroy {
 
   protected readonly financeForm = this.fb.nonNullable.group({
     label: ['', [Validators.required, Validators.maxLength(180)]],
+    eventType: ['EXPENSE' as FinanceEventType, [Validators.required]],
     amount: [0, [Validators.required]],
-    category: ['Hausgeld', [Validators.required, Validators.maxLength(80)]],
+    category: ['Instandhaltung', [Validators.required, Validators.maxLength(80)]],
+    allocationKey: ['MEA' as AllocationKey, [Validators.required]],
+    ownerUnitId: [''],
     bookedOn: [this.today(), [Validators.required, germanDateValidator]],
+    dueDate: [''],
+    paidOn: [''],
+    counterparty: ['', [Validators.maxLength(180)]],
+    invoiceNumber: ['', [Validators.maxLength(80)]],
+    documentReference: ['', [Validators.maxLength(240)]],
     status: ['BOOKED', [Validators.required, Validators.maxLength(32)]]
+  });
+
+  protected readonly houseMoneyForm = this.fb.nonNullable.group({
+    unitId: ['', [Validators.required]],
+    fiscalYear: [new Date().getFullYear(), [Validators.required, Validators.min(2020)]],
+    monthlyHouseMoney: [0, [Validators.required, Validators.min(0)]],
+    monthlyReserveContribution: [0, [Validators.required, Validators.min(0)]],
+    validFrom: [`01.01.${new Date().getFullYear()}`, [Validators.required, germanDateValidator]],
+    status: ['ACTIVE' as AssessmentStatus, [Validators.required]]
   });
 
   protected readonly annualPlanForm = this.fb.nonNullable.group({
@@ -302,7 +326,26 @@ export class App implements OnInit, OnDestroy {
     const propertyId = this.requireSelectedPropertyId();
     if (!propertyId) return;
     const formValue = this.financeForm.getRawValue();
-    this.submitDashboardRequest('finances', { ...formValue, bookedOn: this.toIsoDate(formValue.bookedOn), propertyId }, 'Finanzereignis wurde erfasst.');
+    this.submitDashboardRequest('finances', {
+      ...formValue,
+      ownerUnitId: formValue.ownerUnitId || null,
+      bookedOn: this.toIsoDate(formValue.bookedOn),
+      dueDate: formValue.dueDate ? this.toIsoDate(formValue.dueDate) : null,
+      paidOn: formValue.paidOn ? this.toIsoDate(formValue.paidOn) : null,
+      propertyId
+    }, 'Finanzereignis wurde mit Belegkette erfasst.');
+  }
+
+  protected createHouseMoneyAssessment(): void {
+    if (this.houseMoneyForm.invalid) return;
+    const propertyId = this.requireSelectedPropertyId();
+    if (!propertyId) return;
+    const formValue = this.houseMoneyForm.getRawValue();
+    this.submitDashboardRequest('house-money', {
+      ...formValue,
+      validFrom: this.toIsoDate(formValue.validFrom),
+      propertyId
+    }, 'Hausgeld-Soll wurde für die Einheit angelegt.');
   }
 
   protected createAnnualPlan(): void {
@@ -354,6 +397,10 @@ export class App implements OnInit, OnDestroy {
     this.activeSection.set(section);
     this.error.set('');
     this.info.set('');
+  }
+
+  protected selectFinancePanelTab(tab: 'entry' | 'history'): void {
+    this.financePanelTab.set(tab);
   }
 
   protected dismissInsight(): void {
@@ -466,6 +513,7 @@ export class App implements OnInit, OnDestroy {
       IMPLEMENTED: 'Umgesetzt',
       APPROVED: 'Freigegeben',
       ACTIVE: 'Aktiv',
+      SUPERSEDED: 'Ersetzt',
       SCHEDULED: 'Geplant',
       INVITED: 'Eingeladen',
       COMPLETED: 'Abgeschlossen',
@@ -482,7 +530,18 @@ export class App implements OnInit, OnDestroy {
       OWNER_OCCUPIED: 'Selbst genutzt',
       RENTED: 'Vermietet',
       VACANT: 'Leerstand',
-      DISABLED: 'Deaktiviert'
+      DISABLED: 'Deaktiviert',
+      HOUSE_MONEY_CHARGE: 'Hausgeld-Soll',
+      OWNER_PAYMENT: 'Eigentümerzahlung',
+      EXPENSE: 'Ausgabe',
+      RESERVE_TRANSFER: 'Rücklagenbewegung',
+      SPECIAL_ASSESSMENT: 'Sonderumlage',
+      REFUND: 'Erstattung',
+      MEA: 'MEA',
+      UNIT: 'Einheit',
+      CONSUMPTION: 'Verbrauch',
+      EQUAL: 'Gleich verteilt',
+      DIRECT: 'Direkt'
     }[status] ?? status;
   }
 
@@ -495,7 +554,7 @@ export class App implements OnInit, OnDestroy {
     }[severity] ?? severity;
   }
 
-  private submitDashboardRequest(path: 'properties' | 'units' | 'members' | 'tasks' | 'finances' | 'annual-plans' | 'documents' | 'meetings' | 'decisions' | 'messages', payload: Record<string, unknown>, success: string): void {
+  private submitDashboardRequest(path: 'properties' | 'units' | 'members' | 'tasks' | 'finances' | 'house-money' | 'annual-plans' | 'documents' | 'meetings' | 'decisions' | 'messages', payload: Record<string, unknown>, success: string): void {
     this.begin();
     this.http.post<Dashboard>(`${API_BASE_URL}/workspace/${path}`, payload)
       .subscribe({
@@ -507,7 +566,11 @@ export class App implements OnInit, OnDestroy {
           if (path === 'units') this.unitForm.reset({ ownerName: '', ownerEmail: '', unitLabel: '', shareValue: 0, votingWeight: 0, occupancyType: 'OWNER_OCCUPIED' });
           if (path === 'members') this.memberForm.reset({ fullName: '', email: '', role: 'BOARD_MEMBER' });
           if (path === 'tasks') this.taskForm.reset({ title: '', description: '', priority: 'MEDIUM', dueDate: '' });
-          if (path === 'finances') this.financeForm.reset({ label: '', amount: 0, category: 'Hausgeld', bookedOn: this.today(), status: 'BOOKED' });
+          if (path === 'finances') {
+            this.financeForm.reset({ label: '', eventType: 'EXPENSE', amount: 0, category: 'Instandhaltung', allocationKey: 'MEA', ownerUnitId: '', bookedOn: this.today(), dueDate: '', paidOn: '', counterparty: '', invoiceNumber: '', documentReference: '', status: 'BOOKED' });
+            this.financePanelTab.set('history');
+          }
+          if (path === 'house-money') this.houseMoneyForm.reset({ unitId: '', fiscalYear: new Date().getFullYear(), monthlyHouseMoney: 0, monthlyReserveContribution: 0, validFrom: `01.01.${new Date().getFullYear()}`, status: 'ACTIVE' });
           if (path === 'annual-plans') this.annualPlanForm.reset({ fiscalYear: new Date().getFullYear(), houseMoneyBudget: 0, maintenanceBudget: 0, reserveContribution: 0, status: 'DRAFT' });
           if (path === 'documents') this.documentForm.reset({ title: '', documentType: 'PDF', fileName: '', documentDate: this.today() });
           if (path === 'meetings') this.meetingForm.reset({ title: '', meetingDate: this.today(), location: '', agenda: '', status: 'SCHEDULED' });
@@ -654,6 +717,9 @@ type InsightSeverity = 'HIGH' | 'MEDIUM' | 'LOW' | 'GOOD';
 type ManagementMode = 'SELF_MANAGED' | 'HYBRID' | 'PROFESSIONAL';
 type OccupancyType = 'OWNER_OCCUPIED' | 'RENTED' | 'VACANT';
 type CommunityRole = 'OWNER_ADMIN' | 'SELF_MANAGER' | 'PROPERTY_MANAGER' | 'BOARD_MEMBER' | 'OWNER' | 'EXTERNAL_EXPERT';
+type FinanceEventType = 'HOUSE_MONEY_CHARGE' | 'OWNER_PAYMENT' | 'EXPENSE' | 'RESERVE_TRANSFER' | 'SPECIAL_ASSESSMENT' | 'REFUND';
+type AllocationKey = 'MEA' | 'UNIT' | 'CONSUMPTION' | 'EQUAL' | 'DIRECT';
+type AssessmentStatus = 'DRAFT' | 'ACTIVE' | 'SUPERSEDED';
 
 interface RegistrationResult {
   emailSent: boolean;
@@ -704,7 +770,9 @@ interface Dashboard {
   };
   units: UnitView[];
   tasks: WorkTaskView[];
-  finances: Array<{ label: string; amount: number; category: string; bookedOn: string; status: string }>;
+  finances: FinanceView[];
+  houseMoneyAssessments: AssessmentView[];
+  unitBalances: UnitBalanceView[];
   annualPlans: AnnualPlanView[];
   documents: Array<{ id: string; title: string; documentType: string; fileName: string; documentDate: string }>;
   decisions: DecisionView[];
@@ -759,6 +827,44 @@ interface MemberView {
   status: string;
   invitedAt?: string;
   acceptedAt?: string;
+}
+
+interface FinanceView {
+  id: string;
+  label: string;
+  eventType: FinanceEventType;
+  amount: number;
+  category: string;
+  allocationKey: AllocationKey;
+  ownerUnitId?: string;
+  ownerUnitLabel?: string;
+  bookedOn: string;
+  dueDate?: string;
+  paidOn?: string;
+  counterparty?: string;
+  invoiceNumber?: string;
+  documentReference?: string;
+  status: string;
+}
+
+interface AssessmentView {
+  id: string;
+  unitId: string;
+  unitLabel: string;
+  fiscalYear: number;
+  monthlyHouseMoney: number;
+  monthlyReserveContribution: number;
+  validFrom: string;
+  status: AssessmentStatus;
+}
+
+interface UnitBalanceView {
+  unitId: string;
+  unitLabel: string;
+  ownerName: string;
+  expectedAnnual: number;
+  paid: number;
+  outstanding: number;
 }
 
 interface WorkTaskView {

@@ -13,7 +13,7 @@ Das Backend ist bewusst modular geschnitten:
 - `identity`: Registrierung, Passwort-Setup, Session/JWT
 - `property`: WEG-Profil, Einheiten, MEA, Rollen, Mitgliedschaften und
   Einladungsstatus
-- `finance`: Buchungsfeed und Zahlungsübersicht
+- `finance`: Buchungsfeed, Belegkette, Hausgeld-Soll und Einheitensalden
 - `planning`: Wirtschaftspläne, Budgets und Rücklagenzuführung
 - `task`: Aufgabensteuerung
 - `meeting`: Eigentümerversammlungen, Tagesordnung und Einladungsstatus
@@ -80,6 +80,23 @@ Die WEG-Struktur wurde als tragender Produktslice vertieft:
 Dieser Slice ist die fachliche Voraussetzung fuer den naechsten Finanzraum:
 Hausgeld, Rueckstaende, Ruecklage und Eigentuemeranteile koennen erst dann
 robust berechnet werden, wenn Einheiten und Verteilung belastbar sind.
+
+## Slice 2: Finanzraum und Hausgeld-Soll
+
+Der Finanzraum wurde als naechster fachlicher Kern ausgebaut:
+
+- Finanzereignisse fuehren Ereignistyp, Verteilerschluessel, Einheitsbezug,
+  Faelligkeit, Zahlungstag, Gegenpartei, Belegnummer und Dokumentreferenz
+- Hausgeld-Sollstellungen speichern Hausgeld und Ruecklagenanteil je Einheit,
+  Wirtschaftsjahr und Status
+- Einheitensalden berechnen Jahres-Soll, gezahlte Eigentuemerbetraege und
+  offene Rueckstaende
+- Ausgaben und Erstattungen werden serverseitig negativ normalisiert,
+  Eigentuemerzahlungen positiv
+- offene Forderungen werden aus allen Finanzereignissen der WEG berechnet
+
+Damit ist der Finanzbereich nicht nur eine Liste, sondern ein belastbarer
+Soll/Ist-Arbeitsraum fuer Selbstverwaltung, Beirat und Verwaltung.
 
 ## Identity
 
