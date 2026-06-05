@@ -9,7 +9,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     : req;
 
   return next(authRequest).pipe(catchError((error: unknown) => {
-    if (error instanceof HttpErrorResponse && error.status === 401 && isApiRequest && !req.url.includes('/api/auth/')) {
+    const isExpiredSession = error instanceof HttpErrorResponse
+      && (error.status === 401 || error.status === 403)
+      && isApiRequest
+      && !req.url.includes('/api/auth/');
+    if (isExpiredSession) {
       localStorage.removeItem('realestate.token');
       window.dispatchEvent(new Event('realestate:session-expired'));
     }

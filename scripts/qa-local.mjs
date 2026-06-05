@@ -29,6 +29,20 @@ await writeFile(invoiceFixture, invoiceFixtureContent);
 await writeFile(protocolFixture, protocolFixtureContent);
 
 const browser = await chromium.launch();
+const staleContext = await browser.newContext({
+  viewport: { width: 1440, height: 900 },
+  locale: 'de-DE',
+  ignoreHTTPSErrors: true
+});
+await staleContext.addInitScript(() => {
+  localStorage.setItem('realestate.token', 'stale-token');
+});
+const stalePage = await staleContext.newPage();
+await stalePage.goto(baseUrl, { waitUntil: 'networkidle' });
+await stalePage.getByRole('heading', { name: 'Einloggen' }).waitFor();
+await stalePage.getByText('Ihre Sitzung ist abgelaufen. Bitte erneut einloggen.').waitFor();
+await staleContext.close();
+
 const context = await browser.newContext({
   viewport: { width: 1440, height: 1100 },
   locale: 'de-DE',

@@ -1050,7 +1050,9 @@ export class App implements OnInit, OnDestroy {
   }
 
   private fail(error: { status?: number; error?: { message?: string } }): void {
-    if (error.status === 401 && this.mode() === 'dashboard') {
+    const isExpiredSession = error.status === 401 || error.status === 403;
+    const isAuthenticatedView = this.mode() === 'dashboard' || this.error().includes('Sitzung');
+    if (isExpiredSession && isAuthenticatedView) {
       this.handleSessionExpired();
       return;
     }
