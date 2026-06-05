@@ -2,11 +2,13 @@ import { CommonModule, CurrencyPipe, DatePipe, DecimalPipe } from '@angular/comm
 import { HttpClient } from '@angular/common/http';
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { AuthShellComponent } from './auth/auth-shell.component';
 import { API_BASE_URL } from './core/api';
+import { SidebarComponent } from './layout/sidebar.component';
 
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, CurrencyPipe, DatePipe, DecimalPipe, ReactiveFormsModule],
+  imports: [CommonModule, CurrencyPipe, DatePipe, DecimalPipe, ReactiveFormsModule, AuthShellComponent, SidebarComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })

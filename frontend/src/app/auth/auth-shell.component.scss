@@ -1,0 +1,259 @@
+:host {
+  display: contents;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.brand-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  color: #052242;
+  background: linear-gradient(135deg, #b8f8dc, #33c7a1);
+  font-weight: 900;
+  box-shadow: 0 10px 24px rgb(0 135 101 / 18%);
+}
+
+.brand-logo svg {
+  width: 30px;
+  height: 30px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
+}
+
+.brand strong {
+  display: block;
+  color: var(--ink);
+  font-size: 1.1rem;
+}
+
+.brand small,
+.auth-panel p,
+.auth-panel li {
+  color: #607087;
+}
+
+.auth-panel {
+  padding: 26px;
+  border: 1px solid rgb(202 220 232 / 82%);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 72%);
+  box-shadow: var(--shadow-sm);
+}
+
+.auth-panel h1 {
+  max-width: 620px;
+  margin: 0 0 14px;
+  color: var(--ink);
+  font-size: clamp(2.6rem, 4vw, 3.85rem);
+  line-height: 1.02;
+  letter-spacing: 0;
+}
+
+.auth-panel p {
+  max-width: 560px;
+  font-size: 1.08rem;
+  line-height: 1.45;
+}
+
+.auth-panel ul {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.auth-panel li {
+  position: relative;
+  padding-left: 26px;
+}
+
+.auth-panel li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.6em;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--green-strong);
+  box-shadow: 0 0 0 5px rgb(0 135 101 / 10%);
+}
+
+.auth-card {
+  grid-column: 2;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--green-strong);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fff, #fbfefd);
+  box-shadow: var(--shadow-md);
+}
+
+.card-heading p {
+  margin: 0 0 6px;
+  color: #008765;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.card-heading h2 {
+  margin: 0 0 22px;
+  color: var(--ink);
+  font-size: 1.85rem;
+  line-height: 1.05;
+}
+
+form {
+  display: grid;
+  gap: 14px;
+}
+
+label {
+  display: grid;
+  gap: 7px;
+  color: #31415a;
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0 13px;
+  color: var(--ink);
+  background: #fbfdfc;
+  font: inherit;
+  outline: none;
+}
+
+input:focus {
+  border-color: #008765;
+  box-shadow: 0 0 0 3px rgb(0 135 101 / 12%);
+}
+
+button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 18px;
+  color: #fff;
+  background: linear-gradient(180deg, #12b983, #008765);
+  font-weight: 850;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgb(0 135 101 / 18%);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.link {
+  min-height: auto;
+  margin-top: 12px;
+  padding: 0;
+  color: #0a4f9f;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.auth-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 12px;
+}
+
+.auth-links .link {
+  margin-top: 0;
+}
+
+.message {
+  margin: 18px 0 0;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.message.error {
+  color: #7a1f1f;
+  background: #fff1f1;
+}
+
+.message.info {
+  color: #0b624d;
+  background: #ecfbf6;
+  overflow-wrap: anywhere;
+}
+
+.preview {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 18px;
+  padding: 14px;
+  border-radius: 8px;
+  background: #f5f8fb;
+}
+
+.product-visual {
+  grid-column: 1 / -1;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid rgb(190 211 225 / 80%);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow-md);
+}
+
+.product-visual img {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  aspect-ratio: 16 / 4.6;
+  object-fit: cover;
+  object-position: top;
+}
+
+@media (max-width: 1180px) {
+  .auth-panel,
+  .auth-card,
+  .product-visual {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .brand {
+    margin-bottom: 20px;
+  }
+
+  .auth-panel h1 {
+    font-size: clamp(2.45rem, 12.8vw, 3rem);
+  }
+
+  .auth-panel,
+  .auth-card {
+    padding: 22px;
+  }
+}

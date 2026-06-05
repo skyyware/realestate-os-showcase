@@ -48,6 +48,22 @@ priorisiertes Command Center. Der leere Workspace bleibt absichtlich leer:
 Nutzer legen Immobilie, Einheiten, Finanzen, Aufgaben und Dokumente selbst an,
 damit keine Demodaten mit echten Entscheidungsdaten verwechselt werden.
 
+## Frontend
+
+Das Angular-Frontend ist als kleine, übernehmbare Standalone-Codebasis
+geschnitten. `AppComponent` hält Session, Workspace-Zustand, API-Commands und
+View-Orchestrierung zusammen. Wiederverwendbare, visuelle Shells sind aus dem
+Root-Template herausgezogen:
+
+- `auth/AuthShellComponent` rendert Registrierung, Login, Passwort-Reset und
+  Passwortvergabe als reine UI-Komponente auf vorhandenen Reactive Forms.
+- `layout/SidebarComponent` rendert Navigation, Schnellzugriff und Logout als
+  eigenes Layout-Element mit klaren Inputs und Outputs.
+
+Damit bleibt die Fachinteraktion weiterhin zentral nachvollziehbar, während
+visuelle Flächen separat gepflegt, getestet und später schrittweise in weitere
+Feature-Komponenten zerlegt werden können.
+
 ## WEG Product Fit
 
 Der nächste produktive Kern ist die Beschluss-Sammlung: Eigentümergemeinschaften

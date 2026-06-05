@@ -1,0 +1,90 @@
+<section class="auth-panel">
+  <div class="brand">
+    <span class="brand-mark brand-logo" aria-hidden="true">
+      <svg viewBox="0 0 48 48"><path d="M8 23 24 10l16 13"/><path d="M13 21v17h22V21"/><path d="M20 38V27h8v11"/></svg>
+    </span>
+    <div>
+      <strong>RealEstate OS</strong>
+      <small>Digitale WEG-Verwaltung</small>
+    </div>
+  </div>
+  <h1>WEG-Verwaltung einfach steuern.</h1>
+  <p>
+    Ein klarer Arbeitsraum für Eigentümer, Beirat und Verwaltung:
+    Finanzen, Aufgaben, Dokumente und Beschlüsse bleiben verständlich.
+  </p>
+  <ul>
+    <li>WEG anlegen und Eigentümer strukturiert einladen</li>
+    <li>Finanzen, Aufgaben und Beschlüsse an einem Ort</li>
+    <li>Onboarding per E-Mail-Link mit sicherer Passwortvergabe</li>
+  </ul>
+</section>
+
+<section class="auth-card">
+  @if (mode === 'register') {
+    <div class="card-heading">
+      <p>Account erstellen</p>
+      <h2>Zugang anfordern</h2>
+    </div>
+    <form [formGroup]="registerForm" (ngSubmit)="registerRequested.emit()">
+      <label>Name <input formControlName="fullName" autocomplete="name" placeholder="Ihr Name" /></label>
+      <label>E-Mail <input formControlName="email" type="email" autocomplete="email" placeholder="name@unternehmen.de" /></label>
+      <label>Organisation <input formControlName="organizationName" autocomplete="organization" placeholder="Ihre Organisation" /></label>
+      <button type="submit" [disabled]="loading">Aktivierungslink senden</button>
+    </form>
+    <button class="link" type="button" (click)="switchMode('login')">Ich habe bereits einen Zugang</button>
+  }
+
+  @if (mode === 'login') {
+    <div class="card-heading">
+      <p>Willkommen zurück</p>
+      <h2>Einloggen</h2>
+    </div>
+    <form [formGroup]="loginForm" (ngSubmit)="loginRequested.emit()">
+      <label>E-Mail <input formControlName="email" type="email" autocomplete="email" placeholder="name@unternehmen.de" /></label>
+      <label>Passwort <input formControlName="password" type="password" autocomplete="current-password" /></label>
+      <button type="submit" [disabled]="loading">Login</button>
+    </form>
+    <div class="auth-links">
+      <button class="link" type="button" (click)="switchMode('forgot')">Passwort vergessen</button>
+      <button class="link" type="button" (click)="switchMode('register')">Neuen Zugang erstellen</button>
+    </div>
+  }
+
+  @if (mode === 'forgot') {
+    <div class="card-heading">
+      <p>Zugang wiederherstellen</p>
+      <h2>Passwort vergessen</h2>
+    </div>
+    <form [formGroup]="forgotForm" (ngSubmit)="passwordResetRequested.emit()">
+      <label>E-Mail <input formControlName="email" type="email" autocomplete="email" placeholder="name@unternehmen.de" /></label>
+      <button type="submit" [disabled]="loading">Reset-Link senden</button>
+    </form>
+    <button class="link" type="button" (click)="switchMode('login')">Zurück zum Login</button>
+  }
+
+  @if (mode === 'password') {
+    <div class="card-heading">
+      <p>Aktivierung</p>
+      <h2>Passwort vergeben</h2>
+    </div>
+    @if (registrationPreview) {
+      <div class="preview">
+        <strong>{{ registrationPreview.fullName }}</strong>
+        <span>{{ registrationPreview.email }}</span>
+        <span>{{ registrationPreview.organizationName }}</span>
+      </div>
+    }
+    <form [formGroup]="passwordForm" (ngSubmit)="passwordSetRequested.emit()">
+      <label>Neues Passwort <input formControlName="password" type="password" autocomplete="new-password" /></label>
+      <button type="submit" [disabled]="loading">Account aktivieren</button>
+    </form>
+  }
+
+  @if (error) { <p class="message error">{{ error }}</p> }
+  @if (info) { <p class="message info">{{ info }}</p> }
+</section>
+
+<figure class="product-visual">
+  <img src="realestate-os-dashboard-concept.png?v=20260605" alt="RealEstate OS Dashboard mit Immobilienkennzahlen, Aufgaben und Finanzübersicht" />
+</figure>
