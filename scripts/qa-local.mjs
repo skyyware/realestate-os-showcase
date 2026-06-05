@@ -350,6 +350,7 @@ await page.locator('.quick-config').getByLabel('Buchung erfassen').check();
 await page.getByRole('button', { name: 'Einstellungen speichern', exact: true }).click();
 await page.getByText('Einstellungen wurden gespeichert.').waitFor();
 await page.locator('.sidebar-footer').getByRole('button', { name: 'Buchung erfassen' }).waitFor();
+await page.screenshot({ path: fileURLToPath(new URL('realestate-settings-desktop.png', outputDir)), fullPage: true });
 
 await page.getByRole('button', { name: 'Übersicht', exact: true }).click();
 await page.locator('.metrics').getByText('125.540,75').waitFor();
@@ -394,6 +395,7 @@ console.log(JSON.stringify({
     'output/qa/realestate-decisions-desktop.png',
     'output/qa/realestate-communication-desktop.png',
     'output/qa/realestate-audit-desktop.png',
+    'output/qa/realestate-settings-desktop.png',
     'output/qa/realestate-dashboard-desktop.png',
     'output/qa/realestate-dashboard-mobile.png'
   ]
