@@ -44,10 +44,12 @@ import com.skyyware.realestate.property.OwnerUnit;
 import com.skyyware.realestate.property.OwnerUnitRepository;
 import com.skyyware.realestate.property.PropertyAsset;
 import com.skyyware.realestate.property.PropertyAssetRepository;
+import com.skyyware.realestate.storage.DocumentStorage;
 import com.skyyware.realestate.task.TaskPriority;
 import com.skyyware.realestate.task.TaskStatus;
 import com.skyyware.realestate.task.WorkTask;
 import com.skyyware.realestate.task.WorkTaskRepository;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -55,6 +57,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,6 +79,7 @@ public class WorkspaceService {
     private final AuditService audit;
     private final TransactionalMailService mailService;
     private final RealEstateProperties realEstateProperties;
+    private final DocumentStorage documentStorage;
 
     public WorkspaceService(
             AppUserRepository users,
@@ -93,7 +97,8 @@ public class WorkspaceService {
             CommunityMessageRepository messages,
             AuditService audit,
             TransactionalMailService mailService,
-            RealEstateProperties realEstateProperties
+            RealEstateProperties realEstateProperties,
+            DocumentStorage documentStorage
     ) {
         this.users = users;
         this.properties = properties;
@@ -111,6 +116,7 @@ public class WorkspaceService {
         this.audit = audit;
         this.mailService = mailService;
         this.realEstateProperties = realEstateProperties;
+        this.documentStorage = documentStorage;
     }
 
     @Transactional(readOnly = true)
@@ -459,6 +465,56 @@ public class WorkspaceService {
     }
 
     @Transactional
+    public DashboardView uploadDocument(UUID userId, UploadDocumentCommand command) {
+        AppUser user = user(userId);
+        PropertyAsset property = propertyForCollaborator(user, command.propertyId());
+        validateDocumentLink(property, command.linkedEntityType(), command.linkedEntityId());
+        PropertyDocument document = new PropertyDocument(
+                property,
+                command.title(),
+                command.documentType(),
+                command.originalFileName(),
+                command.documentDate(),
+                command.status(),
+                command.visibility(),
+                command.source(),
+                command.description(),
+                command.linkedEntityType(),
+                command.linkedEntityId()
+        );
+        DocumentStorage.StoredDocument stored = documentStorage.store(
+                document.id(),
+                command.originalFileName(),
+                command.contentType(),
+                command.fileSizeBytes(),
+                command.inputStream()
+        );
+        document.attachFile(stored.storageKey(), stored.contentType(), stored.fileSizeBytes(), stored.sha256Checksum());
+        documents.save(document);
+        activities.save(new ActivityEvent(user, property, "DOCUMENT", "Datei hochgeladen: " + command.title()));
+        audit.record(user, property, "document.upload", "property_document", document.id(), "Datei hochgeladen: " + command.originalFileName());
+        return dashboard(userId, property.id());
+    }
+
+    @Transactional(readOnly = true)
+    public DocumentDownload downloadDocument(UUID userId, UUID documentId) {
+        AppUser user = user(userId);
+        PropertyDocument document = documents.findById(documentId)
+                .orElseThrow(() -> new IllegalArgumentException("Dokument nicht gefunden."));
+        requireDocumentView(user, document);
+        if (!document.hasFile()) {
+            throw new IllegalArgumentException("Für dieses Dokument ist keine Datei hinterlegt.");
+        }
+        DocumentStorage.StoredDocumentFile stored = documentStorage.load(document.storageKey());
+        return new DocumentDownload(
+                document.fileName(),
+                document.contentType() == null ? "application/octet-stream" : document.contentType(),
+                stored.fileSizeBytes(),
+                stored.resource()
+        );
+    }
+
+    @Transactional
     public DashboardView createMeeting(UUID userId, CreateMeetingCommand command) {
         AppUser user = user(userId);
         PropertyAsset property = propertyForAdmin(user, command.propertyId());
@@ -685,6 +741,21 @@ public class WorkspaceService {
     private void requireCollaborator(AppUser user, PropertyAsset property) {
         if (!canCollaborate(user, property)) {
             throw new IllegalArgumentException("Für diese WEG fehlt eine Bearbeitungsrolle.");
+        }
+    }
+
+    private void requireDocumentView(AppUser user, PropertyDocument document) {
+        PropertyAsset property = document.property();
+        if (!canView(user, property)) {
+            throw new IllegalArgumentException("Dokument gehört nicht zu diesem Workspace.");
+        }
+        boolean allowed = switch (document.visibility()) {
+            case ALL_OWNERS -> true;
+            case BOARD_ONLY -> canCollaborate(user, property);
+            case MANAGEMENT_ONLY, PRIVATE -> canAdmin(user, property);
+        };
+        if (!allowed) {
+            throw new IllegalArgumentException("Für dieses Dokument fehlt die Berechtigung.");
         }
     }
 
@@ -1023,7 +1094,12 @@ public class WorkspaceService {
                 document.source(),
                 document.description(),
                 document.linkedEntityType().name(),
-                document.linkedEntityId()
+                document.linkedEntityId(),
+                document.hasFile(),
+                document.contentType(),
+                document.fileSizeBytes(),
+                document.sha256Checksum(),
+                document.uploadedAt()
         );
     }
 
@@ -1177,7 +1253,7 @@ public class WorkspaceService {
     public record AnnualPlanView(UUID id, int fiscalYear, BigDecimal houseMoneyBudget, BigDecimal maintenanceBudget, BigDecimal reserveContribution, String status) {
     }
 
-    public record DocumentView(UUID id, String title, String documentType, String fileName, LocalDate documentDate, String status, String visibility, String source, String description, String linkedEntityType, UUID linkedEntityId) {
+    public record DocumentView(UUID id, String title, String documentType, String fileName, LocalDate documentDate, String status, String visibility, String source, String description, String linkedEntityType, UUID linkedEntityId, boolean hasFile, String contentType, Long fileSizeBytes, String sha256Checksum, Instant uploadedAt) {
     }
 
     public record DecisionView(UUID id, String title, String resolutionText, LocalDate meetingDate, String meetingLocation, UUID meetingId, String meetingTitle, String agendaItem, LocalDate implementationDueDate, String responsibleRole, BigDecimal costImpact, String status, int yesVotes, int noVotes, int abstentions) {
@@ -1244,6 +1320,12 @@ public class WorkspaceService {
     }
 
     public record CreateDocumentCommand(UUID propertyId, String title, String documentType, String fileName, LocalDate documentDate, DocumentStatus status, DocumentVisibility visibility, String source, String description, DocumentLinkType linkedEntityType, UUID linkedEntityId) {
+    }
+
+    public record UploadDocumentCommand(UUID propertyId, String title, String documentType, LocalDate documentDate, DocumentStatus status, DocumentVisibility visibility, String source, String description, DocumentLinkType linkedEntityType, UUID linkedEntityId, String originalFileName, String contentType, long fileSizeBytes, InputStream inputStream) {
+    }
+
+    public record DocumentDownload(String fileName, String contentType, long fileSizeBytes, Resource resource) {
     }
 
     public record CreateMeetingCommand(UUID propertyId, String title, LocalDate meetingDate, String location, String agenda, LocalDate invitationSentOn, LocalDate responseDeadline, String quorumRequirement, MeetingStatus status) {

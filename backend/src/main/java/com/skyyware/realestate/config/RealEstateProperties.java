@@ -8,7 +8,8 @@ public record RealEstateProperties(
         String apiBaseUrl,
         Security security,
         Identity identity,
-        Mail mail
+        Mail mail,
+        DocumentStorage documentStorage
 ) {
     public record Security(String jwtSecret) {
     }
@@ -20,5 +21,8 @@ public record RealEstateProperties(
     }
 
     public record Mail(String from, String fromName, boolean enabled) {
+    }
+
+    public record DocumentStorage(String rootPath, long maxFileSizeBytes) {
     }
 }

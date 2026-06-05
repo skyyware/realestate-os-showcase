@@ -657,7 +657,12 @@
                   <option>Angebot</option>
                   <option>Foto</option>
                 </select>
-                <input formControlName="fileName" placeholder="Dateiname" />
+                <label class="file-picker">
+                  <span>Datei</span>
+                  <input id="document-file-input" type="file" aria-label="Datei auswählen" (change)="selectDocumentFile($event)" />
+                  <b>{{ selectedDocumentFile()?.name || 'Datei auswählen' }}</b>
+                </label>
+                <input formControlName="fileName" placeholder="Dateiname aus Upload" aria-label="Dateiname" readonly />
                 <input formControlName="documentDate" inputmode="numeric" placeholder="TT.MM.JJJJ" aria-label="Dokumentdatum" />
                 <select formControlName="status" aria-label="Dokumentenstatus">
                   <option value="RECEIVED">Eingegangen</option>
@@ -696,15 +701,19 @@
               </form>
               <div class="list">
                 @for (document of filteredDocuments(); track document.id) {
-                  <div class="row">
+                  <div class="row document-row">
                     <div>
                       <strong>{{ document.title }}</strong>
                       <small>
                         {{ document.fileName }} · {{ document.documentDate | date:'dd.MM.yyyy' }} · {{ statusLabel(document.status) }} · {{ statusLabel(document.visibility) }}
                       </small>
+                      <small>{{ documentStorageLabel(document) }}</small>
                       <p>{{ statusLabel(document.linkedEntityType) }}: {{ documentLinkLabel(document) }} @if (document.description) { · {{ document.description }} }</p>
                     </div>
-                    <span class="file-type">{{ document.documentType }}</span>
+                    <div class="document-actions">
+                      <span class="file-type">{{ document.documentType }}</span>
+                      <button class="small-action secondary-action" type="button" [disabled]="!document.hasFile || loading()" (click)="downloadDocument(document)">Download</button>
+                    </div>
                   </div>
                 } @empty {
                   <p class="empty">Noch keine Dokumente.</p>

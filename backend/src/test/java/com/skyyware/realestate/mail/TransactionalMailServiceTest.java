@@ -28,7 +28,8 @@ class TransactionalMailServiceTest {
                 "https://realestate.stage.dev",
                 new RealEstateProperties.Security("test-secret-test-secret-test-secret"),
                 new RealEstateProperties.Identity("local", "", "realestate-os"),
-                new RealEstateProperties.Mail("admin@stage.dev", "Real Estate OS", true)
+                new RealEstateProperties.Mail("admin@stage.dev", "Real Estate OS", true),
+                new RealEstateProperties.DocumentStorage("/tmp/realestate-documents-test", 26214400)
         );
 
         TransactionalMailService service = new TransactionalMailService(mailSender, properties);
@@ -59,7 +60,8 @@ class TransactionalMailServiceTest {
                 "https://realestate.stage.dev",
                 new RealEstateProperties.Security("test-secret-test-secret-test-secret"),
                 new RealEstateProperties.Identity("local", "", "realestate-os"),
-                new RealEstateProperties.Mail("admin@stage.dev", "Real Estate OS", true)
+                new RealEstateProperties.Mail("admin@stage.dev", "Real Estate OS", true),
+                new RealEstateProperties.DocumentStorage("/tmp/realestate-documents-test", 26214400)
         );
 
         TransactionalMailService service = new TransactionalMailService(mailSender, properties);

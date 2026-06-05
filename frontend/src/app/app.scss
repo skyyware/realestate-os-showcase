@@ -716,8 +716,7 @@ button:disabled {
   color: var(--green);
 }
 
-.command-copy span,
-.insight-action span {
+.command-copy span {
   display: block;
   margin-bottom: 7px;
   color: #008765;
@@ -753,70 +752,6 @@ button:disabled {
   color: #607087;
   background: transparent;
   box-shadow: none;
-}
-
-.insight-list {
-  display: flex;
-  gap: 12px;
-}
-
-.insight-action {
-  display: grid;
-  align-content: start;
-  flex: 1 1 220px;
-  min-height: 156px;
-  width: 100%;
-  padding: 16px;
-  color: #071b46;
-  background: rgb(255 255 255 / 88%);
-  border: 1px solid #cfe4ee;
-  box-shadow: none;
-  text-align: left;
-}
-
-.insight-action:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 30px rgb(8 32 79 / 8%);
-}
-
-.insight-action.high {
-  border-left: 4px solid #d86c00;
-}
-
-.insight-action.medium {
-  border-left: 4px solid #0877d8;
-}
-
-.insight-action.low {
-  border-left: 4px solid #008765;
-}
-
-.insight-action.good {
-  border-left: 4px solid #00a870;
-}
-
-.insight-action strong,
-.insight-action small,
-.insight-action em {
-  display: block;
-}
-
-.insight-action strong {
-  margin-bottom: 6px;
-  font-size: 1.02rem;
-  line-height: 1.18;
-}
-
-.insight-action small {
-  color: #607087;
-  line-height: 1.35;
-}
-
-.insight-action em {
-  margin-top: 12px;
-  color: #008765;
-  font-style: normal;
-  font-weight: 850;
 }
 
 .content-grid {
@@ -919,6 +854,45 @@ button:disabled {
 }
 
 .compact-form button {
+  white-space: nowrap;
+}
+
+.file-picker {
+  position: relative;
+  display: grid;
+  align-content: center;
+  min-height: 44px;
+  gap: 2px;
+  border: 1px dashed #b8d8e8;
+  border-radius: 10px;
+  padding: 6px 14px;
+  color: #0b624d;
+  background: #f6fffb;
+  cursor: pointer;
+}
+
+.file-picker input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: auto;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-picker span {
+  color: #607087;
+  font-size: 0.7rem;
+  font-weight: 850;
+}
+
+.file-picker b {
+  overflow: hidden;
+  color: #075c45;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -1219,6 +1193,27 @@ button.table-row.selected {
   gap: 16px;
   padding: 16px;
   background: linear-gradient(180deg, #fff, #fbfefd);
+}
+
+.document-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  background: linear-gradient(180deg, #fff, #fbfefd);
+}
+
+.document-row p {
+  margin: 8px 0 0;
+  color: #31415a;
+  line-height: 1.45;
+}
+
+.document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .task-card.full-width .task-row {
@@ -1788,6 +1783,14 @@ button.table-row.selected {
 
   .decision-row {
     grid-template-columns: 1fr;
+  }
+
+  .document-row {
+    grid-template-columns: 1fr;
+  }
+
+  .document-actions {
+    justify-content: flex-start;
   }
 
   .content-grid > .panel:not(.portfolio):not(.setup-panel) .compact-form {

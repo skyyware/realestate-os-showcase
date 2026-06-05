@@ -104,17 +104,19 @@ Soll/Ist-Arbeitsraum fuer Selbstverwaltung, Beirat und Verwaltung.
 Die Dokumentenablage wurde von einer Dateiliste zu einer Nachweiskette
 ausgebaut:
 
-- Dokumente fuehren Status, Sichtbarkeit, Quelle, Beschreibung und fachlichen
-  Linktyp
+- Dokumente fuehren Status, Sichtbarkeit, Quelle, Beschreibung, fachlichen
+  Linktyp und optional gespeicherte Datei-Metadaten
 - Zielobjekte koennen Finanzereignisse, Beschluesse oder Versammlungen sein
 - der Workspace-Service validiert, dass ein Dokument nur auf Objekte derselben
   WEG zeigt
 - allgemeine Dokumente bleiben moeglich, duerfen aber kein Zielobjekt setzen
 - die UI zeigt Belegkontext direkt in der Dokumentliste und macht ihn suchbar
+- Uploads werden serverseitig gespeichert, groessenlimitiert, mit SHA-256
+  verifiziert und rollenbasiert heruntergeladen
 
-Damit entsteht die Grundlage fuer spaetere Dateiablage in S3-kompatiblem
-Storage, ohne heute Infrastrukturkosten oder Scheindateien ins Produkt zu
-ziehen.
+Damit ist die Belegkette nicht mehr nur Metadaten: Sie kann lokal und auf Stage
+echte Dateien tragen. Der Upgrade-Pfad zu S3-kompatiblem Storage bleibt
+bewusst offen, ohne den modularen Monolithen frueh zu verkomplizieren.
 
 ## Slice 4: Versammlung und Beschlussworkflow
 

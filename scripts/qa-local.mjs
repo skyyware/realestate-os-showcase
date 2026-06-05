@@ -1,9 +1,10 @@
 import { chromium } from 'playwright';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 const baseUrl = process.env.QA_BASE_URL ?? 'https://realestate.localhost';
 const outputDir = new URL('../output/qa/', import.meta.url);
+const fixtureDir = new URL('fixtures/', outputDir);
 const stamp = Date.now();
 const user = {
   fullName: 'Sascha Dobrochynskyy',
@@ -13,12 +14,26 @@ const user = {
 };
 
 await mkdir(outputDir, { recursive: true });
+await mkdir(fixtureDir, { recursive: true });
+const invoiceFixtureContent = `Rechnung Hausmeisterservice Stuttgart
+Beleg HM-2026-118
+Betrag 1.250,00 EUR
+`;
+const protocolFixtureContent = `Protokoll JHV 2026
+Beschluss: Sanierung Treppenhaus beauftragen
+Status: umgesetzt
+`;
+const invoiceFixture = fileURLToPath(new URL('rechnung-hm-2026-118.txt', fixtureDir));
+const protocolFixture = fileURLToPath(new URL('protokoll-jhv-2026.txt', fixtureDir));
+await writeFile(invoiceFixture, invoiceFixtureContent);
+await writeFile(protocolFixture, protocolFixtureContent);
 
 const browser = await chromium.launch();
 const context = await browser.newContext({
   viewport: { width: 1440, height: 1100 },
   locale: 'de-DE',
-  ignoreHTTPSErrors: true
+  ignoreHTTPSErrors: true,
+  acceptDownloads: true
 });
 const page = await context.newPage();
 const desktopErrors = [];
@@ -131,7 +146,7 @@ await page.screenshot({ path: fileURLToPath(new URL('realestate-finances-desktop
 await page.getByRole('button', { name: 'Dokumente', exact: true }).click();
 await page.getByPlaceholder('Dokumenttitel').fill('Rechnung Hausmeisterservice');
 await page.getByLabel('Dokumenttyp').selectOption('Rechnung');
-await page.getByPlaceholder('Dateiname').fill('rechnung-hm-2026-118.pdf');
+await page.getByLabel('Datei auswählen').setInputFiles(invoiceFixture);
 await page.locator('input[formcontrolname="documentDate"]').fill('03.06.2026');
 await page.getByLabel('Dokumentenstatus').selectOption('APPROVED');
 await page.getByLabel('Sichtbarkeit').selectOption('ALL_OWNERS');
@@ -141,7 +156,19 @@ const financeDocumentTarget = await page.getByLabel('Zielobjekt').locator('optio
 await page.getByLabel('Zielobjekt').selectOption(financeDocumentTarget);
 await page.getByPlaceholder('Kontext für Suche und Prüfung').fill('Geprüfter Beleg zur offenen Forderung.');
 await page.getByRole('button', { name: 'Ablegen', exact: true }).click();
-await page.locator('.row').filter({ hasText: 'Rechnung Hausmeisterservice' }).filter({ hasText: 'Geprüfter Beleg' }).waitFor();
+let documentRow = page.locator('.document-row').filter({ hasText: 'Rechnung Hausmeisterservice' }).filter({ hasText: 'Geprüfter Beleg' }).filter({ hasText: 'SHA-256' });
+await documentRow.waitFor();
+let [documentDownload] = await Promise.all([
+  page.waitForEvent('download'),
+  documentRow.getByRole('button', { name: 'Download' }).click()
+]);
+if (documentDownload.suggestedFilename() !== 'rechnung-hm-2026-118.txt') {
+  throw new Error(`Unexpected invoice download filename: ${documentDownload.suggestedFilename()}`);
+}
+const invoiceDownloadPath = await documentDownload.path();
+if (!invoiceDownloadPath || await readFile(invoiceDownloadPath, 'utf8') !== invoiceFixtureContent) {
+  throw new Error('Downloaded invoice file content does not match uploaded fixture.');
+}
 
 await page.getByRole('button', { name: 'Beschlüsse', exact: true }).click();
 await page.locator('form.meeting-form').getByPlaceholder('Versammlungstitel').fill('Eigentümerversammlung 2026');
@@ -176,7 +203,7 @@ await page.screenshot({ path: fileURLToPath(new URL('realestate-decisions-deskto
 await page.getByRole('button', { name: 'Dokumente', exact: true }).click();
 await page.getByPlaceholder('Dokumenttitel').fill('Protokoll JHV 2026');
 await page.getByLabel('Dokumenttyp').selectOption('Protokoll');
-await page.getByPlaceholder('Dateiname').fill('protokoll-jhv-2026.pdf');
+await page.getByLabel('Datei auswählen').setInputFiles(protocolFixture);
 await page.locator('input[formcontrolname="documentDate"]').fill('03.06.2026');
 await page.getByLabel('Dokumentenstatus').selectOption('APPROVED');
 await page.getByLabel('Sichtbarkeit').selectOption('ALL_OWNERS');
@@ -186,7 +213,19 @@ const decisionDocumentTarget = await page.getByLabel('Zielobjekt').locator('opti
 await page.getByLabel('Zielobjekt').selectOption(decisionDocumentTarget);
 await page.getByPlaceholder('Kontext für Suche und Prüfung').fill('Beschlussprotokoll zur Sanierung.');
 await page.getByRole('button', { name: 'Ablegen', exact: true }).click();
-await page.locator('.row').filter({ hasText: 'Protokoll JHV 2026' }).filter({ hasText: 'Beschlussprotokoll' }).waitFor();
+documentRow = page.locator('.document-row').filter({ hasText: 'Protokoll JHV 2026' }).filter({ hasText: 'Beschlussprotokoll' }).filter({ hasText: 'SHA-256' });
+await documentRow.waitFor();
+[documentDownload] = await Promise.all([
+  page.waitForEvent('download'),
+  documentRow.getByRole('button', { name: 'Download' }).click()
+]);
+if (documentDownload.suggestedFilename() !== 'protokoll-jhv-2026.txt') {
+  throw new Error(`Unexpected protocol download filename: ${documentDownload.suggestedFilename()}`);
+}
+const protocolDownloadPath = await documentDownload.path();
+if (!protocolDownloadPath || await readFile(protocolDownloadPath, 'utf8') !== protocolFixtureContent) {
+  throw new Error('Downloaded protocol file content does not match uploaded fixture.');
+}
 await page.screenshot({ path: fileURLToPath(new URL('realestate-documents-desktop.png', outputDir)), fullPage: true });
 
 await page.getByRole('button', { name: 'Kommunikation', exact: true }).click();

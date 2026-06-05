@@ -26,9 +26,17 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.UUID;
+import org.springframework.core.io.Resource;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,6 +48,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/workspace")
@@ -222,6 +231,59 @@ public class WorkspaceController {
                 request.linkedEntityType(),
                 request.linkedEntityId()
         ));
+    }
+
+    @PostMapping(value = "/documents/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('OWNER_ADMIN','PROPERTY_MANAGER','BOARD_MEMBER')")
+    WorkspaceService.DashboardView uploadDocument(
+            @RequestParam UUID propertyId,
+            @RequestParam @NotBlank @Size(max = 180) String title,
+            @RequestParam @NotBlank @Size(max = 80) String documentType,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate documentDate,
+            @RequestParam DocumentStatus status,
+            @RequestParam DocumentVisibility visibility,
+            @RequestParam @NotBlank @Size(max = 80) String source,
+            @RequestParam(required = false) @Size(max = 1000) String description,
+            @RequestParam DocumentLinkType linkedEntityType,
+            @RequestParam(required = false) UUID linkedEntityId,
+            @RequestParam MultipartFile file
+    ) {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("Bitte eine Datei auswählen.");
+        }
+        try {
+            return workspaceService.uploadDocument(CurrentUser.require().userId(), new WorkspaceService.UploadDocumentCommand(
+                    propertyId,
+                    title,
+                    documentType,
+                    documentDate,
+                    status,
+                    visibility,
+                    source,
+                    description,
+                    linkedEntityType,
+                    linkedEntityId,
+                    file.getOriginalFilename(),
+                    file.getContentType(),
+                    file.getSize(),
+                    file.getInputStream()
+            ));
+        } catch (IOException exception) {
+            throw new IllegalArgumentException("Datei konnte nicht gelesen werden.");
+        }
+    }
+
+    @GetMapping("/documents/{documentId}/download")
+    ResponseEntity<Resource> downloadDocument(@PathVariable UUID documentId) {
+        WorkspaceService.DocumentDownload download = workspaceService.downloadDocument(CurrentUser.require().userId(), documentId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(download.contentType()))
+                .contentLength(download.fileSizeBytes())
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename(download.fileName(), StandardCharsets.UTF_8)
+                        .build()
+                        .toString())
+                .body(download.resource());
     }
 
     @PostMapping("/meetings")

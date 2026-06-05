@@ -15,7 +15,7 @@ Eine shipbare Product-Engineering-Codebasis für moderne digitale WEG-Verwaltung
 - PostgreSQL 16 lokal und Aurora-kompatibles Schema
 - Keycloak/OIDC-ready Identity Boundary via `docker-compose --profile identity`
 - Onboarding mit Registrierung, E-Mail-Link, Passwortvergabe und leerem Workspace
-- Produktflows für Immobilien, Einheiten, Finanzen, Hausgeld-Soll, Einheitensalden, Wirtschaftspläne, Versammlungen, Beschlussworkflow, Kommunikation, Aufgaben, Dokumente mit Belegkette und Aktivität
+- Produktflows für Immobilien, Einheiten, Finanzen, Hausgeld-Soll, Einheitensalden, Wirtschaftspläne, Versammlungen, Beschlussworkflow, Kommunikation, Aufgaben, echte Dokument-Uploads mit Belegkette und Aktivität
 - Rollenbasierte Workspace-Commands und Audit-Log für schreibende Vorgänge
 - Operatives Command Center mit priorisierten nächsten Schritten je Immobilie
 - Beschluss-Sammlung mit Datum, Ort, Wortlaut, Abstimmungsergebnis und Umsetzungsstatus
@@ -67,9 +67,9 @@ npm run qa:local
 ```
 
 Der Smoke registriert einen frischen lokalen Nutzer, setzt ein Passwort, baut
-einen Workspace ohne Seed-Daten auf, prüft die Empfehlungen, schließt eine
-Aufgabe ab, wechselt zwischen zwei Immobilien und schreibt Screenshots nach
-`output/qa`.
+einen Workspace ohne Seed-Daten auf, prueft die Empfehlungen, laedt Dokumente
+hoch, prueft deren Download, schliesst eine Aufgabe ab, wechselt zwischen zwei
+Immobilien und schreibt Screenshots nach `output/qa`.
 
 ## Architektur
 

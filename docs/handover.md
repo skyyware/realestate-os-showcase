@@ -1,6 +1,6 @@
 # Handover Runbook
 
-Stand: 4. Juni 2026
+Stand: 5. Juni 2026
 
 ## Lokaler Start
 
@@ -29,6 +29,8 @@ docker compose --profile identity up -d keycloak
 - `REALESTATE_MAIL_ENABLED`
 - `REALESTATE_MAIL_FROM`
 - `REALESTATE_MAIL_FROM_NAME`
+- `REALESTATE_DOCUMENT_STORAGE_ROOT`
+- `REALESTATE_DOCUMENT_STORAGE_MAX_FILE_SIZE_BYTES`
 
 Secrets werden nicht im Repo gespeichert.
 
@@ -50,6 +52,8 @@ Secrets werden nicht im Repo gespeichert.
 - Keycloak-Realm, Client und Rollen definieren.
 - Aurora-Parameter, Backups und Deletion Protection bestaetigen.
 - SES-Domain verifizieren.
-- Dokumentablage von Metadaten auf S3-Objekte erweitern.
+- Dokumentablage nutzt lokal/Stage einen Serverpfad mit Storage-Key,
+  Content-Type, Dateigroesse und SHA-256; produktiv kann die Boundary auf S3
+  oder kompatiblen Object Storage zeigen.
 - Monitoring: API-Health, Fehlerquote, Mail-Delivery, DB-Verbindungen,
   Speicherauslastung und Antwortzeiten.

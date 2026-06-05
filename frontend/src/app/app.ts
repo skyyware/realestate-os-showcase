@@ -28,6 +28,7 @@ export class App implements OnInit, OnDestroy {
   protected readonly insightHidden = signal(false);
   protected readonly financePanelTab = signal<'entry' | 'history'>('entry');
   protected readonly editingTaskId = signal<string | null>(null);
+  protected readonly selectedDocumentFile = signal<File | null>(null);
   protected readonly quickAccess = signal<Section[]>(['tasks', 'documents']);
   private applyDefaultViewOnNextDashboard = false;
 
@@ -487,18 +488,43 @@ export class App implements OnInit, OnDestroy {
     if (this.documentForm.invalid) return;
     const propertyId = this.requireSelectedPropertyId();
     if (!propertyId) return;
+    const file = this.selectedDocumentFile();
+    if (!file) {
+      this.error.set('Bitte eine Datei auswählen.');
+      this.info.set('');
+      return;
+    }
     const formValue = this.documentForm.getRawValue();
     if (formValue.linkedEntityType !== 'GENERAL' && !formValue.linkedEntityId) {
       this.error.set('Bitte Zielobjekt für das Dokument auswählen.');
       this.info.set('');
       return;
     }
-    this.submitDashboardRequest('documents', {
-      ...formValue,
-      documentDate: this.toIsoDate(formValue.documentDate),
-      linkedEntityId: formValue.linkedEntityType === 'GENERAL' ? null : formValue.linkedEntityId || null,
-      propertyId
-    }, 'Dokument wurde mit Kontext abgelegt.');
+    const payload = new FormData();
+    payload.append('propertyId', propertyId);
+    payload.append('title', formValue.title);
+    payload.append('documentType', formValue.documentType);
+    payload.append('documentDate', this.toIsoDate(formValue.documentDate));
+    payload.append('status', formValue.status);
+    payload.append('visibility', formValue.visibility);
+    payload.append('source', formValue.source);
+    payload.append('description', formValue.description);
+    payload.append('linkedEntityType', formValue.linkedEntityType);
+    if (formValue.linkedEntityType !== 'GENERAL' && formValue.linkedEntityId) {
+      payload.append('linkedEntityId', formValue.linkedEntityId);
+    }
+    payload.append('file', file, file.name);
+    this.begin();
+    this.http.post<Dashboard>(`${API_BASE_URL}/workspace/documents/upload`, payload)
+      .subscribe({
+        next: dashboard => {
+          this.loading.set(false);
+          this.applyDashboard(dashboard);
+          this.resetDocumentForm();
+          this.info.set('Dokumentdatei wurde hochgeladen und mit Kontext abgelegt.');
+        },
+        error: error => this.fail(error)
+      });
   }
 
   protected createDecision(): void {
@@ -862,6 +888,51 @@ export class App implements OnInit, OnDestroy {
     this.documentForm.controls.linkedEntityId.setValue('');
   }
 
+  protected selectDocumentFile(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.item(0) ?? null;
+    this.selectedDocumentFile.set(file);
+    if (!file) {
+      this.documentForm.controls.fileName.setValue('');
+      return;
+    }
+    this.documentForm.controls.fileName.setValue(file.name);
+    if (!this.documentForm.controls.title.value.trim()) {
+      this.documentForm.controls.title.setValue(this.titleFromFileName(file.name));
+    }
+    this.error.set('');
+  }
+
+  protected downloadDocument(document: DocumentView): void {
+    if (!document.hasFile) {
+      this.error.set('Für dieses Dokument ist keine Datei gespeichert.');
+      this.info.set('');
+      return;
+    }
+    this.begin();
+    this.http.get(`${API_BASE_URL}/workspace/documents/${encodeURIComponent(document.id)}/download`, {
+      observe: 'response',
+      responseType: 'blob'
+    }).subscribe({
+      next: response => {
+        this.loading.set(false);
+        if (!response.body) {
+          this.error.set('Dokumentdatei konnte nicht gelesen werden.');
+          return;
+        }
+        const fileName = this.downloadFileName(response.headers.get('content-disposition')) ?? document.fileName;
+        const objectUrl = URL.createObjectURL(response.body);
+        const anchor = globalThis.document.createElement('a');
+        anchor.href = objectUrl;
+        anchor.download = fileName;
+        anchor.click();
+        setTimeout(() => URL.revokeObjectURL(objectUrl));
+        this.info.set(`Download gestartet: ${fileName}`);
+      },
+      error: error => this.fail(error)
+    });
+  }
+
   protected documentRequiresLink(): boolean {
     return this.documentForm.controls.linkedEntityType.value !== 'GENERAL';
   }
@@ -897,6 +968,16 @@ export class App implements OnInit, OnDestroy {
     return this.statusLabel(document.linkedEntityType);
   }
 
+  protected documentStorageLabel(document: DocumentView): string {
+    if (!document.hasFile) return 'Nur Metadaten';
+    const parts = [
+      this.fileSizeLabel(document.fileSizeBytes),
+      document.contentType || 'Datei',
+      document.sha256Checksum ? `SHA-256 ${document.sha256Checksum.slice(0, 10)}` : ''
+    ].filter(Boolean);
+    return parts.join(' · ');
+  }
+
   protected insightSeverityLabel(severity: string): string {
     return {
       HIGH: 'Priorität',
@@ -924,7 +1005,7 @@ export class App implements OnInit, OnDestroy {
           }
           if (path === 'house-money') this.houseMoneyForm.reset({ unitId: '', fiscalYear: new Date().getFullYear(), monthlyHouseMoney: 0, monthlyReserveContribution: 0, validFrom: `01.01.${new Date().getFullYear()}`, status: 'ACTIVE' });
           if (path === 'annual-plans') this.annualPlanForm.reset({ fiscalYear: new Date().getFullYear(), houseMoneyBudget: 0, maintenanceBudget: 0, reserveContribution: 0, status: 'DRAFT' });
-          if (path === 'documents') this.documentForm.reset({ title: '', documentType: 'Rechnung', fileName: '', documentDate: this.today(), status: 'RECEIVED', visibility: 'ALL_OWNERS', source: 'UPLOAD', description: '', linkedEntityType: 'GENERAL', linkedEntityId: '' });
+          if (path === 'documents') this.resetDocumentForm();
           if (path === 'meetings') this.meetingForm.reset({ title: '', meetingDate: this.today(), location: '', agenda: '', invitationSentOn: '', responseDeadline: '', quorumRequirement: 'Einfache Mehrheit nach MEA', status: 'SCHEDULED' });
           if (path === 'decisions') this.decisionForm.reset({ meetingId: '', title: '', resolutionText: '', meetingDate: this.today(), meetingLocation: 'Eigentümerversammlung', agendaItem: 'TOP 1', implementationDueDate: '', responsibleRole: 'Verwaltung', costImpact: 0, status: 'PASSED', yesVotes: 0, noVotes: 0, abstentions: 0 });
           if (path === 'messages') this.communicationForm.reset({ audience: 'Eigentümer', subject: '', message: '', status: 'READY_TO_SEND', channel: 'EMAIL', sourceType: 'MANUAL', sourceId: '', readyToSendOn: this.today(), createFollowUpTask: true, followUpTitle: 'Rückfrage nachhalten', followUpDescription: 'Rückmeldung prüfen und nächsten Schritt dokumentieren.', followUpPriority: 'MEDIUM', followUpAssigneeRole: 'Verwaltung', followUpDueDate: '', followUpReminderDate: '' });
@@ -1043,6 +1124,24 @@ export class App implements OnInit, OnDestroy {
     });
   }
 
+  private resetDocumentForm(): void {
+    this.documentForm.reset({
+      title: '',
+      documentType: 'Rechnung',
+      fileName: '',
+      documentDate: this.today(),
+      status: 'RECEIVED',
+      visibility: 'ALL_OWNERS',
+      source: 'UPLOAD',
+      description: '',
+      linkedEntityType: 'GENERAL',
+      linkedEntityId: ''
+    });
+    this.selectedDocumentFile.set(null);
+    const input = globalThis.document.getElementById('document-file-input') as HTMLInputElement | null;
+    if (input) input.value = '';
+  }
+
   private preferenceEmail(): string {
     return this.dashboard()?.user.email ?? localStorage.getItem('realestate.lastEmail') ?? 'default';
   }
@@ -1059,6 +1158,34 @@ export class App implements OnInit, OnDestroy {
 
   private currency(amount: number): string {
     return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(amount);
+  }
+
+  private fileSizeLabel(bytes?: number): string {
+    if (!bytes) return 'Datei gespeichert';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let value = bytes;
+    let unitIndex = 0;
+    while (value >= 1024 && unitIndex < units.length - 1) {
+      value /= 1024;
+      unitIndex += 1;
+    }
+    return `${new Intl.NumberFormat('de-DE', { maximumFractionDigits: value >= 10 ? 0 : 1 }).format(value)} ${units[unitIndex]}`;
+  }
+
+  private titleFromFileName(fileName: string): string {
+    return fileName
+      .replace(/\.[^.]+$/, '')
+      .replace(/[-_]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private downloadFileName(contentDisposition: string | null): string | null {
+    if (!contentDisposition) return null;
+    const utf8Match = /filename\*=UTF-8''([^;]+)/i.exec(contentDisposition);
+    if (utf8Match) return decodeURIComponent(utf8Match[1].replace(/"/g, ''));
+    const fallbackMatch = /filename="?([^";]+)"?/i.exec(contentDisposition);
+    return fallbackMatch ? fallbackMatch[1] : null;
   }
 
   private requireSelectedPropertyId(): string | null {
@@ -1316,6 +1443,11 @@ interface DocumentView {
   description?: string;
   linkedEntityType: DocumentLinkType;
   linkedEntityId?: string;
+  hasFile: boolean;
+  contentType?: string;
+  fileSizeBytes?: number;
+  sha256Checksum?: string;
+  uploadedAt?: string;
 }
 
 interface WorkTaskView {

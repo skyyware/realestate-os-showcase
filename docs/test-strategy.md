@@ -1,6 +1,6 @@
 # Test Strategy
 
-Stand: 4. Juni 2026
+Stand: 5. Juni 2026
 
 ## Testpyramide
 
@@ -23,7 +23,7 @@ Der lokale QA-Smoke muss diese Pfade abdecken:
 - Einheiten und Eigentuemerstruktur erfassen
 - Finanzbuchung und offenen Betrag erfassen
 - Wirtschaftsplan anlegen
-- Dokument ablegen
+- Dokument hochladen, speichern und herunterladen
 - Eigentuemerversammlung vorbereiten
 - Beschluss erfassen und umsetzen
 - Aufgabe erstellen, bearbeiten, pruefen, erledigen und loeschen
@@ -33,6 +33,7 @@ Der lokale QA-Smoke muss diese Pfade abdecken:
 - Workspace wechseln
 - Suche nutzen
 - Desktop- und Mobile-Screenshot ohne sichtbare Layoutbrueche
+- Dateiinhalt nach Download mit der hochgeladenen Fixture vergleichen
 
 ## Definition Of Done
 

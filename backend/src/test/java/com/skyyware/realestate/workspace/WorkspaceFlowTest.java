@@ -23,7 +23,9 @@ import com.skyyware.realestate.property.MemberStatus;
 import com.skyyware.realestate.property.OccupancyType;
 import com.skyyware.realestate.task.TaskPriority;
 import com.skyyware.realestate.task.TaskStatus;
+import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -44,7 +46,7 @@ class WorkspaceFlowTest {
     private WorkspaceService workspaceService;
 
     @Test
-    void freshAccountStartsEmptyAndCanBuildWorkspace() {
+    void freshAccountStartsEmptyAndCanBuildWorkspace() throws Exception {
         String email = "ship-ready@example.com";
         AuthService.RegistrationResult registration = authService.register(email, "Ship Ready", "WEG Verwaltung GmbH");
         String rawToken = registration.localSetupLink().substring(registration.localSetupLink().indexOf("token=") + 6);
@@ -151,19 +153,38 @@ class WorkspaceFlowTest {
                 new BigDecimal("12000.00"),
                 AnnualPlanStatus.APPROVED
         ));
-        workspaceService.createDocument(user.id(), new WorkspaceService.CreateDocumentCommand(
+        byte[] invoiceBytes = """
+                Rechnung Hausmeisterservice Stuttgart
+                Beleg HM-2026-118
+                Betrag 1.250,00 EUR
+                """.getBytes(StandardCharsets.UTF_8);
+        WorkspaceService.DashboardView withUploadedInvoice = workspaceService.uploadDocument(user.id(), new WorkspaceService.UploadDocumentCommand(
                 withProperty.selectedPropertyId(),
                 "Rechnung Hausmeisterservice",
                 "Rechnung",
-                "rechnung-hm-2026-118.pdf",
                 LocalDate.of(2026, 6, 5),
                 DocumentStatus.APPROVED,
                 DocumentVisibility.ALL_OWNERS,
                 "UPLOAD",
                 "Geprüfter Beleg zur offenen Forderung.",
                 DocumentLinkType.FINANCE,
-                financeId
+                financeId,
+                "rechnung-hm-2026-118.txt",
+                "text/plain",
+                invoiceBytes.length,
+                new ByteArrayInputStream(invoiceBytes)
         ));
+        WorkspaceService.DocumentView uploadedInvoice = withUploadedInvoice.documents().stream()
+                .filter(document -> document.title().equals("Rechnung Hausmeisterservice"))
+                .findFirst()
+                .orElseThrow();
+        assertThat(uploadedInvoice.hasFile()).isTrue();
+        assertThat(uploadedInvoice.fileSizeBytes()).isEqualTo(invoiceBytes.length);
+        assertThat(uploadedInvoice.sha256Checksum()).hasSize(64);
+        WorkspaceService.DocumentDownload invoiceDownload = workspaceService.downloadDocument(user.id(), uploadedInvoice.id());
+        assertThat(invoiceDownload.fileName()).isEqualTo("rechnung-hm-2026-118.txt");
+        assertThat(invoiceDownload.contentType()).isEqualTo("text/plain");
+        assertThat(invoiceDownload.resource().getInputStream().readAllBytes()).isEqualTo(invoiceBytes);
         WorkspaceService.DashboardView withMeeting = workspaceService.createMeeting(user.id(), new WorkspaceService.CreateMeetingCommand(
                 withProperty.selectedPropertyId(),
                 "Eigentümerversammlung 2026",

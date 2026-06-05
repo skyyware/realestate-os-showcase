@@ -56,6 +56,21 @@ public class PropertyDocument {
 
     private UUID linkedEntityId;
 
+    @Column(name = "storage_key")
+    private String storageKey;
+
+    @Column(name = "content_type")
+    private String contentType;
+
+    @Column(name = "file_size_bytes")
+    private Long fileSizeBytes;
+
+    @Column(name = "sha256_checksum", length = 64)
+    private String sha256Checksum;
+
+    @Column(name = "uploaded_at")
+    private Instant uploadedAt;
+
     @Column(nullable = false)
     private Instant createdAt;
 
@@ -75,6 +90,42 @@ public class PropertyDocument {
             DocumentLinkType linkedEntityType,
             UUID linkedEntityId
     ) {
+        this(
+                property,
+                title,
+                documentType,
+                fileName,
+                documentDate,
+                status,
+                visibility,
+                source,
+                description,
+                linkedEntityType,
+                linkedEntityId,
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    public PropertyDocument(
+            PropertyAsset property,
+            String title,
+            String documentType,
+            String fileName,
+            LocalDate documentDate,
+            DocumentStatus status,
+            DocumentVisibility visibility,
+            String source,
+            String description,
+            DocumentLinkType linkedEntityType,
+            UUID linkedEntityId,
+            String storageKey,
+            String contentType,
+            Long fileSizeBytes,
+            String sha256Checksum
+    ) {
         this.id = UUID.randomUUID();
         this.property = property;
         this.title = title;
@@ -87,6 +138,7 @@ public class PropertyDocument {
         this.description = description;
         this.linkedEntityType = linkedEntityType;
         this.linkedEntityId = linkedEntityId;
+        attachFile(storageKey, contentType, fileSizeBytes, sha256Checksum);
         this.createdAt = Instant.now();
     }
 
@@ -136,5 +188,37 @@ public class PropertyDocument {
 
     public UUID linkedEntityId() {
         return linkedEntityId;
+    }
+
+    public String storageKey() {
+        return storageKey;
+    }
+
+    public String contentType() {
+        return contentType;
+    }
+
+    public Long fileSizeBytes() {
+        return fileSizeBytes;
+    }
+
+    public String sha256Checksum() {
+        return sha256Checksum;
+    }
+
+    public Instant uploadedAt() {
+        return uploadedAt;
+    }
+
+    public boolean hasFile() {
+        return storageKey != null && !storageKey.isBlank();
+    }
+
+    public void attachFile(String storageKey, String contentType, Long fileSizeBytes, String sha256Checksum) {
+        this.storageKey = storageKey;
+        this.contentType = contentType;
+        this.fileSizeBytes = fileSizeBytes;
+        this.sha256Checksum = sha256Checksum;
+        this.uploadedAt = storageKey == null || storageKey.isBlank() ? null : Instant.now();
     }
 }
