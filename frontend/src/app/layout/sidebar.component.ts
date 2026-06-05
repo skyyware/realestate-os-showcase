@@ -2,11 +2,6 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 export type SidebarSection = 'overview' | 'properties' | 'units' | 'finances' | 'tasks' | 'documents' | 'decisions' | 'activity' | 'communication' | 'settings';
 
-interface QuickActionView {
-  section: SidebarSection;
-  label: string;
-}
-
 interface NavigationItem {
   section: SidebarSection;
   label: string;
@@ -20,7 +15,6 @@ interface NavigationItem {
 })
 export class SidebarComponent {
   @Input({ required: true }) activeSection!: SidebarSection;
-  @Input({ required: true }) quickActions: QuickActionView[] = [];
 
   @Output() sectionSelected = new EventEmitter<SidebarSection>();
   @Output() loggedOut = new EventEmitter<void>();

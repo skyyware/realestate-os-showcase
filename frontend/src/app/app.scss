@@ -1229,22 +1229,6 @@ button.table-row.selected {
   grid-column: 1 / -1;
 }
 
-.preference-block {
-  display: grid;
-  gap: 14px;
-  grid-column: 1 / -1;
-  padding: 18px;
-  border: 1px solid #e4edf5;
-  border-radius: 8px;
-  background: #f8fbfe;
-}
-
-.quick-config {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-}
-
 .member-list {
   display: grid;
   gap: 10px;

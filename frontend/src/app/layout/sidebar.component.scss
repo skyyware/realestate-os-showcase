@@ -95,48 +95,24 @@ nav button {
 
 nav button.active,
 nav button:hover {
-  color: #fff;
-  background: linear-gradient(90deg, #0d9c8d, #0a7c8f);
-  box-shadow: 0 12px 26px rgb(1 20 51 / 22%);
+  color: #07326a;
+  background: #fff;
+  box-shadow: 0 12px 26px rgb(1 20 51 / 18%);
 }
 
 .sidebar-footer {
   display: grid;
-  gap: 10px;
   margin-top: auto;
   padding-top: 18px;
   border-top: 1px solid rgb(255 255 255 / 12%);
 }
 
-.sidebar-footer small {
-  color: #a8b7ca;
-  font-weight: 850;
-  text-transform: uppercase;
-}
-
-.quick-action {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  justify-content: flex-start;
-  min-height: 36px;
-  padding: 0 8px;
-  color: #fff;
-  background: transparent;
-  box-shadow: none;
-}
-
-.quick-action.configure {
-  color: #bfefff;
-}
-
 .logout-button {
   width: 100%;
-  margin-top: 12px;
-  color: #fff;
-  background: var(--pink);
-  border: 1px solid transparent;
-  box-shadow: 0 16px 30px rgb(255 79 149 / 22%);
+  color: #07326a;
+  background: #fff;
+  border: 1px solid rgb(255 255 255 / 44%);
+  box-shadow: 0 12px 26px rgb(1 20 51 / 16%);
 }
 
 @media (max-width: 1180px) {
@@ -165,10 +141,6 @@ nav button:hover {
     margin-top: 0;
     padding-top: 0;
     border-top: 0;
-  }
-
-  .sidebar-footer small {
-    display: none;
   }
 
   .logout-button {
@@ -202,11 +174,6 @@ nav button:hover {
   .sidebar-footer {
     grid-column: 2;
     grid-row: 1;
-  }
-
-  .sidebar-footer small,
-  .sidebar-footer .quick-action {
-    display: none;
   }
 
   .logout-button {

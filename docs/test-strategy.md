@@ -29,7 +29,7 @@ Der lokale QA-Smoke muss diese Pfade abdecken:
 - Aufgabe erstellen, bearbeiten, pruefen, erledigen und loeschen
 - Mitteilung vorbereiten
 - Nutzerrolle aendern, Status setzen und Zugriff deaktivieren
-- Schnellzugriff pro Nutzer konfigurieren
+- Rollen- und Workspace-Einstellungen speichern
 - Workspace wechseln
 - Suche nutzen
 - Desktop- und Mobile-Screenshot ohne sichtbare Layoutbrueche

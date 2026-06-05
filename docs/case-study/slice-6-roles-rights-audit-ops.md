@@ -43,8 +43,8 @@ Frontend:
 - Login-first fuer bekannte Nutzer, Passwort-vergessen-Flow und kompaktere
   Auth-Hero-Ansicht.
 - Einstellungen zeigen Rolle, Bearbeitungsniveau und erlaubte Command-Gruppen.
-- Einstellungen verwalten Nutzerrollen, Zugriffsstatus und Schnellzugriff pro
-  Nutzer.
+- Einstellungen verwalten Nutzerrollen, Zugriffsstatus und
+  Workspace-Benachrichtigungen pro Nutzer.
 - Aufgaben koennen direkt aus der Liste bearbeitet, geloescht und per Status
   verschoben werden.
 - Die Aktivitaetsansicht zeigt zusaetzlich einen technischen Audit-Nachweis.

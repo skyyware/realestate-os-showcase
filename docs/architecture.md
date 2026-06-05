@@ -57,8 +57,8 @@ Root-Template herausgezogen:
 
 - `auth/AuthShellComponent` rendert Registrierung, Login, Passwort-Reset und
   Passwortvergabe als reine UI-Komponente auf vorhandenen Reactive Forms.
-- `layout/SidebarComponent` rendert Navigation, Schnellzugriff und Logout als
-  eigenes Layout-Element mit klaren Inputs und Outputs.
+- `layout/SidebarComponent` rendert Navigation und Logout als eigenes
+  Layout-Element mit klaren Inputs und Outputs.
 
 Damit bleibt die Fachinteraktion weiterhin zentral nachvollziehbar, während
 visuelle Flächen separat gepflegt, getestet und später schrittweise in weitere

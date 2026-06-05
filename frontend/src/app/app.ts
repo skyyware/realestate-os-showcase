@@ -31,19 +31,7 @@ export class App implements OnInit, OnDestroy {
   protected readonly financePanelTab = signal<'entry' | 'history'>('entry');
   protected readonly editingTaskId = signal<string | null>(null);
   protected readonly selectedDocumentFile = signal<File | null>(null);
-  protected readonly quickAccess = signal<Section[]>(['tasks', 'documents']);
   private applyDefaultViewOnNextDashboard = false;
-
-  protected readonly quickAccessOptions: Array<{ section: Section; label: string }> = [
-    { section: 'tasks', label: 'Neue Aufgabe' },
-    { section: 'documents', label: 'Dokument ablegen' },
-    { section: 'finances', label: 'Buchung erfassen' },
-    { section: 'communication', label: 'Mitteilung vorbereiten' },
-    { section: 'settings', label: 'Nutzer & Rechte' }
-  ];
-  protected readonly configuredQuickActions = computed(() =>
-    this.quickAccessOptions.filter(option => this.quickAccess().includes(option.section))
-  );
 
   protected readonly selectedProperty = computed(() => {
     const dashboard = this.dashboard();
@@ -663,7 +651,6 @@ export class App implements OnInit, OnDestroy {
   protected saveSettings(): void {
     const email = this.preferenceEmail();
     localStorage.setItem(this.preferenceKey('workspaceSettings', email), JSON.stringify(this.settingsForm.getRawValue()));
-    localStorage.setItem(this.preferenceKey('quickAccess', email), JSON.stringify(this.quickAccess()));
     this.info.set('Einstellungen wurden gespeichert.');
     this.error.set('');
   }
@@ -746,19 +733,6 @@ export class App implements OnInit, OnDestroy {
         },
         error: error => this.fail(error)
       });
-  }
-
-  protected isQuickActionEnabled(section: Section): boolean {
-    return this.quickAccess().includes(section);
-  }
-
-  protected toggleQuickAction(section: Section, event: Event): void {
-    const checked = (event.target as HTMLInputElement).checked;
-    const current = this.quickAccess();
-    const next = checked
-      ? [...new Set([...current, section])]
-      : current.filter(item => item !== section);
-    this.quickAccess.set(next.length ? next : ['tasks']);
   }
 
   protected updateDecisionStatus(decision: DecisionView, status: DecisionStatus): void {
@@ -1085,16 +1059,6 @@ export class App implements OnInit, OnDestroy {
         localStorage.removeItem(this.preferenceKey('workspaceSettings', email));
       }
     }
-    const quickAccess = localStorage.getItem(this.preferenceKey('quickAccess', email));
-    if (quickAccess) {
-      try {
-        const parsed = JSON.parse(quickAccess) as Section[];
-        const allowed = parsed.filter(section => this.quickAccessOptions.some(option => option.section === section));
-        if (allowed.length) this.quickAccess.set(allowed);
-      } catch {
-        localStorage.removeItem(this.preferenceKey('quickAccess', email));
-      }
-    }
   }
 
   private updateMember(member: MemberView, changes: Partial<Pick<MemberView, 'role' | 'status'>>): void {
@@ -1150,7 +1114,7 @@ export class App implements OnInit, OnDestroy {
     return this.dashboard()?.user.email ?? localStorage.getItem('realestate.lastEmail') ?? 'default';
   }
 
-  private preferenceKey(kind: 'workspaceSettings' | 'quickAccess', email: string): string {
+  private preferenceKey(kind: 'workspaceSettings', email: string): string {
     return `realestate.${kind}.${email}`;
   }
 

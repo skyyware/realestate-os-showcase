@@ -346,10 +346,13 @@ page.once('dialog', dialog => dialog.accept());
 await memberRow.getByRole('button', { name: 'Deaktivieren' }).click();
 await page.getByText('Rolle wurde deaktiviert.').waitFor();
 await page.locator('.member-row.disabled').filter({ hasText: 'Beirat Stuttgart' }).waitFor();
-await page.locator('.quick-config').getByLabel('Buchung erfassen').check();
 await page.getByRole('button', { name: 'Einstellungen speichern', exact: true }).click();
 await page.getByText('Einstellungen wurden gespeichert.').waitFor();
-await page.locator('.sidebar-footer').getByRole('button', { name: 'Buchung erfassen' }).waitFor();
+const sidebarFooterText = await page.locator('.sidebar-footer').innerText();
+if (sidebarFooterText.includes('Schnellzugriff') || sidebarFooterText.includes('Buchung erfassen')) {
+  throw new Error('Sidebar footer should only contain the neutral logout action.');
+}
+await page.locator('.sidebar-footer').getByRole('button', { name: 'Logout' }).waitFor();
 await page.screenshot({ path: fileURLToPath(new URL('realestate-settings-desktop.png', outputDir)), fullPage: true });
 
 await page.getByRole('button', { name: 'Übersicht', exact: true }).click();

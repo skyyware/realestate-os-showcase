@@ -21,7 +21,6 @@
   @if (mode() === 'dashboard' && dashboard()) {
     <app-sidebar
       [activeSection]="activeSection()"
-      [quickActions]="configuredQuickActions()"
       (sectionSelected)="selectSection($event)"
       (loggedOut)="logout()"
     />
@@ -815,20 +814,6 @@
                     <option value="settings">Einstellungen</option>
                   </select>
                 </label>
-                <section class="preference-block">
-                  <div class="subsection-heading">
-                    <div><span>Schnellzugriff</span><h3>Sidebar-Aktionen konfigurieren</h3></div>
-                    <small>pro Nutzer</small>
-                  </div>
-                  <div class="quick-config">
-                    @for (action of quickAccessOptions; track action.section) {
-                      <label class="toggle-line">
-                        <input type="checkbox" [checked]="isQuickActionEnabled(action.section)" (change)="toggleQuickAction(action.section, $event)" />
-                        {{ action.label }}
-                      </label>
-                    }
-                  </div>
-                </section>
                 <button type="submit">Einstellungen speichern</button>
               </form>
               <div class="subsection">
