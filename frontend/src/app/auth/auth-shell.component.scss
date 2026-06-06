@@ -173,8 +173,11 @@ button:disabled {
   border: 0;
   box-shadow: none;
   text-align: left;
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  text-decoration: none;
+}
+
+.link:hover {
+  color: #07326a;
 }
 
 .auth-links {
@@ -228,8 +231,7 @@ button:disabled {
 .product-visual img {
   display: block;
   width: 100%;
-  max-height: 320px;
-  aspect-ratio: 16 / 4.6;
+  height: clamp(360px, 38vh, 460px);
   object-fit: cover;
   object-position: top;
 }

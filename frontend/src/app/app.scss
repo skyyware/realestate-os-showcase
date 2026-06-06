@@ -382,16 +382,23 @@ button:disabled {
 
 .metrics article {
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  grid-template-areas:
+    "label icon"
+    "value value"
+    "caption caption";
+  column-gap: 16px;
+  align-content: start;
   min-height: 132px;
   overflow: hidden;
-  padding: 20px 74px 20px 20px;
+  padding: 20px;
   background: linear-gradient(180deg, #fff, #fbfefd);
 }
 
 .metric-icon {
-  position: absolute;
-  right: 18px;
-  top: 18px;
+  grid-area: icon;
+  justify-self: end;
   display: grid;
   place-items: center;
   width: 44px;
@@ -417,17 +424,29 @@ button:disabled {
 }
 
 .metrics article > span:not(.metric-icon) {
+  grid-area: label;
+  min-width: 0;
   display: block;
   margin-bottom: 12px;
   color: #607087;
+  line-height: 1.2;
   font-weight: 750;
 }
 
 .metrics strong {
+  grid-area: value;
+  min-width: 0;
   display: block;
   margin-bottom: 6px;
-  font-size: 1.8rem;
+  font-size: clamp(1.45rem, 2.1vw, 1.8rem);
   line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.metrics small {
+  grid-area: caption;
+  min-width: 0;
+  line-height: 1.35;
 }
 
 .command-center {
