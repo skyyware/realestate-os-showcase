@@ -1,76 +1,74 @@
-# Slice 4: Versammlung und Beschlussworkflow
+# Slice 4: Meeting And Decision Workflow
 
-Stand: 4. Juni 2026
+Last updated: 2026-06-06
 
-## Ziel
+## Purpose
 
-WEG-Entscheidungen sind nur belastbar, wenn Einladung, Tagesordnung,
-Beschlusswortlaut, Abstimmung, Protokoll und Umsetzung zusammenhaengen. Slice 4
-macht aus losen Beschluessen einen nachvollziehbaren Workflow: Eine
-Eigentuemer- oder Beiratssitzung wird geplant, Beschluesse werden einem
-Tagesordnungspunkt zugeordnet, Kosten und Fristen werden sichtbar und der
-Umsetzungsstatus bleibt pruefbar.
+WEG decisions are reliable only when invitation, agenda, decision text, voting,
+minutes, and implementation stay connected. This slice turns loose decisions
+into a traceable workflow from meeting planning to evidence and follow-up.
 
 ## Figma
 
-- Case-Study-Board: https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8
-- Artefakt: `RealEstate OS Slice 4 Meeting Decision Workflow`
+- Case-study board: https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8
+- Artifact: `RealEstate OS Slice 4 Meeting Decision Workflow`
 
-Das Artefakt dokumentiert den Nutzerjob von Einladung ueber Beschlussfassung
-bis Protokollnachweis und Umsetzung.
+The artifact covers the user job from invitation to decision, minutes, and
+implementation.
 
-## Umsetzung
+## Implementation
 
 Backend:
-- Flyway V8 erweitert `owner_meeting` um Einladungsdatum, Rueckmeldefrist und
-  Quorum-/Mehrheitsanforderung.
-- `community_decision` fuehrt optionalen Versammlungsbezug, Tagesordnungspunkt,
-  Umsetzungsfrist, verantwortliche Rolle und Kostenwirkung.
-- Der Workspace-Service validiert, dass ein Beschluss nur auf eine Versammlung
-  derselben WEG zeigen kann.
-- Meeting- und Decision-DTOs liefern die neuen Workflowdaten an das Frontend.
-- Backend-Tests decken den Pfad WEG anlegen -> Versammlung planen -> Beschluss
-  zuordnen -> Umsetzung pruefen ab.
+
+- Flyway V8 extends `owner_meeting` with invitation date, response deadline,
+  quorum, and majority requirement.
+- `community_decision` stores optional meeting reference, agenda item,
+  implementation due date, responsible role, and cost impact.
+- `WorkspaceService` validates that decisions can link only to meetings in the
+  same WEG.
+- Meeting and decision DTOs expose the new workflow data.
+- Backend tests cover WEG creation, meeting planning, decision linking, and
+  implementation review.
 
 Frontend:
-- Versammlungen koennen mit Einladungsdatum, Rueckmeldefrist,
-  Mehrheitsanforderung, Status und Tagesordnung geplant werden.
-- Beschluesse koennen direkt an eine Versammlung und einen Tagesordnungspunkt
-  gebunden werden.
-- Umsetzungsfrist, verantwortliche Rolle und Kostenwirkung sind sichtbar in der
-  Beschlusssammlung.
-- Dokumente koennen weiterhin als Protokollnachweis an den Beschluss gehaengt
-  werden.
-- Suche und Listen zeigen den fachlichen Kontext ohne Zusatznavigation.
 
-## Akzeptanz
+- Meetings can be planned with invitation date, response deadline, majority
+  requirement, status, and agenda.
+- Decisions can link to a meeting and agenda item.
+- Due date, responsible role, and cost impact are visible in the decision
+  register.
+- Documents can be attached as minutes evidence.
+- Search and lists expose context without extra navigation.
 
-- Ein leerer Workspace bleibt frei von Demodaten.
-- Eine Versammlung kann geplant und in der aktuellen WEG angezeigt werden.
-- Ein Beschluss kann genau dieser Versammlung zugeordnet werden.
-- Der Beschluss zeigt TOP, Datum, Versammlung, Frist, Verantwortlichkeit,
-  Kostenwirkung und Abstimmungsergebnis.
-- Der Status kann auf umgesetzt gesetzt werden und schreibt Aktivitaet/Audit.
-- Ein Protokolldokument kann den Beschluss nachweisbar belegen.
+## Acceptance
 
-## Tests
+- An empty workspace contains no demo decisions.
+- A meeting can be planned for the selected WEG.
+- A decision can link to that meeting.
+- Decision details show agenda item, meeting, due date, responsibility, cost
+  impact, and voting result.
+- Status changes write activity and audit.
+- A document can prove the decision as minutes evidence.
 
-- `npm run backend:test`
-- `npm run frontend:build`
-- `npm run qa:local`
-- `npm run ci`
+## Verification
 
-Der lokale Browser-Smoke erstellt eine Versammlung, verknuepft einen Beschluss,
-markiert ihn als umgesetzt und legt anschliessend das Protokoll als
-Beschlussnachweis ab.
+```bash
+npm run backend:test
+npm run frontend:build
+npm run qa:local
+npm run ci
+```
 
-Screenshot-Artefakte:
+The local QA smoke creates a meeting, links a decision, marks it implemented,
+and uploads minutes as decision evidence.
+
+Screenshot outputs:
+
 - `output/qa/realestate-decisions-desktop.png`
 - `output/qa/realestate-documents-desktop.png`
 - `output/qa/realestate-dashboard-mobile.png`
 
-## Naechster Slice
+## Product Value
 
-Slice 5 sollte Kommunikation, Aufgaben und Fristen schliessen: Eigentuemern
-muessen Mitteilungen, Verantwortlichkeiten, Rueckfragen und Wiedervorlagen aus
-Finanz-, Dokument- und Beschlusskontexten klar zugestellt werden.
+Decisions stop being static text. They become accountable work with context,
+evidence, due dates, and implementation status.

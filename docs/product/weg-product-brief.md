@@ -1,158 +1,176 @@
-# Product Brief: RealEstate OS fuer WEG-Selbstverwaltung
+# Product Brief: RealEstate OS For WEG Management
 
-Stand: 4. Juni 2026
+Last updated: 2026-06-06
 
-## Produktauftrag
+## Product Mission
 
-RealEstate OS soll aus einer Demo-Anwendung zu einem wirklich nutzbaren
-Arbeitsraum fuer deutsche WEG-Selbstverwaltung werden. Der Massstab ist nicht,
-ob alle Screens vorhanden sind, sondern ob eine kleine oder mittlere WEG morgen
-ihre echte Verwaltung beginnen kann: ohne Demodaten, mit klaren Rollen,
-nachvollziehbaren Finanzen, belastbaren Beschluessen, Dokumenten und
-Kommunikation.
+RealEstate OS should become a usable operating workspace for German WEG
+self-management and assisted management. The goal is not to show many screens.
+The goal is that a small or mid-sized WEG can start real administration work
+with no demo data, clear roles, traceable money, reliable decisions, documents,
+communication, and tasks.
 
-## Nicht Verhandelbare Produktqualitaeten
+## Non-Negotiable Qualities
 
-- **Verstaendlich:** Fachliche Komplexitaet wird erklaert, nicht versteckt.
-- **Nachvollziehbar:** Jede relevante Aktion, Zahl und Entscheidung hat Quelle
-  und Verlauf.
-- **Gefuehrt:** Nutzer sehen immer den naechsten sinnvollen Schritt.
-- **Verbrauchernah:** Bedienung ist ruhig, mobil, klar und fehlertolerant.
-- **Intern uebernehmbar:** Module, Tests, Docs und Architektur bleiben so
-  pragmatisch, dass ein Produktteam sie weiterfuehren kann.
+- **Understandable:** Domain complexity is explained, not hidden.
+- **Traceable:** Every relevant action, number, document, and decision has a
+  source and history.
+- **Guided:** Users always see the next useful step.
+- **Consumer-ready:** The UI is calm, mobile, readable, and forgiving.
+- **Maintainable:** Modules, tests, documentation, and architecture can be
+  owned by a small product team.
+- **Honest:** The product supports legal and financial workflows; it does not
+  pretend to replace professional advice.
 
-## Zielbild Nach Delta-Schliessung
+## Target Product Capabilities
 
-### 1. WEG und Rollen
+### 1. WEG And Roles
 
-Funktion:
-- WEG anlegen mit Adresse, Abrechnungsjahr, Bank-/Ruecklagenstruktur und
-  Einheiten.
-- Eigentuemer einladen, Einheiten zuordnen, Miteigentumsanteile pflegen.
-- Rollen: Selbstverwalter, Beirat, Eigentuemer, externer Experte.
+Capabilities:
 
-Akzeptanz:
-- Ein neuer Account startet leer und wird durch eine echte WEG-Einrichtung
-  gefuehrt.
-- Schreibrechte sind rollenbasiert.
-- Jede Einladung und Rollenveraenderung wird auditiert.
+- Create WEG with address, fiscal year, reserve target, management mode, and
+  expected MEA total.
+- Create units with owner contact, usage, MEA, and voting weight.
+- Invite owners, board members, managers, and external experts.
+- Enforce role-aware write commands.
 
-### 2. Finanzraum
+Acceptance:
 
-Funktion:
-- Bankumsatz, manuelle Buchung, Rechnung, Beleg, Kostenart,
-  Verteilerschluessel und Einheit werden verbunden.
-- Hausgeld-Soll, Zahlungseingang, Rueckstand und Ruecklage sind getrennt
-  sichtbar.
-- Eigentuemer sehen Gemeinschaftssicht und eigenen Anteil.
+- New accounts start with an empty workspace.
+- Invites and role changes are audited.
+- Users can see their own role and allowed command groups.
 
-Akzeptanz:
-- Keine Finanzkarte zeigt eine Zahl ohne Drilldown.
-- Eine Buchung kann mit Beleg und Kostenart gespeichert werden.
-- Offene Forderungen koennen je Einheit nachvollzogen werden.
+### 2. Finance Workspace
 
-### 3. Wirtschaftsplan und Jahresabschluss
+Capabilities:
 
-Funktion:
-- Jahresbezogener Wirtschaftsplan mit Ist-Basis, Kategorien, Ruecklage,
-  Szenarien und Hausgeldwirkung.
-- Jahresabrechnung mit Plausibilitaetspruefung, Nachzahlung/Guthaben und
-  Vermoegensbericht.
-- Beschlussvorlagen fuer Wirtschaftsplan und Abrechnung.
+- Connect bookings, receipts, categories, distribution keys, units, due dates,
+  payment dates, counterparties, and document references.
+- Track house-money assessment, reserve share, paid amount, and open balance per
+  unit.
+- Surface open receivables in metrics and next-step recommendations.
 
-Akzeptanz:
-- Nutzer koennen einen Plan aus Ist-Werten starten und anpassen.
-- Das System zeigt Abweichungen und fehlende Belege.
-- Export erzeugt ein pruefbares PDF-Artefakt pro Gemeinschaft und Einheit.
+Acceptance:
 
-### 4. Versammlung und Beschluss
+- No finance card shows a number without a path to explanation.
+- A booking can be saved with context and evidence.
+- Open receivables can be inspected per unit.
 
-Funktion:
-- Eigentuemerversammlung mit Modus Praesenz, hybrid oder virtuell.
-- Tagesordnung, Einladung, Teilnehmer, Stimmrechte, Vollmachten,
-  Abstimmungsergebnis und Protokoll.
-- Beschlusssammlung mit fortlaufender Nummer, Wortlaut, Status und Anfechtung/
-  Aufhebungshinweis.
+### 3. Annual Budget And Closing
 
-Akzeptanz:
-- Ein TOP kann in einen Beschluss und danach in Aufgaben uebergehen.
-- Beschlussdetails sind exportierbar und mobil lesbar.
-- Virtuelle Versammlung erfasst den erforderlichen Grundlagenbeschluss.
+Capabilities:
 
-### 5. Dokumentenakte
+- Year-based annual budget from actuals, categories, reserve planning, and
+  scenarios.
+- Annual statement with plausibility checks, missing evidence, owner balance,
+  additional payment or credit, and asset report.
+- Decision templates for budget and annual statement.
 
-Funktion:
-- Upload echter Dokumente mit Typ, Objektbezug, Jahr, Sichtbarkeit und Version.
-- Volltext/OCR als Ausbaupfad, aber Metadaten und Verknuepfungen sofort.
-- Dokumente koennen an Buchungen, Beschluesse, Aufgaben und Vertraege gehaengt
-  werden.
+Acceptance:
 
-Akzeptanz:
-- Jedes Dokument hat Eigentum, Sichtbarkeit und Audit.
-- Suche findet nach Typ, Jahr, Objekt, Einheit, Person und Text.
-- Exportpaket fuer Versammlung oder Beratung ist moeglich.
+- Users can start from actual values and adjust the plan.
+- The system highlights missing evidence and unusual deviations.
+- Exports are reviewable per community and per unit.
 
-### 6. Kommunikation als Vorgang
+### 4. Meetings And Decisions
 
-Funktion:
-- Eigentuemeranfrage, Schadensmeldung, Ankuendigung und interne Notiz werden
-  als Vorgaenge gefuehrt.
-- Status, SLA, Verantwortliche, Lesebestaetigung und Antwortverlauf.
-- E-Mail-Benachrichtigung fuehrt in den passenden Vorgang.
+Capabilities:
 
-Akzeptanz:
-- Keine Anfrage verschwindet als freie Chatnachricht.
-- Nutzer sehen Antwortstatus und Verantwortliche.
-- Dringende Themen koennen eskaliert werden.
+- Owner meeting with in-person, hybrid, or virtual mode.
+- Agenda, invitation date, response deadline, quorum, majority requirement,
+  voting rights, voting result, minutes, and decision register.
+- Decision status, implementation due date, responsible role, cost impact, and
+  follow-up tasks.
 
-### 7. Instandhaltung und Vertraege
+Acceptance:
 
-Funktion:
-- Vertraege, Fristen, Wartungen, Angebote, Massnahmen, Auftraege und Abnahmen.
-- Sanierungsvorhaben mit Finanzierungsbedarf, Beschlussbedarf und Fortschritt.
+- An agenda item can become a decision and then tasks.
+- Decisions are readable on mobile and exportable.
+- Virtual meeting context can capture the required basis decision.
 
-Akzeptanz:
-- Eine Massnahme zeigt: Grund, Angebote, Beschluss, Kosten, Finanzierung,
-  Verantwortliche und naechste Aktion.
-- Vertragsfristen erzeugen rechtzeitig Aufgaben.
+### 5. Document Evidence Chain
 
-## Designauftrag
+Capabilities:
 
-Das Produkt muss Verbraucher ansprechen, ohne seine Fachlichkeit zu verlieren:
+- Upload documents with type, status, visibility, source, year, object link,
+  file metadata, and version-ready structure.
+- Link documents to bookings, decisions, meetings, tasks, and contracts.
+- Search by type, year, object, unit, person, and text metadata.
 
-- erste Ansicht als aktiver Arbeitsraum, nicht Landing Page
-- grosse, klare Prioritaeten nur fuer echte Kernentscheidungen
-- dichte, ruhige Detailansichten fuer wiederholte Arbeit
-- mobile Nutzung fuer Lesen, Abstimmen, Antworten, Dokumente und Zahlfreigaben
-- keine dekorative Ueberladung
-- Zahlen, Status und naechste Schritte visuell vor Textwuesen
+Acceptance:
 
-## Engineering Slice Reihenfolge
+- Every document has ownership, visibility, audit, and product context.
+- Users can download uploaded files.
+- Meeting or advisory export packages can be assembled later from the same
+  evidence model.
 
-1. WEG-Onboarding mit Einheiten, Rollen und leerem Produktzustand vertiefen.
-2. Finanzmodell auf Belegkette, Kostenarten, Verteilerschluessel und Hausgeld
-   erweitern.
-3. Beschluss- und Versammlungsmodul zum vollstaendigen Workflow ausbauen.
-4. Dokumentenakte auf echte Dateiablage und Verknuepfung erweitern.
-5. Kommunikation in Vorgangslogik umbauen.
-6. Jahresabschluss, Wirtschaftsplan und Vermoegensbericht als gefuehrten
-   Jahreszyklus liefern.
-7. Instandhaltung, Angebote, Vertraege und Sanierungsvorhaben ergaenzen.
+### 6. Communication As Cases
+
+Capabilities:
+
+- Owner request, damage report, announcement, and internal note as structured
+  cases.
+- Status, recipient, channel, responsible role, due date, answer history, and
+  optional follow-up task.
+- Email notifications deep-link into the correct case.
+
+Acceptance:
+
+- No important request disappears as free-form chat.
+- Owners see status and responsibility.
+- Urgent topics can be escalated.
+
+### 7. Maintenance And Contracts
+
+Capabilities:
+
+- Contracts, deadlines, maintenance events, offers, measures, orders, and
+  acceptance.
+- Renovation initiatives with funding need, decision requirement, and progress.
+
+Acceptance:
+
+- A measure shows reason, offers, decision, cost, funding, responsible party,
+  and next action.
+- Contract deadlines create tasks before risk appears.
+
+## Design Direction
+
+The product should feel calm and trustworthy:
+
+- first screen is a working dashboard, not a landing page
+- large visual priority only for truly important decisions
+- dense but readable detail views for repeated work
+- mobile support for reading, answering, approving, uploading, and finding
+  documents
+- no decorative overload
+- numbers, status, and next actions before long explanatory copy
+
+## Engineering Slice Order
+
+1. Deepen WEG onboarding with units, roles, and empty product state.
+2. Expand finance into evidence, categories, distribution keys, house money, and
+   owner balances.
+3. Build meeting and decision workflow end to end.
+4. Expand documents into real file storage and object linking.
+5. Turn communication into case and task workflow.
+6. Deliver annual budget, annual statement, and asset report as a guided yearly
+   cycle.
+7. Add maintenance, offers, contracts, and renovation initiatives.
 
 ## Definition Of Ready
 
-- Problem ist in `docs/research/weg-market-2026.md` oder Interviewnotizen
-  belegt.
-- User Journey und UI-Zustand sind in Figma oder FigJam dokumentiert.
-- Datenmodell, Rechte und Audit sind beschrieben.
-- Testfaelle fuer Backend, Frontend und QA-Smoke sind benannt.
-- Datenschutz- und Exportwirkung sind geklaert.
+- Problem is backed by research, interview notes, or a documented assumption.
+- User journey and UI state are captured in Figma/FigJam or an equivalent
+  design artifact.
+- Data model, permissions, audit, and export impact are known.
+- Backend, frontend, and QA smoke coverage are named.
+- Privacy and operational implications are understood.
 
 ## Definition Of Done
 
-- `npm run ci` ist gruen.
-- Betroffener Kernflow ist im lokalen QA-Smoke oder Playwright-Test abgedeckt.
-- Desktop, Tablet und Mobile wurden visuell geprueft.
-- Figma-Artefakt wurde mit implementiertem Screenshot abgeglichen.
-- Dokumentation und Bewerbungsdeck-Notizen sind aktualisiert.
-
+- `npm run ci` passes.
+- Affected core flow is covered by local QA smoke or focused tests.
+- Desktop, tablet, and mobile were visually checked when UI changed.
+- Design artifact and implementation screenshot were compared.
+- Documentation is updated in English.

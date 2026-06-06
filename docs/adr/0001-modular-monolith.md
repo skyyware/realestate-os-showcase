@@ -1,39 +1,44 @@
-# ADR 0001: Modularer Monolith Statt Frueher Microservices
+# ADR 0001: Modular Monolith
 
 Status: accepted  
-Datum: 4. Juni 2026
+Date: 2026-06-04
 
-## Kontext
+## Context
 
-Die Kundenvision beschreibt eine moderne, aber pragmatische Product-Engineering-
-Organisation: Java 21+, Spring Boot, Angular, PostgreSQL/Aurora, Keycloak und AWS
-Managed Services. Gleichzeitig soll Over-Engineering vermieden und eine
-Agentur-Codebasis schrittweise intern uebernommen werden.
+The product target is a modern but pragmatic engineering setup: Java 21+,
+Spring Boot, Angular, PostgreSQL/Aurora, Keycloak/OIDC, and AWS managed-service
+readiness. The codebase should remain easy to run, review, and take over by a
+small internal product team.
 
-## Entscheidung
+Distributed services would add operational and coordination cost before the
+product has enough scale to justify them.
 
-RealEstate OS bleibt ein modularer Monolith:
+## Decision
 
-- ein Spring-Boot-Deployment fuer die API
-- ein Angular-Frontend
-- fachliche Module nach WEG-Domain: `property`, `finance`, `task`, `document`,
-  `decision`, `planning`, `meeting`, `communication`, `identity`, `audit`
-- `workspace` als produktorientierte Application/API-Schicht
-- Infrastruktur wie `security`, `mail` und AWS bleibt ausserhalb der Domain
+RealEstate OS stays a modular monolith:
 
-ArchUnit-Tests sichern, dass Domainmodule nicht von der Workspace-API oder
-Delivery-Infrastruktur abhaengen.
+- one Spring Boot API deployment
+- one Angular frontend
+- domain modules by WEG product area: `property`, `finance`, `task`,
+  `document`, `planning`, `meeting`, `communication`, `identity`, `audit`
+- `workspace` as product-oriented application/API layer
+- infrastructure such as `security`, `mail`, and AWS boundaries outside domain
+  logic
 
-## Konsequenzen
+ArchUnit tests protect domain modules from depending on workspace API or
+delivery infrastructure.
 
-Positiv:
+## Consequences
 
-- leicht lokal startbar
-- einfach zu debuggen und zu deployen
-- klare fachliche Grenzen ohne verteilte Systemkomplexitaet
-- spaeter extrahierbare Module, wenn Produktlast es rechtfertigt
+Positive:
+
+- easy local startup
+- easier debugging
+- simple stage deployment
+- clear domain boundaries without distributed-system overhead
+- modules can be extracted later when product load demands it
 
 Tradeoff:
 
-- Teamdisziplin und Architekturtests sind wichtiger, weil keine physischen
-  Service-Grenzen erzwingen, was fachlich getrennt bleiben soll.
+- Team discipline and architecture tests matter more because physical service
+  boundaries do not enforce separation.

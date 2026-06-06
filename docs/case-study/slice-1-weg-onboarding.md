@@ -1,71 +1,71 @@
-# Slice 1: WEG-Onboarding und Rollen
+# Slice 1: WEG Onboarding And Roles
 
-Stand: 4. Juni 2026
+Last updated: 2026-06-06
 
-## Ziel
+## Purpose
 
-Der erste echte Produktslice schliesst die wichtigste Demo-Luecke: Eine WEG
-besteht nicht nur aus einer Immobilie, sondern aus Einheiten,
-Miteigentumsanteilen, Eigentuemerinnen und Eigentuemer, Rollen und
-Einladungen. Ohne diese Grundlage sind Finanzen, Beschluesse, Kommunikation
-und Dokumente fachlich nicht belastbar.
+This slice closes the most important gap between a visual demo and a real WEG
+product. A WEG is not just a property. It consists of units, ownership shares,
+owners, roles, invitations, permissions, and readiness signals. Finance,
+decisions, documents, and communication are not reliable without this
+foundation.
 
 ## Figma
 
-- Case-Study-Board: https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8
-- Artefakt: `RealEstate OS Slice 1 WEG Onboarding And Roles`
+- Case-study board: https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8
+- Artifact: `RealEstate OS Slice 1 WEG Onboarding And Roles`
 
-Der Flow dokumentiert Registrierung, leeren Workspace, WEG-Profil, Einheiten,
-MEA-Pruefung, Rollen, Einladungsstatus und Uebergang in den Finanzslice.
+The flow covers registration, empty workspace, WEG profile, units, MEA review,
+roles, invitations, and transition into finance.
 
-## Umsetzung
+## Implementation
 
 Backend:
-- Flyway V5 erweitert `property_asset` um Wirtschaftsjahr, Ziel-Ruecklage,
-  MEA-Gesamtsumme und Verwaltungsmodus.
-- `owner_unit` fuehrt jetzt Eigentuemer-E-Mail, Nutzung und Stimmgewicht.
-- Neues `community_member`-Modell bildet WEG-Rollen und Einladungsstatus ab.
-- Service-Level-Rechte unterscheiden WEG-Admin, Verwaltung,
-  Selbstverwalter, Beirat, Eigentuemer und externe Experten.
-- Passwort-Aktivierung verknuepft eingeladene Mitgliedschaften automatisch.
-- Dashboard liefert `members` und `readiness` fuer UI, Tests und spaetere
-  Produktlogik.
+
+- Flyway V5 extends `property_asset` with fiscal year, reserve target, expected
+  MEA total, and management mode.
+- `owner_unit` stores owner email, usage type, MEA, and voting weight.
+- `community_member` models WEG roles and invitation status.
+- Service-level permissions distinguish admin, manager, self-manager, advisory
+  board, owner, and external expert.
+- Password activation links invited memberships automatically.
+- The workspace response exposes `members` and `readiness`.
 
 Frontend:
-- WEG-Anlage fragt jetzt Wirtschaftsjahr, Ziel-Ruecklage, MEA-Ziel und
-  Verwaltungsmodell ab.
-- Einheiten erfassen Eigentuemer-E-Mail, MEA, Stimmgewicht und Nutzung.
-- Readiness-Karten zeigen MEA-Summe, Rollenstatus und Finanzraum-Bereitschaft.
-- Rollen koennen aus der Einheitenansicht eingeladen werden.
-- Onboarding-Checkliste fuehrt MEA-Verteilung und Rollen explizit.
 
-## Akzeptanz
+- WEG setup captures fiscal year, reserve target, MEA target, and management
+  mode.
+- Unit setup captures owner email, MEA, voting weight, and usage.
+- Readiness cards show MEA status, roles, and finance readiness.
+- Roles can be invited from the unit view.
+- The onboarding checklist makes MEA and role setup explicit.
 
-- Ein neuer Account startet leer.
-- Eine WEG kann mit fachlichen Basisdaten angelegt werden.
-- Die erste Einheit erzeugt eine nachvollziehbare Eigentuemerrolle.
-- Rollen koennen eingeladen und im Aktivitaets-/Audit-Verlauf dokumentiert
-  werden.
-- Das System erkennt, ob Einheitenanzahl, MEA-Summe und Rollen bereit fuer den
-  Finanzslice sind.
+## Acceptance
 
-## Tests
+- New accounts start empty.
+- A WEG can be created with useful domain data.
+- The first unit creates a traceable owner role.
+- Role invitations are visible in activity and audit.
+- The system can identify whether units, MEA, and roles are ready for finance.
 
-- `npm run ci`
-- `npm run qa:local`
+## Verification
 
-Der lokale Browser-Smoke prueft Registrierung, Passwortvergabe, WEG-Anlage,
-Einheiten/Rollen, Readiness, Finanzen, Dokumente, Beschluesse, Aufgaben,
-Kommunikation, Workspace-Wechsel, Suche und Mobile-Dashboard.
+```bash
+npm run ci
+npm run qa:local
+```
 
-Neue Screenshot-Artefakte:
+The local QA smoke covers registration, password setup, WEG creation, units,
+roles, readiness, finance, documents, decisions, tasks, communication, workspace
+switching, search, and mobile dashboard.
+
+Screenshot outputs:
+
 - `output/qa/realestate-units-desktop.png`
 - `output/qa/realestate-dashboard-desktop.png`
 - `output/qa/realestate-dashboard-mobile.png`
 
-## Naechster Slice
+## Product Value
 
-Slice 2 baut auf dieser Struktur auf: Finanzraum mit Buchung, Kostenart,
-Belegkette, Hausgeld-Soll, Zahlungseingang, Rueckstand, Ruecklage und
-Eigentuemeranteil.
-
+The slice gives the product a real operating base. Every later module can now
+answer: which WEG, which unit, which owner, which role, and which permission?

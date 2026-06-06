@@ -1,45 +1,50 @@
 # Test Strategy
 
-Stand: 5. Juni 2026
+Last updated: 2026-06-06
 
-## Testpyramide
+RealEstate OS should be safe to review, change, and deploy. Tests focus on
+product behavior, module boundaries, real workflows, and responsive usability.
 
-- Unit-nahe Tests: E-Mail-Policy, Mail-Delivery-Fehler, externe Identity-Grenze
-- Integrationstests: Spring Context, Flyway, JPA, Workspace-Service-Flow
-- Architekturtests: Modulgrenzen per ArchUnit
-- Frontend-Build: Angular Template- und TypeScript-Check
-- Browser-Smoke: Registrierung, Passwortvergabe, leerer Workspace und Kernflows
-- Security-Smoke: oeffentliche Auth-Endpunkte bleiben ohne Session erreichbar,
-  Workspace-APIs bleiben geschuetzt
+## Test Pyramid
 
-## Kritische Produktpfade
+- Unit-like tests: email policy, transactional mail failure handling, external
+  identity boundary.
+- Integration tests: Spring context, Flyway migrations, JPA repositories,
+  workspace service flow.
+- Architecture tests: module boundaries with ArchUnit.
+- Frontend build: Angular template and TypeScript checks.
+- Browser smoke: registration, password setup, empty workspace, and core
+  product flows.
+- Security smoke: public auth endpoints remain reachable without session;
+  workspace APIs remain protected.
 
-Der lokale QA-Smoke muss diese Pfade abdecken:
+## Critical Product Paths
 
-- Registrierung ohne vorbefuellte Daten
-- Aktivierungslink und Passwortvergabe
-- Passwort-Reset ueber Login-Maske
-- Immobilie anlegen
-- Einheiten und Eigentuemerstruktur erfassen
-- Finanzbuchung und offenen Betrag erfassen
-- Wirtschaftsplan anlegen
-- Dokument hochladen, speichern und herunterladen
-- Eigentuemerversammlung vorbereiten
-- Beschluss erfassen und umsetzen
-- Aufgabe erstellen, bearbeiten, pruefen, erledigen und loeschen
-- Mitteilung vorbereiten
-- Nutzerrolle aendern, Status setzen und Zugriff deaktivieren
-- Rollen- und Workspace-Einstellungen speichern
-- Workspace wechseln
-- Suche nutzen
-- Desktop- und Mobile-Screenshot ohne sichtbare Layoutbrueche
-- Dateiinhalt nach Download mit der hochgeladenen Fixture vergleichen
+The local QA smoke should cover:
+
+- registration without pre-filled data
+- activation link and password setup
+- password reset from login
+- property creation
+- unit and owner structure
+- finance booking and open amount
+- annual planning foundation
+- document upload, save, download, and content comparison
+- meeting preparation
+- decision creation and implementation
+- task create, edit, review, complete, and delete
+- communication preparation and follow-up task
+- user role update, access status, and deactivation
+- role and workspace settings
+- workspace switching
+- global search
+- desktop and mobile screenshots without visible layout breaks
 
 ## Definition Of Done
 
-- `npm run ci` ist gruen.
-- `npm run qa:local` ist gruen, wenn UI oder API-Flows betroffen sind.
-- Neue persistente Daten haben Flyway-Migration und Service-Test.
-- Neue Module verletzen keine ArchUnit-Regeln.
-- Stage-Deployment prueft Healthcheck und Browser-Smoke.
-- Bekannte Restrisiken werden im Abschluss genannt.
+- `npm run ci` passes.
+- `npm run qa:local` passes when UI or API flows changed.
+- New persistent data has Flyway migration and focused service coverage.
+- New modules do not violate ArchUnit rules.
+- Stage deployment verifies health and browser smoke behavior.
+- Known residual risks are reported explicitly.

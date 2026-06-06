@@ -1,8 +1,11 @@
 # Handover Runbook
 
-Stand: 5. Juni 2026
+Last updated: 2026-06-06
 
-## Lokaler Start
+This runbook is for a developer or operator taking over RealEstate OS locally,
+on stage, or as a managed-service production target.
+
+## Local Start
 
 ```bash
 docker compose up -d postgres
@@ -10,13 +13,13 @@ cd backend && ./mvnw spring-boot:run
 cd frontend && npm run start
 ```
 
-Optional fuer Identity-Arbeit:
+Optional identity work:
 
 ```bash
 docker compose --profile identity up -d keycloak
 ```
 
-## Wichtige Umgebungsvariablen
+## Important Environment Variables
 
 - `SPRING_DATASOURCE_URL`
 - `SPRING_DATASOURCE_USERNAME`
@@ -32,28 +35,44 @@ docker compose --profile identity up -d keycloak
 - `REALESTATE_DOCUMENT_STORAGE_ROOT`
 - `REALESTATE_DOCUMENT_STORAGE_MAX_FILE_SIZE_BYTES`
 
-Secrets werden nicht im Repo gespeichert.
+Secrets are never stored in the repository.
 
-## Stage-Release
+## Stage Release
 
-1. `npm run ci`
-2. `npm run backend:package`
-3. `npm run frontend:build`
-4. Artefakte nach `/srv/www/realestate.stage.dev/releases/<release>` kopieren.
-5. Symlink `current` aktualisieren.
-6. `sudo systemctl restart realestate-api.service`
-7. Healthcheck, oeffentlichen Passwort-Reset-Endpunkt und Browser-Smoke
-   ausfuehren.
+1. Run `npm run ci`.
+2. Run `npm run backend:package`.
+3. Ensure the frontend build in `frontend/dist/frontend/browser` is current.
+4. Copy artifacts to `/srv/www/realestate.stage.dev/releases/<release>`.
+5. Update the `current` symlink.
+6. Restart `realestate-api.service`.
+7. Verify health, public auth endpoints, and browser smoke behavior.
 
-## Uebernahme-Checkliste
+Stage health:
 
-- Repo klonen und lokale CI ausfuehren.
-- `.env.example` gegen eigene Secrets/Env-Dateien mappen.
-- Keycloak-Realm, Client und Rollen definieren.
-- Aurora-Parameter, Backups und Deletion Protection bestaetigen.
-- SES-Domain verifizieren.
-- Dokumentablage nutzt lokal/Stage einen Serverpfad mit Storage-Key,
-  Content-Type, Dateigroesse und SHA-256; produktiv kann die Boundary auf S3
-  oder kompatiblen Object Storage zeigen.
-- Monitoring: API-Health, Fehlerquote, Mail-Delivery, DB-Verbindungen,
-  Speicherauslastung und Antwortzeiten.
+```bash
+curl -fsS https://realestate.stage.dev/actuator/health
+```
+
+## Takeover Checklist
+
+- Clone the repository and run local CI.
+- Map `.env.example` or environment documentation to secure local files.
+- Define Keycloak realm, client, and role mapping if OIDC mode is used.
+- Confirm database parameters, backups, retention, and deletion protection.
+- Verify SES domain or SMTP provider for transactional mail.
+- Confirm document storage root, storage key format, content type, file size,
+  and SHA-256 behavior.
+- Decide when the storage boundary should move from disk to S3-compatible object
+  storage.
+- Monitor API health, error rate, mail delivery, database connections, disk
+  usage, and response time.
+
+## Operational Risk Notes
+
+- Local and stage identity are app-native for testability; production should use
+  the OIDC boundary.
+- Document storage is abstracted but not yet a full retention/compliance system.
+- Annual closing and asset report are product roadmap items, not complete
+  accounting automation.
+- The product supports WEG workflows and evidence; it does not replace legal or
+  tax advice.

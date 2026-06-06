@@ -1,71 +1,72 @@
-# Slice 5: Kommunikation, Aufgaben und Fristen
+# Slice 5: Communication, Tasks, And Deadlines
 
-Stand: 4. Juni 2026
+Last updated: 2026-06-06
 
-## Ziel
+## Purpose
 
-WEG-Verwaltung braucht nicht nur Daten, sondern verlaessliche Nacharbeit:
-Eigentuemer muessen informiert werden, Beirat oder Verwaltung brauchen klare
-Verantwortlichkeiten und Fristen duerfen nicht im Postfach verschwinden. Slice 5
-verbindet Kommunikation deshalb mit operativen Aufgaben, Wiedervorlagen und
-fachlichem Ursprung.
+WEG administration needs reliable follow-up. Owners must be informed, boards and
+managers need clear responsibility, and deadlines must not disappear in email
+threads. This slice connects communication with tasks, reminders, and source
+context.
 
 ## Figma
 
-- Case-Study-Board: https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8
-- Artefakt: `RealEstate OS Slice 5 Communication Task Deadline Workflow`
+- Case-study board: https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8
+- Artifact: `RealEstate OS Slice 5 Communication Task Deadline Workflow`
 
-Das Artefakt zeigt den Ablauf von Ausloeser ueber Mitteilung, Folgeaufgabe,
-Friststeuerung und Nachweis.
+The flow covers trigger, message, follow-up task, deadline control, and
+evidence.
 
-## Umsetzung
+## Implementation
 
 Backend:
-- Flyway V9 erweitert `work_task` um Verantwortlichkeit, Ursprung,
-  Zielobjekt, Wiedervorlage und Abschlusszeitpunkt.
-- `community_message` fuehrt Kanal, Status, Ursprung, Zielobjekt,
-  Versandbereitschaft, optionalen Folgeaufgaben-Link und Versandzeitpunkt.
-- Gemeinsamer `WorkContextType` modelliert manuelle, Finanz-, Dokument-,
-  Beschluss- und Versammlungskontexte.
-- Der Workspace-Service validiert den WEG-Kontext fuer Aufgaben und
-  Mitteilungen serverseitig.
-- Eine Mitteilung kann atomar eine Folgeaufgabe erzeugen.
-- Insights priorisieren ueberfaellige Aufgaben und anstehende Wiedervorlagen.
+
+- Flyway V9 extends `work_task` with responsibility, source context, target
+  object, reminder date, and completion timestamp.
+- `community_message` stores channel, status, source context, target object,
+  send readiness, optional follow-up task link, and sent timestamp.
+- Shared `WorkContextType` models manual, finance, document, decision, and
+  meeting contexts.
+- `WorkspaceService` validates WEG context for tasks and messages.
+- A message can atomically create a follow-up task.
+- Insights prioritize overdue tasks and upcoming reminders.
 
 Frontend:
-- Aufgabenformular fuehrt Verantwortlichkeit, Ursprung und Wiedervorlage.
-- Kommunikationsformular fuehrt Empfaenger, Kanal, Status, Versanddatum,
-  Ursprung und optionale Folgeaufgabe.
-- Listen zeigen Kontext, Status, Fristen und Folgeaufgabe ohne Zusatzklick.
-- Die globale Suche findet Aufgaben und Mitteilungen ueber Kontext,
-  Verantwortlichkeit, Kanal und Fristen.
 
-## Akzeptanz
+- Task form captures responsibility, source context, due date, and reminder.
+- Communication form captures recipient, channel, status, send date, source
+  context, and optional follow-up task.
+- Lists show context, status, deadlines, and follow-up task without extra
+  navigation.
+- Global search covers tasks and messages by context, owner, channel, and due
+  dates.
 
-- Ein leerer Workspace bleibt frei von Demodaten.
-- Eine Mitteilung kann einem Produktkontext derselben WEG zugeordnet werden.
-- Eine Mitteilung kann direkt eine Folgeaufgabe mit Fälligkeit und
-  Wiedervorlage erzeugen.
-- Aufgaben zeigen Verantwortliche, Fristen, Ursprung und Status.
-- Erledigte Aufgaben setzen `completed_at` und verschwinden aus offenen
-  Kennzahlen.
-- Browser-QA prueft den Pfad Versammlung -> Mitteilung -> Folgeaufgabe ->
-  Statuswechsel -> Dashboard.
+## Acceptance
 
-## Tests
+- The empty workspace stays free of demo messages.
+- A message can link to a product context in the same WEG.
+- A message can create a follow-up task with due date and reminder.
+- Tasks show responsibility, source, due date, reminder, and status.
+- Done tasks set `completed_at` and leave open metrics.
+- Browser QA covers meeting, message, follow-up task, status change, and
+  dashboard update.
 
-- `npm run backend:test`
-- `npm run frontend:build`
-- `npm run qa:local`
-- `npm run ci`
+## Verification
 
-Screenshot-Artefakte:
+```bash
+npm run backend:test
+npm run frontend:build
+npm run qa:local
+npm run ci
+```
+
+Screenshot outputs:
+
 - `output/qa/realestate-communication-desktop.png`
 - `output/qa/realestate-dashboard-desktop.png`
 - `output/qa/realestate-dashboard-mobile.png`
 
-## Naechster Slice
+## Product Value
 
-Slice 6 sollte Rollen, Rechte, Audit und Betrieb vertiefen: granulare
-Command-Rechte, sichtbare Audit-Nachweise, robuste Fehlerzustaende und
-betriebliche Readiness fuer einen externen Code-Review.
+Communication becomes accountable work. Each message can carry context, owner,
+state, and a next action.

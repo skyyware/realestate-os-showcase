@@ -1,252 +1,209 @@
-# Architecture Notes
+# Architecture
 
-RealEstate OS ist als produktionsnaher, aber kleiner Vertical-Slice gebaut.
-Der Slice orientiert sich an dotegas Produktversprechen: digitale
-WEG-Selbstverwaltung, Transparenz, rechtssichere Abläufe, Finanzüberblick und
-weniger manueller Verwaltungsaufwand. Die Umsetzung folgt dem SKYYWARE-Anspruch,
-qualitativ, pragmatisch und ohne unnötige Komplexität zu liefern.
+RealEstate OS is a production-oriented vertical slice for digital WEG
+management. It is intentionally small, but it is not a throwaway demo. The
+architecture is built around stable product objects, server-side commands,
+traceable state changes, and a frontend that renders decisions instead of
+inventing product truth in the browser.
 
-## Backend
+## System Shape
 
-Das Backend ist bewusst modular geschnitten:
+- One Spring Boot API.
+- One Angular frontend.
+- PostgreSQL/Aurora-compatible relational schema managed by Flyway.
+- App-native identity for local and stage usage.
+- Keycloak/OIDC boundary for production identity integration.
+- Transactional mail through environment-based SMTP configuration.
+- File storage behind a `DocumentStorage` boundary.
+- Stage deployment through Apache, systemd, PostgreSQL, TLS, and restricted
+  environment files.
+- AWS managed-service blueprint for the production target.
 
-- `identity`: Registrierung, Passwort-Setup, Session/JWT
-- `property`: WEG-Profil, Einheiten, MEA, Rollen, Mitgliedschaften und
-  Einladungsstatus
-- `finance`: Buchungsfeed, Belegkette, Hausgeld-Soll und Einheitensalden
-- `document`: Dokumentenablage, Sichtbarkeit, Status und Zielobjekt-Verknuepfung
-- `planning`: Wirtschaftspläne, Budgets und Rücklagenzuführung
-- `task`: Aufgabensteuerung
-- `meeting`: Eigentümerversammlungen, Tagesordnung und Einladungsstatus
-- `communication`: vorbereitete Mitteilungen an Eigentümer, Beirat oder Verwaltung
-- `audit`: technische Nachvollziehbarkeit schreibender Commands
-- `activity`: Audit-Trail
-- `workspace`: produktorientierte Read-/Command-API für das Frontend
-- `security`, `mail`, `config`, `common`: Infrastruktur und Querschnitt
+## Backend Modules
 
-Die Module enthalten jeweils ihre JPA-Entities und Repositories. Die API wird
-nicht direkt aus Entities gespeist, sondern über DTOs/Records in Services.
+The backend is a modular monolith. Module boundaries follow product objects, not
+technical layers.
 
-## Workspace Intelligence
+| Module | Responsibility |
+| --- | --- |
+| `identity` | Registration, password setup, password reset, sessions, external identity mapping |
+| `property` | WEG profile, properties, units, MEA, roles, memberships, invitations |
+| `finance` | Bookings, house-money assessments, reserves, balances, receivables |
+| `planning` | Annual budget and reserve planning foundation |
+| `document` | Document metadata, visibility, object links, upload/download storage |
+| `meeting` | Owner meetings, invitations, agenda, quorum and majority context |
+| `task` | Operational tasks, due dates, status, owner, source context |
+| `communication` | Prepared messages, channel, status, recipient, follow-up tasks |
+| `audit` | Technical audit trail for write-side commands |
+| `activity` | Product-facing activity stream |
+| `workspace` | Product-oriented read model and command API for the frontend |
+| `security`, `mail`, `config`, `common` | Cross-cutting infrastructure |
 
-Das Dashboard liefert nicht nur Rohlisten, sondern verdichtete Arbeitssignale:
+Domain modules expose behavior through services and DTOs. The API does not
+serve JPA entities directly.
 
-- `PortfolioMetrics` fasst Kontostand, Rücklage, Forderungen und offene Aufgaben zusammen.
-- `InsightView` erzeugt pro ausgewählter Immobilie priorisierte nächste Schritte.
-- Task-Statuswechsel werden als Command verarbeitet und landen im Audit-Trail.
+## Workspace Read Model
 
-Damit bleibt das Frontend dünn: Es rendert Handlungsvorschläge, springt in den
-passenden Arbeitsbereich und aktualisiert den Workspace nach jeder Aktion aus
-einer konsistenten Backend-Sicht.
+The frontend consumes a product-oriented workspace response. It contains the
+current WEG, portfolio metrics, readiness, units, members, finance data,
+documents, meetings, decisions, tasks, messages, permissions, activity, and
+technical audit entries.
 
-## Product Design
+The key idea is consistency: after each command, the frontend reloads the
+workspace from the backend. This keeps the UI thin and prevents browser-only
+product state from drifting away from persisted truth.
 
-Die Oberfläche ist als verbrauchernahes Eigentümerprodukt gestaltet, nicht als
-reines Admin-Tool. Die visuelle Sprache nutzt ruhige Finanzflächen, klare
-Arbeitskarten, warmes Grün für Fortschritt, Amber für Klärungsbedarf und ein
-priorisiertes Command Center. Der leere Workspace bleibt absichtlich leer:
-Nutzer legen Immobilie, Einheiten, Finanzen, Aufgaben und Dokumente selbst an,
-damit keine Demodaten mit echten Entscheidungsdaten verwechselt werden.
+## Write Model
 
-## Frontend
+Write operations are command-oriented:
 
-Das Angular-Frontend ist als kleine, übernehmbare Standalone-Codebasis
-geschnitten. `AppComponent` hält Session, Workspace-Zustand, API-Commands und
-View-Orchestrierung zusammen. Wiederverwendbare, visuelle Shells sind aus dem
-Root-Template herausgezogen:
+1. Validate authentication.
+2. Resolve the active user and current WEG context.
+3. Check role-based permission.
+4. Validate product invariants.
+5. Persist the change.
+6. Write activity for product visibility.
+7. Write audit for technical traceability.
+8. Return the updated workspace view where appropriate.
 
-- `auth/AuthShellComponent` rendert Registrierung, Login, Passwort-Reset und
-  Passwortvergabe als reine UI-Komponente auf vorhandenen Reactive Forms.
-- `layout/SidebarComponent` rendert Navigation und Logout als eigenes
-  Layout-Element mit klaren Inputs und Outputs.
-
-Damit bleibt die Fachinteraktion weiterhin zentral nachvollziehbar, während
-visuelle Flächen separat gepflegt, getestet und später schrittweise in weitere
-Feature-Komponenten zerlegt werden können.
-
-## WEG Product Fit
-
-Der nächste produktive Kern ist die Beschluss-Sammlung: Eigentümergemeinschaften
-brauchen nachvollziehbare Entscheidungen mit Datum, Ort, Wortlaut,
-Abstimmungsergebnis und späterer Umsetzung. RealEstate OS bildet diesen Weg als
-eigenen Vertical Slice ab:
-
-- Beschluss erfassen und der ausgewählten Immobilie zuordnen
-- Status von Entwurf über beschlossen/abgelehnt bis umgesetzt führen
-- Abstimmzahlen getrennt erfassen
-- Audit-Trail bei Erfassung und Statuswechsel schreiben
-- Command Center warnt, wenn eine Beschluss-Sammlung fehlt oder beschlossene
-  Punkte noch nicht umgesetzt sind
-
-Damit rückt die App näher an den Kern realer WEG-Verwaltung: nicht nur Daten
-ablegen, sondern Entscheidungen sauber dokumentieren und in Arbeit übersetzen.
-
-## Slice 1: WEG-Onboarding und Rollen
-
-Die WEG-Struktur wurde als tragender Produktslice vertieft:
-
-- WEG-Profil mit Wirtschaftsjahr, Verwaltungsmodus, Ziel-Ruecklage und
-  erwarteter MEA-Summe
-- Einheiten mit Eigentuemer-E-Mail, Nutzung, MEA und Stimmgewicht
-- `community_member` als Rollen- und Einladungsmodell je WEG
-- Dashboard-Readiness fuer Einheitenanzahl, MEA-Summe, Rollenstatus und
-  Finanzraum-Bereitschaft
-- Service-Level-Rechte fuer Admin, Selbstverwalter, Verwaltung und Beirat
-- automatische Aktivierung eingeladener Mitgliedschaften beim Passwort-Setup
-
-Dieser Slice ist die fachliche Voraussetzung fuer den naechsten Finanzraum:
-Hausgeld, Rueckstaende, Ruecklage und Eigentuemeranteile koennen erst dann
-robust berechnet werden, wenn Einheiten und Verteilung belastbar sind.
-
-## Slice 2: Finanzraum und Hausgeld-Soll
-
-Der Finanzraum wurde als naechster fachlicher Kern ausgebaut:
-
-- Finanzereignisse fuehren Ereignistyp, Verteilerschluessel, Einheitsbezug,
-  Faelligkeit, Zahlungstag, Gegenpartei, Belegnummer und Dokumentreferenz
-- Hausgeld-Sollstellungen speichern Hausgeld und Ruecklagenanteil je Einheit,
-  Wirtschaftsjahr und Status
-- Einheitensalden berechnen Jahres-Soll, gezahlte Eigentuemerbetraege und
-  offene Rueckstaende
-- Ausgaben und Erstattungen werden serverseitig negativ normalisiert,
-  Eigentuemerzahlungen positiv
-- offene Forderungen werden aus allen Finanzereignissen der WEG berechnet
-
-Damit ist der Finanzbereich nicht nur eine Liste, sondern ein belastbarer
-Soll/Ist-Arbeitsraum fuer Selbstverwaltung, Beirat und Verwaltung.
-
-## Slice 3: Dokumente und Belegkette
-
-Die Dokumentenablage wurde von einer Dateiliste zu einer Nachweiskette
-ausgebaut:
-
-- Dokumente fuehren Status, Sichtbarkeit, Quelle, Beschreibung, fachlichen
-  Linktyp und optional gespeicherte Datei-Metadaten
-- Zielobjekte koennen Finanzereignisse, Beschluesse oder Versammlungen sein
-- der Workspace-Service validiert, dass ein Dokument nur auf Objekte derselben
-  WEG zeigt
-- allgemeine Dokumente bleiben moeglich, duerfen aber kein Zielobjekt setzen
-- die UI zeigt Belegkontext direkt in der Dokumentliste und macht ihn suchbar
-- Uploads werden serverseitig gespeichert, groessenlimitiert, mit SHA-256
-  verifiziert und rollenbasiert heruntergeladen
-
-Damit ist die Belegkette nicht mehr nur Metadaten: Sie kann lokal und auf Stage
-echte Dateien tragen. Der Upgrade-Pfad zu S3-kompatiblem Storage bleibt
-bewusst offen, ohne den modularen Monolithen frueh zu verkomplizieren.
-
-## Slice 4: Versammlung und Beschlussworkflow
-
-Der Beschlussbereich wurde zu einem geschlossenen Meeting-Workflow erweitert:
-
-- Versammlungen fuehren Einladungsdatum, Rueckmeldefrist,
-  Quorum-/Mehrheitsanforderung, Status und Tagesordnung
-- Beschluesse koennen optional an eine Versammlung derselben WEG gebunden werden
-- Tagesordnungspunkt, Umsetzungsfrist, verantwortliche Rolle und Kostenwirkung
-  sind Teil der Domain-Daten
-- der Service validiert den WEG-Kontext des Versammlungsbezugs serverseitig
-- Protokolle und weitere Dokumente koennen den Beschluss als Nachweis belegen
-- der Browser-Smoke prueft den Pfad von Versammlung ueber Beschluss bis
-  Protokollablage und Umsetzung
-
-Damit wird aus "Beschluss als Text" ein pruefbarer Eigentuemerversammlungs-
-Prozess, der spaeter Benachrichtigungen, Aufgaben, Fristen und Exportlogik
-tragen kann.
-
-## Slice 5: Kommunikation, Aufgaben und Fristen
-
-Kommunikation und operative Nacharbeit wurden verbunden:
-
-- Aufgaben fuehren Verantwortlichkeit, Ursprung, Zielobjekt, Faelligkeit,
-  Wiedervorlage und Abschlusszeitpunkt
-- Mitteilungen fuehren Empfaenger, Kanal, Status, Versandbereitschaft, Ursprung
-  und optionalen Link auf eine Folgeaufgabe
-- `WorkContextType` verbindet manuelle Vorgange, Finanzen, Dokumente,
-  Beschluesse und Versammlungen ohne zusaetzliche Infrastruktur
-- der Workspace-Service validiert, dass Quellen und Zielobjekte zur aktuellen
-  WEG gehoeren
-- eine Mitteilung kann atomar eine Folgeaufgabe erzeugen
-- Insights priorisieren ueberfaellige Aufgaben und anstehende Wiedervorlagen
-
-Damit wird Kommunikation nicht als isolierter Entwurf gespeichert, sondern als
-steuerbarer Arbeitsnachweis im Eigentuemerkontext.
-
-## Slice 6: Rollen, Rechte, Audit und Betrieb
-
-Rollen und technische Nachvollziehbarkeit wurden review-faehig gemacht:
-
-- `audit_log` fuehrt nun einen optionalen WEG-Kontext mit Index nach
-  Immobilie und Zeitpunkt
-- alle Workspace-Commands schreiben Audit mit Akteur, Zieltyp, Ziel-ID,
-  Zusammenfassung und WEG
-- das Dashboard liefert `access` mit Rolle, Admin-/Bearbeitungsrecht und
-  erlaubten Command-Gruppen
-- das Dashboard liefert technische Audit-Eintraege der aktuellen WEG
-- die UI zeigt Rechte in den Einstellungen und Audit-Nachweise in der
-  Aktivitaetsansicht
-- direkte Aktivierungslinks auf `/set-password` sind routerseitig abgedeckt
-
-Damit ist der Vertical Slice nicht nur bedienbar, sondern auch fuer Code-Review,
-Support und spaetere Betreiberpruefungen nachvollziehbar.
+This pattern makes product behavior reviewable and gives future operators a
+clear chain of evidence.
 
 ## Identity
 
-Die Anwendung nutzt lokal eine app-native Registrierung mit einmaligem Token,
-BCrypt und kurzlebigem HMAC-JWT. Das macht die Anwendung lokal und auf Stage
-direkt testbar. Zusätzlich ist die produktive Identity Boundary Keycloak/OIDC-
-fähig:
+Local and stage environments use app-native registration with one-time tokens,
+BCrypt password hashing, and short-lived HMAC JWT sessions. This keeps the
+product directly testable.
 
-- Token-Validierung sitzt zentral in `security`
-- User-Kontext wird nur als Principal ins Produkt gereicht
-- `docker-compose --profile identity` startet Keycloak für Integrationsarbeit
-- `REALESTATE_IDENTITY_MODE=keycloak` aktiviert den OIDC-Resource-Server
-- Keycloak-Rollen werden auf `OWNER_ADMIN`, `PROPERTY_MANAGER` und
-  `BOARD_MEMBER` gemappt
-- externe Subjects werden in `app_user.identity_provider` und
-  `app_user.external_subject` nachvollziehbar gespeichert
+The production boundary is OIDC-ready:
 
-## Database
+- Token validation is centralized in `security`.
+- Product services receive only the authenticated principal.
+- `docker-compose --profile identity` starts Keycloak for integration work.
+- `REALESTATE_IDENTITY_MODE=keycloak` enables OIDC resource-server behavior.
+- Keycloak roles map to product roles such as `OWNER_ADMIN`,
+  `PROPERTY_MANAGER`, and `BOARD_MEMBER`.
+- External subjects are stored on the user record for traceability.
 
-Flyway verwaltet das Schema. PostgreSQL wird lokal genutzt; die SQL-Typen und
-Constraints sind Aurora-PostgreSQL-kompatibel. CI nutzt H2 im PostgreSQL-Modus,
-damit Pull Requests ohne externen Service validierbar bleiben.
+## Data Model
 
-## Mail
+Flyway owns the schema. PostgreSQL is used locally; migrations are written to
+stay Aurora PostgreSQL-compatible. CI uses H2 in PostgreSQL mode so pull
+requests can validate without external infrastructure.
 
-SMTP-Konfiguration kommt ausschließlich über Environment-Variablen. Reale
-Zugangsdaten werden nicht in Git gespeichert. Lokal gibt die API bei
-deaktiviertem Mailversand einen Setup-Link zurück; Stage versendet echte
-Transaktionsmails.
+Product-relevant data is stored server-side. Browser-only state is allowed only
+for local UI preferences.
 
-## Datenhaltung, Rollen und Audit
+## Documents
 
-Produktrelevante Daten liegen serverseitig in PostgreSQL/Aurora-kompatiblen
-Tabellen. Browser-only-Zustand ist nur für lokale UI-Präferenzen erlaubt.
-Schreibende Workspace-Commands sind rollenbasiert geschützt und schreiben zwei
-Spuren:
+Documents are evidence, not just files. Each document can carry:
 
-- `activity_event` für den sichtbaren Produktverlauf
-- `audit_log` für technische Nachvollziehbarkeit und spätere Betreiberprüfungen
+- document type
+- status
+- visibility
+- source
+- description
+- target object type and ID
+- original filename
+- storage key
+- content type
+- size
+- SHA-256 hash
+- upload timestamp
 
-## AWS/Stage
+The storage boundary can use local or stage disk today and can move to
+S3-compatible object storage later without changing the domain model.
 
-Der Stage-Betrieb ist bewusst pragmatisch:
+## Finance
 
-- statisches Angular-Bundle über Apache
-- `/api` Reverse Proxy auf Spring Boot
-- systemd-Service für das JAR
-- PostgreSQL auf dem Host oder managed kompatibel
-- Secrets als restriktive Env-Datei
-- TLS über Let's Encrypt für `realestate.stage.dev`
+Finance is modeled as an explainable chain:
 
-Das ist nah an einem Seed/Pre-Series-A Setup: wenig Over-Engineering, aber
-klare Upgrade-Pfade zu ECS/App Runner, Aurora, SES und Keycloak.
+`bank/manual event -> booking type -> category -> distribution key -> unit ->
+owner share -> document evidence -> activity/audit`.
 
-Ein Terraform-Blueprint liegt unter `infra/aws`. Er modelliert Aurora
-PostgreSQL, S3-Dokumentablage, SES, CloudWatch und App Runner als Managed-
-Service-Zielbild.
+The current slice supports bookings, due dates, payment dates, counterparties,
+document references, house-money assessments, unit balances, reserves, and open
+receivables. The next product depth is annual closing, owner statements,
+plausibility checks, and exportable reports.
 
-## ADRs und Betrieb
+## Meetings And Decisions
 
-- `docs/adr/0001-modular-monolith.md`
-- `docs/test-strategy.md`
-- `docs/handover.md`
+Decisions are linked to meetings where appropriate. The model captures agenda
+context, decision text, voting result, status, due date, responsible role, cost
+impact, and document evidence.
+
+The product value is not the decision record alone. The value is the ability to
+turn a decision into tasks, documents, communication, finance impact, and a
+traceable implementation status.
+
+## Communication And Tasks
+
+Communication is treated as workflow evidence. A message can point to a product
+context and can create a follow-up task atomically. Tasks carry owner,
+responsibility, origin, due date, reminder date, status, completion timestamp,
+activity, and audit.
+
+This prevents important owner communication from becoming an unstructured chat
+history.
+
+## Frontend
+
+The Angular frontend is intentionally straightforward:
+
+- `AppComponent` orchestrates session, workspace state, forms, API commands,
+  and view switching.
+- `auth/AuthShellComponent` renders registration, login, password reset, and
+  password setup.
+- `layout/SidebarComponent` renders navigation and logout.
+- Product data is read from the backend; forms submit typed commands.
+
+The frontend should continue to be split only when it reduces real complexity.
+Do not create abstractions before the workflow needs them.
+
+## Product Design
+
+The UI is designed as a consumer-facing owner workspace, not an ERP clone. The
+layout should show the next important action, explain money clearly, expose
+status and responsibility, and stay usable on mobile.
+
+Design rules:
+
+- Use clear task language.
+- Keep empty states actionable.
+- Make status, due dates, and responsibility visible without extra clicks.
+- Keep finance numbers explainable.
+- Avoid decorative UI that does not help the user decide or act.
+- Verify desktop and mobile screenshots after meaningful UI changes.
+
+## Operations
+
+Stage is deliberately pragmatic:
+
+- Angular bundle served by Apache.
+- `/api` reverse proxy to Spring Boot.
+- Spring Boot JAR managed by systemd.
+- PostgreSQL on the host or managed-compatible target.
+- Secrets in restricted environment files.
+- TLS through Let's Encrypt.
+
+The AWS blueprint in `infra/aws` models the managed-service target: Aurora,
+S3, SES, CloudWatch, App Runner, and identity integration points.
+
+## Architecture Decision Records
+
+- [ADR 0001: Modular Monolith](adr/0001-modular-monolith.md)
+
+## Verification
+
+Primary checks:
+
+```bash
+npm run ci
+npm run qa:local
+```
+
+Stage health:
+
+```bash
+curl -fsS https://realestate.stage.dev/actuator/health
+```

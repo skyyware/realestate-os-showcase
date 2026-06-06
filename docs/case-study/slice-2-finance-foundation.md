@@ -1,82 +1,76 @@
-# Slice 2: Finanzraum, Hausgeld-Soll und Salden
+# Slice 2: Finance Foundation, House Money, And Balances
 
-Stand: 4. Juni 2026
+Last updated: 2026-06-06
 
-## Ziel
+## Purpose
 
-Der Finanzslice macht aus der WEG-Struktur einen nutzbaren Arbeitsraum fuer
-laufende Verwaltung. Eigentuemergemeinschaften brauchen nicht nur Kontostand
-und Ruecklage, sondern nachvollziehbare Sollstellungen, offene Forderungen,
-Belege, Faelligkeiten, Verteilung und einen klaren Blick auf Rueckstaende je
-Einheit.
+This slice turns WEG structure into an explainable finance workspace. Owner
+communities need more than account balance and reserve totals. They need
+receivables, due dates, receipts, distribution keys, unit balances, and a clear
+view of what each owner owes.
 
 ## Figma
 
-- Case-Study-Board: https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8
-- Artefakt: `RealEstate OS Slice 2 Finance Foundation`
+- Case-study board: https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8
+- Artifact: `RealEstate OS Slice 2 Finance Foundation`
 
-Der Flow dokumentiert die fachliche Kette von Einheiten und MEA ueber
-Hausgeld-Soll, Buchung, Belegkette, offene Forderung und Einheiten-Saldo bis
-zur Priorisierung im Command Center.
+The flow follows the chain from units and MEA to house-money assessment,
+booking, evidence, open receivable, unit balance, and dashboard priority.
 
-## Umsetzung
+## Implementation
 
 Backend:
-- Flyway V6 erweitert `finance_event` um Ereignistyp, Verteilerschluessel,
-  Einheitsbezug, Faelligkeit, Zahlungstag, Gegenpartei, Belegnummer und
-  Dokumentreferenz.
-- Neues `house_money_assessment` speichert Hausgeld und Ruecklagenanteil je
-  Einheit und Wirtschaftsjahr.
-- `WorkspaceService` berechnet Einheiten-Salden aus Sollstellung und
-  Eigentuemerzahlungen.
-- Ausgaben und Erstattungen werden serverseitig negativ normalisiert,
-  Eigentuemerzahlungen positiv. Damit bleibt die API robust, auch wenn Nutzer
-  positive Betraege eingeben.
-- Offene Forderungen werden aus allen Finanzereignissen der ausgewaehlten WEG
-  berechnet, nicht nur aus den zuletzt sichtbaren Buchungen.
+
+- Flyway V6 extends `finance_event` with event type, distribution key, unit
+  reference, due date, payment date, counterparty, receipt number, and document
+  reference.
+- `house_money_assessment` stores house money and reserve share per unit and
+  fiscal year.
+- `WorkspaceService` calculates unit balances from assessments and owner
+  payments.
+- Expenses and reimbursements are normalized as negative values server-side;
+  owner payments stay positive.
+- Open receivables are calculated from all finance events in the selected WEG.
 
 Frontend:
-- Finanzbereich nutzt echte Tabs fuer Buchungserfassung und Buchungshistorie.
-- Buchungsformular erfasst Ereignistyp, Kategorie, Betrag, Buchungsdatum,
-  Faelligkeit, Verteilerschluessel, Einheitsbezug, Gegenpartei, Belegnummer,
-  Dokumentreferenz und Status.
-- Hausgeld-Soll kann je Einheit und Jahr angelegt werden.
-- Einheiten-Salden zeigen Jahres-Soll, gezahlt und offen.
-- Nach einer Buchung springt die Ansicht in die Historie und zeigt den
-  erzeugten Belegkontext.
 
-## Akzeptanz
+- Finance uses tabs for booking capture and booking history.
+- Booking form captures event type, category, amount, booking date, due date,
+  distribution key, unit, counterparty, receipt number, document reference, and
+  status.
+- House-money assessment can be created per unit and year.
+- Unit balance cards show yearly target, paid amount, and open amount.
+- After booking, the view switches to the history with the new context visible.
 
-- Eine WEG mit Einheiten kann Hausgeld-Sollstellungen je Einheit anlegen.
-- Der Jahres-Sollbetrag setzt sich aus Hausgeld und Ruecklagenanteil zusammen.
-- Eine positive Ausgaben-Eingabe wird als negativer Forderungs-/Kostenposten
-  gespeichert.
-- Offene Forderungen erscheinen in Kennzahlen, Command Center und
-  Buchungshistorie.
-- Finanzereignisse enthalten genug Kontext fuer spaetere Belegsuche,
-  Dokumentenablage und Eigentuemerkommunikation.
+## Acceptance
 
-## Tests
+- A WEG with units can create house-money assessments per unit.
+- Yearly target amount is composed from house money and reserve share.
+- Positive expense input is stored as a negative cost/receivable event.
+- Open receivables appear in metrics, command center, and booking history.
+- Finance events carry enough context for later document search and owner
+  communication.
 
-- `npm run backend:test`
-- `npm run frontend:build`
-- `npm run qa:local`
-- `npm run ci`
+## Verification
 
-Der lokale Browser-Smoke prueft den kompletten Weg: Registrierung,
-Passwortvergabe, WEG-Anlage, Einheiten/Rollen, Hausgeld-Soll,
-Einheiten-Saldo, positive Ausgaben-Eingabe mit serverseitiger
-Normalisierung, Wirtschaftsplan, Dokumente, Beschluesse, Aufgaben,
-Kommunikation, Workspace-Wechsel, Suche und Mobile-Dashboard.
+```bash
+npm run backend:test
+npm run frontend:build
+npm run qa:local
+npm run ci
+```
 
-Screenshot-Artefakte:
+The local QA smoke covers assessment creation, unit balance, server-side amount
+normalization, annual plan foundation, documents, decisions, tasks,
+communication, search, workspace switching, and mobile dashboard.
+
+Screenshot outputs:
+
 - `output/qa/realestate-finances-desktop.png`
 - `output/qa/realestate-dashboard-desktop.png`
 - `output/qa/realestate-dashboard-mobile.png`
 
-## Naechster Slice
+## Product Value
 
-Slice 3 sollte die Dokumenten- und Belegkette vertiefen: echte Upload-Grenze,
-Dokumenttypen, Zuordnung zu Finanzereignis/Beschluss/Versammlung,
-Versionierung, Sichtbarkeit je Rolle und spaetere Ablage in S3-kompatiblem
-Storage.
+Finance becomes explainable. A number is no longer a static card; it becomes a
+path from booking to owner impact.

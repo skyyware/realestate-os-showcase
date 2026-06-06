@@ -1,49 +1,54 @@
 # AGENTS.md
 
-Diese Datei ist die Arbeitsanweisung fuer Coding-Agenten in RealEstate OS.
+This file is the binding working instruction for coding agents in RealEstate OS.
 
-## Ziel
+## Mission
 
-Baue die Anwendung wie eine intern uebernehmbare Product-Engineering-Codebasis:
-Java 21+, Spring Boot, Angular, PostgreSQL/Aurora, Keycloak/OIDC und AWS
-Managed Services, modular und ohne unnoetige Abstraktion.
+Build RealEstate OS as an internally maintainable product-engineering codebase:
+Java 21+, Spring Boot, Angular, PostgreSQL/Aurora-compatible schema,
+Keycloak/OIDC boundaries, AWS managed-service readiness, modular design, and no
+unnecessary abstraction.
 
-## Vor Jeder Aenderung
+## Before Every Change
 
-- Lies `README.md`, `docs/architecture.md` und betroffene Dateien.
-- Pruefe `git status --short --branch`.
-- Suche mit `rg` oder `rg --files`.
-- Schuetze fremde lokale Aenderungen.
-- Schreibe keine Secrets, SMTP-Daten, Tokens oder privaten Dokumente ins Repo.
+- Read `README.md`, `docs/architecture.md`, and the affected files.
+- Check `git status --short --branch`.
+- Search with `rg` or `rg --files`.
+- Protect local changes made by someone else.
+- Never write secrets, SMTP credentials, tokens, private PDFs, or personal
+  documents into the repository.
 
-## Architekturregeln
+## Architecture Rules
 
-- Domainmodule haengen nicht von `workspace`, `security`, `mail` oder Delivery
-  Details ab.
-- Schreibende Workspace-Commands muessen rollenbasiert geschuetzt sein.
-- Persistente Fachobjekte brauchen Flyway-Migration, Repository, Service-Command,
-  Activity-Eintrag und Audit-Log.
-- Frontend-Formulare muessen echte API-Commands ausloesen; kein lokales
-  Browser-only-Feature fuer produktrelevante Daten.
-- Neue WEG-Funktionalitaet muss in den QA-Smoke aufgenommen werden.
+- Domain modules must not depend on `workspace`, `security`, `mail`, browser
+  code, PDF rendering, CI, network, or filesystem delivery details.
+- Write-side workspace commands must enforce role-based access.
+- Persistent domain objects need a Flyway migration, repository, service
+  command, activity entry, audit log, and focused tests.
+- Frontend forms must call real API commands for product data. Do not keep
+  product-relevant state only in the browser.
+- New WEG functionality must be represented in the local QA smoke flow.
+- Documentation must be in English, concise, source-based, and useful to both
+  humans and agents.
 
-## Standardchecks
+## Standard Checks
 
 ```bash
 npm run ci
 npm run qa:local
 ```
 
-Bei Deployment:
+For deployment:
 
 ```bash
 curl -fsS https://realestate.stage.dev/actuator/health
 ```
 
-## Nicht Tun
+## Do Not
 
-- Keine Demo-Seeds in produktive Workspaces.
-- Keine Secrets im Git.
-- Keine Tests loeschen, um Gruen zu bekommen.
-- Keine Framework-lastige Architektur, wenn ein modularer Monolith reicht.
-- Keine finale Erfolgsmeldung ohne echte Verifikation.
+- Do not add demo seeds to productive workspaces.
+- Do not commit secrets.
+- Do not remove tests just to make the build green.
+- Do not introduce framework-heavy architecture when a modular monolith is
+  enough.
+- Do not claim success without actual verification.

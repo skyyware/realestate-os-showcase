@@ -1,69 +1,67 @@
-# WEG Problem- und Loesungslandkarte
+# WEG Customer Problem Map
 
-Stand: 4. Juni 2026
+Last updated: 2026-06-06
 
-Diese Landkarte uebersetzt die Marktrecherche in konkrete Jobs, Schmerzen,
-Produktantworten und Prioritaeten. Sie ist die Referenz fuer Backlog,
-Designentscheidungen und Akzeptanztests.
+This map turns market research into product jobs, pain points, responses, and
+acceptance criteria. It is the reference for backlog decisions, design reviews,
+and QA coverage.
 
-## Zielkunden
+## Target Roles
 
-| Rolle | Job To Be Done | Erfolgskriterium |
+| Role | Job to be done | Success looks like |
 | --- | --- | --- |
-| Interner Selbstverwalter | Die WEG rechtssicher und zeitsparend fuehren. | Alle Pflichtprozesse laufen mit Checklisten, Vorlagen, Fristen und Audit. |
-| Verwaltungsbeirat | Verwaltung kontrollieren und Eigentuemer informieren. | Belege, Konten, Beschluesse, Aufgaben und Risiken sind schnell pruefbar. |
-| Einzelner Eigentuemer | Verstehen, was passiert und was es kostet. | Persoenlicher Finanzanteil, Dokumente, Stimmen und offene Entscheidungen sind klar. |
-| Vermietender Eigentuemer | Abrechnung und Nachweise fuer Mieter und Steuer nutzen. | Einzelabrechnung, Belege und relevante Auswertungen sind exportierbar. |
-| Neuer Eigentuemer | Schnell in die bestehende WEG hineinfinden. | Einheit, Beschluesse, Hausgeld, Ruecklage, Dokumente und aktuelle Themen sind sichtbar. |
-| Externer Experte | Fachlich helfen, ohne die WEG-Daten neu zu sortieren. | Geteilte Vorgangsakten, Dokumente und Status reduzieren Rueckfragen. |
+| Self-managing owner | Run the WEG legally, transparently, and with less manual work. | Required workflows have checklists, templates, deadlines, permissions, and audit. |
+| Advisory board | Review management work and inform owners. | Money, receipts, decisions, tasks, and risks are easy to inspect. |
+| Individual owner | Understand what is happening and what it costs. | Personal share, documents, votes, and open decisions are clear. |
+| Landlord owner | Use statements and evidence for tenants and taxes. | Owner statements, receipts, and exports are available. |
+| New owner | Understand an existing WEG quickly. | Unit, house money, reserves, decisions, documents, and current issues are visible. |
+| External expert | Help on a case without reconstructing context. | Shared case files, documents, decisions, and status reduce back-and-forth. |
 
-## Problemcluster
+## Problem Clusters
 
-| Prioritaet | Problem | Kundenschmerz | Produktantwort |
+| Priority | Problem | Customer pain | Product response |
 | --- | --- | --- | --- |
-| P0 | WEG-Stammdaten und Rollen sind unklar | Niemand weiss genau, wer was darf und wer wofuer zustaendig ist. | Mandantenfaehige WEG-Struktur mit Einheiten, Miteigentumsanteilen, Rollen, Einladungen und Berechtigungen. |
-| P0 | Finanzen sind nicht erklaerbar | Hausgeld, Ruecklage, Nachzahlung und Belege wirken wie eine Blackbox. | Doppelt nachvollziehbarer Finanzraum: Bankumsatz -> Buchung -> Kostenart -> Beleg -> Verteilerschluessel -> Einheit. |
-| P0 | Wirtschaftsplan und Jahresabrechnung sind Jahresstress | Excel, Fristen, Fehlerangst und Diskussionen in der Versammlung. | Gefuehrter Jahreszyklus mit Ist-Basis, Planvorschlaegen, Plausibilitaet, Hausgeldwirkung und Beschlussvorlage. |
-| P0 | Beschluesse werden nicht sauber gefuehrt | Anfechtungsrisiko, fehlende Historie, unklare Umsetzung. | Versammlungs- und Beschlussmodul mit Einladung, TOPs, Abstimmung, Protokoll, Beschlusssammlung und Aufgabenableitung. |
-| P0 | Dokumente sind verteilt | Belege, Protokolle, Versicherungen und Vertraege muessen gesucht werden. | Dokumentenakte mit Upload, Typisierung, Version, Volltextsuche, Objektbezug und Verknuepfung zu Finanzen/Beschluessen/Aufgaben. |
-| P0 | Kommunikation bleibt folgenlos | Mails und Chats erzeugen keine Verantwortung. | Vorgangsbasierte Kommunikation mit Status, SLA, Verantwortlichen, internen Notizen und Eigentuemeransicht. |
-| P1 | Instandhaltung ist reaktiv | Schaeden, Angebote und Sanierungskosten laufen auseinander. | Instandhaltungsplanung mit Objektzustand, Massnahmen, Angeboten, Beschlussbedarf, Finanzierung und Fortschritt. |
-| P1 | Eigentuemer sind unterschiedlich digital | Manche lesen alles mobil, andere brauchen einfache E-Mail und PDF. | Barrierearme Oberflaeche, klare Sprache, E-Mail-Bruecke, PDF-Exports und mobile First-Tasks. |
-| P1 | Externe Hilfe ist schwer einzubinden | Rechts-, Bau- oder Steuerfragen brauchen Kontext. | Expertenzugang auf Vorgangsebene, Exportpakete und Beratungsnotizen. |
-| P2 | KI ohne Vertrauen hilft nicht | Nutzer wollen keine Blackbox bei Recht und Geld. | Assistenz nur mit Quellen, Erklaerung, Unsicherheit und manueller Freigabe. |
+| P0 | Master data and roles are unclear | Nobody knows who owns what, who may act, or who is responsible. | Tenant-ready WEG structure with properties, units, MEA, roles, invitations, and permissions. |
+| P0 | Money is not explainable | House money, reserves, arrears, and receipts feel like a black box. | Finance chain from booking to receipt to category to distribution key to owner share. |
+| P0 | Annual budget and statement create yearly stress | Excel, deadlines, error fear, and meeting conflict. | Guided annual cycle with actuals, plan suggestions, plausibility, owner impact, and decision templates. |
+| P0 | Decisions are not managed cleanly | Dispute risk, missing history, unclear implementation. | Meeting and decision workflow with agenda, vote, minutes, decision register, tasks, and evidence. |
+| P0 | Documents are scattered | Receipts, contracts, minutes, insurance, and declarations must be hunted down. | Document evidence chain with upload, type, version, visibility, search, and object links. |
+| P0 | Communication has no consequence | Emails and chats do not create responsibility. | Case-based communication with status, SLA, owners, internal notes, and owner-facing updates. |
+| P1 | Maintenance is reactive | Damage, offers, cost, and funding decisions drift apart. | Maintenance planning with measures, offers, decisions, funding, and progress. |
+| P1 | Owners have different digital comfort levels | Some work mobile-first; others need simple email and PDFs. | Accessible UI, clear language, email bridge, PDF exports, and mobile task completion. |
+| P1 | External help is hard to involve | Legal, construction, and tax questions need context. | Expert access per case, export packages, and advisory notes. |
+| P2 | AI without trust is risky | Users do not want a black box for law or money. | Assistance only with sources, uncertainty, explanation, and human approval. |
 
-## Produktthesen
+## Product Thesis
 
-1. Eine WEG-App gewinnt Vertrauen, wenn sie Geld und Entscheidungen besser
-   erklaert als eine klassische Verwaltung.
-2. Selbstverwaltung wird kaufbar, wenn das Produkt Verantwortung sichtbar macht
-   und Arbeit in kleine, sichere Schritte zerlegt.
-3. Der groesste Nutzen entsteht nicht durch isolierte Module, sondern durch
-   Verknuepfung: Beschluss erzeugt Aufgabe, Aufgabe erzeugt Auftrag, Auftrag
-   erzeugt Rechnung, Rechnung erklaert Hausgeld.
-4. Consumer Design ist im WEG-Kontext kein Marketinglack. Es ist notwendig,
-   weil viele Nutzer keine Verwaltungsprofis sind.
+1. A WEG app earns trust when it explains money and decisions better than the
+   current manual process.
+2. Self-management becomes usable when responsibility is visible and work is
+   broken into small safe steps.
+3. The highest value comes from connected workflows: decision creates task,
+   task creates order, order creates invoice, invoice explains house money.
+4. Consumer-grade design is not cosmetic in this domain. Many users are not
+   administration professionals.
 
-## Akzeptanzregeln fuer Neue Features
+## Acceptance Rules For New Features
 
-- Jede schreibende Aktion hat Rolle, Audit-Eintrag und sichtbare Aktivitaet.
-- Jede Finanzzahl ist bis zur Quelle nachvollziehbar.
-- Jede gesetzlich relevante Entscheidung erzeugt ein exportierbares Artefakt.
-- Jeder Workflow hat leeren Zustand, Fehlerzustand, Erfolg, Mobilansicht und
-  mindestens einen automatisierten Test.
-- Kein Produkttext darf juristische Sicherheit suggerieren, wenn nur eine
-  technische Hilfestellung vorliegt.
-- Jede neue UI muss vor Implementierung als Figma-Artefakt oder FigJam-Flow
-  dokumentiert und nach Implementierung mit Screenshots abgeglichen werden.
+- Every write action has role enforcement, activity, and audit.
+- Every finance number can be traced to its source.
+- Every legally relevant decision can produce an exportable artifact.
+- Every workflow has empty state, validation, error state, success state,
+  mobile view, and automated coverage.
+- Product copy must not imply legal certainty where the software only provides
+  workflow assistance.
+- Every meaningful UI decision should be captured in Figma/FigJam and checked
+  against implementation screenshots.
 
-## Metriken
+## Product Metrics
 
-| Metrik | Warum sie zaehlt |
+| Metric | Why it matters |
 | --- | --- |
-| Time to first WEG | Wie schnell ein neuer Nutzer seine echte Gemeinschaft startklar bekommt. |
-| Anteil verknuepfter Buchungen | Misst, ob Finanztransparenz wirklich entsteht. |
-| Beschluss-Umsetzungsquote | Misst, ob Entscheidungen in Arbeit uebergehen. |
-| Durchschnittliche Antwortzeit je Vorgang | Misst Servicequalitaet, nicht Chat-Aktivitaet. |
-| Anzahl offener Pflichtschritte | Zeigt, ob die WEG rechtlich-operativ auf Kurs ist. |
-| Mobile Task Completion | Zeigt, ob Eigentuemer ohne Desktop produktiv teilnehmen koennen. |
-
+| Time to first WEG | Shows how quickly a new user can start real work. |
+| Linked booking ratio | Shows whether finance transparency is actually created. |
+| Decision implementation rate | Shows whether decisions become action. |
+| Average response time per case | Measures service reliability instead of chat volume. |
+| Open required steps | Shows whether a WEG is operationally on track. |
+| Mobile task completion | Shows whether owners can participate without a desktop. |

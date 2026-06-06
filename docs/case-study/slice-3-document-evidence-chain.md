@@ -1,83 +1,80 @@
-# Slice 3: Dokumente und Belegkette
+# Slice 3: Document Evidence Chain
 
-Stand: 5. Juni 2026
+Last updated: 2026-06-06
 
-## Ziel
+## Purpose
 
-WEG-Verwaltung scheitert im Alltag oft nicht an fehlenden Dokumenten, sondern
-an fehlendem Kontext: Welche Rechnung gehoert zu welcher Buchung? Welches
-Protokoll belegt welchen Beschluss? Welche Unterlage duerfen Eigentuemer,
-Beirat oder Verwaltung sehen? Slice 3 macht Dokumente deshalb zu verknuepften
-Nachweisen statt zu einer losen Dateiliste.
+WEG management often fails because documents lack context. Which invoice belongs
+to which booking? Which minutes support which decision? Which document may an
+owner, board member, or manager see? This slice turns documents into linked
+evidence instead of loose files.
 
 ## Figma
 
-- Case-Study-Board: https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8
-- Artefakt: `RealEstate OS Slice 3 Documents And Evidence Chain`
+- Case-study board: https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8
+- Artifact: `RealEstate OS Slice 3 Documents And Evidence Chain`
 
-Der Flow dokumentiert Import, Klassifikation, Zuordnung, Pruefung und Nutzung
-von Dokumenten in Finanz-, Beschluss- und Versammlungskontexten.
+The flow covers upload, classification, object linking, review, and reuse in
+finance, decision, and meeting contexts.
 
-## Umsetzung
+## Implementation
 
 Backend:
-- Flyway V7 erweitert `property_document` um Status, Sichtbarkeit, Quelle,
-  Beschreibung, Linktyp und Zielobjekt-ID.
-- Flyway V11 erweitert `property_document` um Storage-Key, Content-Type,
-  Dateigroesse, SHA-256-Checksumme und Upload-Zeitpunkt.
-- Neue Typen: `DocumentStatus`, `DocumentVisibility`, `DocumentLinkType`.
-- Dokumente koennen mit Finanzereignissen, Beschluessen oder Versammlungen
-  derselben WEG verknuepft werden.
-- `WorkspaceService` validiert jede Zuordnung serverseitig gegen die
-  ausgewaehlte WEG.
-- Allgemeine Dokumente duerfen kein Zielobjekt setzen; verknuepfte Dokumente
-  muessen ein gueltiges Zielobjekt haben.
-- `DocumentStorage` speichert echte Uploads ausserhalb der Domainmodule,
-  begrenzt Dateigroessen, normalisiert Dateinamen und berechnet SHA-256.
-- Downloads laufen ueber eine rollenbasierte Workspace-API mit
-  Content-Disposition und Content-Type.
+
+- Flyway V7 extends `property_document` with status, visibility, source,
+  description, link type, and target object ID.
+- Flyway V11 adds storage key, content type, file size, SHA-256 checksum, and
+  upload timestamp.
+- `DocumentStatus`, `DocumentVisibility`, and `DocumentLinkType` model document
+  state explicitly.
+- Documents can link to finance events, decisions, or meetings in the same WEG.
+- `WorkspaceService` validates every link server-side against the current WEG.
+- General documents may not set a target object; linked documents must set a
+  valid target.
+- `DocumentStorage` stores real uploads outside domain modules, limits file
+  size, normalizes names, and calculates SHA-256.
+- Downloads use a role-aware workspace API with content disposition and content
+  type.
 
 Frontend:
-- Dokumentformular fuehrt Dokumenttyp, Status, Sichtbarkeit, Quelle,
-  Zuordnung, Zielobjekt und Beschreibung.
-- Der Dateiname wird aus dem echten File-Picker uebernommen; Nutzer muessen ihn
-  nicht manuell eintippen.
-- Zielobjekte werden aus vorhandenen Finanzereignissen, Beschluessen oder
-  Versammlungen der aktuellen WEG angeboten.
-- Dokumentlisten zeigen Kontext direkt sichtbar: Datei, Datum, Freigabe,
-  Sichtbarkeit, Linktyp, Zielobjekt, Dateigroesse, Content-Type und Hash.
-- Jede gespeicherte Datei kann direkt aus der Dokumentliste heruntergeladen
-  werden.
-- Suche findet Dokumente jetzt auch ueber Status, Sichtbarkeit, Quelle und
-  Beschreibung.
 
-## Akzeptanz
+- Document form captures type, status, visibility, source, target type, target
+  object, and description.
+- The file picker uses the real selected filename.
+- Target objects are offered from current WEG finance events, decisions, and
+  meetings.
+- Document lists show file, date, approval, visibility, link type, target,
+  size, content type, and hash.
+- Saved files can be downloaded from the document list.
+- Search includes status, visibility, source, and description.
 
-- Ein Finanzbeleg kann direkt an ein Finanzereignis gehaengt werden.
-- Ein Protokoll kann direkt an einen Beschluss gehaengt werden.
-- Dokumente koennen nicht versehentlich auf Objekte einer anderen WEG zeigen.
-- Sichtbarkeit und Status sind Teil der Produktdaten, nicht nur UI-Text.
-- Upload, Hash, Dateigroesse und Download sind Teil der Produktdaten.
-- Der leere Workspace bleibt leer; alle Unterlagen werden bewusst angelegt.
+## Acceptance
 
-## Tests
+- A finance receipt can be linked to a finance event.
+- Meeting minutes can be linked to a decision.
+- Documents cannot point to objects from another WEG.
+- Visibility, status, upload metadata, and hash are product data.
+- The empty workspace stays empty until users upload real documents.
 
-- `npm run backend:test`
-- `npm run frontend:build`
-- `npm run qa:local`
-- `npm run ci`
+## Verification
 
-Der lokale Browser-Smoke legt jetzt zwei verknuepfte Dokumente mit echten
-Fixture-Dateien an: eine Hausmeister-Rechnung zum Finanzereignis und ein
-JHV-Protokoll zum Beschluss. Beide Dateien werden nach dem Upload wieder
-heruntergeladen und inhaltlich mit den Fixtures verglichen.
+```bash
+npm run backend:test
+npm run frontend:build
+npm run qa:local
+npm run ci
+```
 
-Screenshot-Artefakte:
+The local QA smoke uploads two fixture files, links one to a finance event and
+one to a decision, downloads both, and compares the downloaded content with the
+fixtures.
+
+Screenshot outputs:
+
 - `output/qa/realestate-documents-desktop.png`
 - `output/qa/realestate-dashboard-mobile.png`
 
-## Naechster Slice
+## Product Value
 
-Slice 4 sollte Beschluss und Versammlung vertiefen: Einladung, Tagesordnung,
-Beschlussvorlagen, Abstimmung, Protokoll, Umsetzungsaufgabe und Dokumentlink
-als geschlossener Eigentuemerversammlungs-Workflow.
+Documents become operational evidence. Future exports, advice packages, annual
+reviews, and owner questions can reuse the same source chain.

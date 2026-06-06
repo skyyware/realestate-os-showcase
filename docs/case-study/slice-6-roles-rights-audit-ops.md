@@ -1,83 +1,76 @@
-# Slice 6: Rollen, Rechte, Audit und Betrieb
+# Slice 6: Roles, Rights, Audit, And Operations
 
-Stand: 4. Juni 2026
+Last updated: 2026-06-06
 
-## Ziel
+## Purpose
 
-Eine produktionsnahe WEG-App muss nicht nur Funktionen anbieten, sondern
-Vertrauen schaffen: Wer darf was tun? Welche Aktion wurde wann von wem
-ausgeloest? Ist das System betreibbar und review-faehig? Slice 6 macht Rollen,
-Rechte und Audit deshalb sichtbar und erweitert den technischen Nachweis pro
-WEG.
+A production-oriented WEG app must build trust: who may do what, which action
+was triggered by whom, and can the system be reviewed and operated? This slice
+makes permissions and audit visible while improving operational readiness.
 
 ## Figma
 
-- Case-Study-Board: https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8
-- Artefakt: `RealEstate OS Slice 6 Roles Rights Audit Operations`
+- Case-study board: https://www.figma.com/board/8L6TmSLizT6j06UaNHHrB8
+- Artifact: `RealEstate OS Slice 6 Roles Rights Audit Operations`
 
-Das Artefakt zeigt Rollenmodell, serverseitige Rechtepruefung, Audit-Trail,
-Produkt-Sichtbarkeit und Betriebsreadiness.
+The artifact covers role model, server-side permission checks, audit trail,
+product visibility, and operations readiness.
 
-## Umsetzung
+## Implementation
 
 Backend:
-- Passwort-Reset ist als eigener Auth-Flow umgesetzt und in der
-  Security-Allowlist explizit oeffentlich freigegeben.
-- Flyway V10 erweitert `audit_log` um `property_id` und einen
-  WEG-Zeitindex.
-- Audit-Logs speichern Akteur, Rolle, WEG, Aktion, Zieltyp, Ziel-ID,
-  Zusammenfassung und Zeitpunkt.
-- Workspace-Commands schreiben Audit nun mit WEG-Kontext.
-- Aufgaben koennen aktualisiert und geloescht werden; Statuswechsel,
-  Bearbeitung und Loeschung landen im Audit.
-- Community-Mitglieder koennen in Rolle und Status verwaltet oder deaktiviert
-  werden. Die primaere Administratorrolle bleibt gegen Deaktivierung
-  geschuetzt.
-- Das Dashboard liefert `access` mit aktueller Rolle, Admin-/Bearbeitungsrecht
-  und erlaubten Command-Gruppen.
-- Das Dashboard liefert die letzten technischen Audit-Eintraege der
-  ausgewählten WEG.
-- Tests pruefen Rollen-/Rechte-Readmodel und Audit-Eintraege im Workspace-Flow.
+
+- Password reset is implemented as a dedicated auth flow and explicitly allowed
+  through security configuration.
+- Flyway V10 extends `audit_log` with `property_id` and a WEG/time index.
+- Audit entries store actor, role, WEG, action, target type, target ID, summary,
+  and timestamp.
+- Workspace commands write audit with WEG context.
+- Tasks can be updated and deleted; status changes, edits, and deletion write
+  audit.
+- Community members can be updated, deactivated, and assigned roles. The primary
+  admin is protected from deactivation.
+- Workspace response exposes `access` with current role, edit/admin rights, and
+  allowed command groups.
+- Workspace response exposes recent technical audit entries.
+- Tests cover access read model and audit entries in the workspace flow.
 
 Frontend:
-- Login-first fuer bekannte Nutzer, Passwort-vergessen-Flow und kompaktere
-  Auth-Hero-Ansicht.
-- Einstellungen zeigen Rolle, Bearbeitungsniveau und erlaubte Command-Gruppen.
-- Einstellungen verwalten Nutzerrollen, Zugriffsstatus und
-  Workspace-Benachrichtigungen pro Nutzer.
-- Aufgaben koennen direkt aus der Liste bearbeitet, geloescht und per Status
-  verschoben werden.
-- Die Aktivitaetsansicht zeigt zusaetzlich einen technischen Audit-Nachweis.
-- Lokale QA prueft, dass Audit und Rechte im Produkt sichtbar sind.
-- `/set-password` ist als Route registriert, damit direkte Aktivierungslinks
-  keine Router-Fehler erzeugen.
 
-## Akzeptanz
+- Known users land on login first; password reset is available from the login
+  card.
+- Settings show current role, edit level, and allowed command groups.
+- Settings manage user roles, access status, and workspace notifications.
+- Tasks can be edited, deleted, and moved by status from the list.
+- Activity view also shows technical audit evidence.
+- `/set-password` is a registered route for direct setup links.
 
-- Jede schreibende Workspace-Aktion landet im Audit mit WEG-Kontext.
-- Nutzer sehen ihre aktuelle Rolle und ihre erlaubten Arbeitsbereiche.
-- Admins koennen Rollen und Zugriffe intuitiv verwalten.
-- Aufgaben sind ohne Umwege bearbeitbar, verschiebbar und loeschbar.
-- Wiederkehrende Nutzer sehen zuerst den Login und koennen ihr Passwort
-  eigenstaendig zuruecksetzen.
-- Audit-Eintraege sind im Produkt sichtbar und filterbar ueber die globale
-  Suche.
-- Direkte Passwort-Setup-Links erzeugen keine Browser-Console-Fehler.
-- CI, lokale Browser-QA und Stage-Smoke sind Teil des Release-Ablaufs.
+## Acceptance
 
-## Tests
+- Every write-side workspace action creates audit with WEG context.
+- Users can see current role and allowed work areas.
+- Admins can manage roles and access safely.
+- Tasks can be edited, moved, completed, and deleted without workarounds.
+- Returning users can reset passwords.
+- Audit entries are visible in the product and searchable.
+- Direct setup links do not create router errors.
+- CI, local browser QA, and stage smoke are part of release practice.
 
-- `npm run backend:test`
-- `npm run frontend:build`
-- `npm run qa:local`
-- `npm run ci`
+## Verification
 
-Screenshot-Artefakte:
+```bash
+npm run backend:test
+npm run frontend:build
+npm run qa:local
+npm run ci
+```
+
+Screenshot outputs:
+
 - `output/qa/realestate-audit-desktop.png`
 - `output/qa/realestate-dashboard-mobile.png`
 
-## Naechster Schritt
+## Product Value
 
-Die Case Study kann nun ins Bewerbungsdeck uebernommen werden: Marktproblem,
-Produktthese, Figma-Artefakte, Architektur, Live-App, Code und getesteter
-Release-Prozess.
+The product becomes reviewable. It can explain who acted, under which role, in
+which WEG context, and what changed.
