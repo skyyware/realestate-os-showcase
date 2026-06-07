@@ -218,28 +218,9 @@ button:disabled {
   background: #f5f8fb;
 }
 
-.product-visual {
-  grid-column: 1 / -1;
-  margin: 0;
-  overflow: hidden;
-  border: 1px solid rgb(190 211 225 / 80%);
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: var(--shadow-md);
-}
-
-.product-visual img {
-  display: block;
-  width: 100%;
-  height: clamp(360px, 38vh, 460px);
-  object-fit: cover;
-  object-position: top;
-}
-
 @media (max-width: 1180px) {
   .auth-panel,
-  .auth-card,
-  .product-visual {
+  .auth-card {
     grid-column: 1;
     grid-row: auto;
   }

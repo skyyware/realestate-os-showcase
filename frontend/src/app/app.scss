@@ -33,7 +33,9 @@
   gap: clamp(18px, 2.2vw, 28px);
   align-content: center;
   align-items: stretch;
+  width: min(100%, 1840px);
   min-height: 100vh;
+  margin: 0 auto;
   padding: clamp(30px, 3.2vw, 48px);
   background:
     linear-gradient(120deg, rgb(255 255 255 / 98%) 0%, rgb(246 251 249 / 96%) 56%, rgb(236 247 242 / 94%) 100%),
