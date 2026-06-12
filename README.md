@@ -99,6 +99,7 @@ Secrets are not stored in Git.
 - [WEG market research](docs/research/weg-market-2026.md)
 - [Customer problem map](docs/product/weg-customer-problem-map.md)
 - [Product brief](docs/product/weg-product-brief.md)
+- [Opportunity map](docs/product/opportunity-map-2026-06-12.md)
 - [Design and case-study workflow](docs/design/figma-case-study-workflow.md)
 - [Slice 1: WEG onboarding and roles](docs/case-study/slice-1-weg-onboarding.md)
 - [Slice 2: finance foundation](docs/case-study/slice-2-finance-foundation.md)

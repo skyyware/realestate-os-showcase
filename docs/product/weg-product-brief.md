@@ -1,6 +1,6 @@
 # Product Brief: RealEstate OS For WEG Management
 
-Last updated: 2026-06-06
+Last updated: 2026-06-12
 
 ## Product Mission
 
@@ -148,15 +148,31 @@ The product should feel calm and trustworthy:
 
 ## Engineering Slice Order
 
-1. Deepen WEG onboarding with units, roles, and empty product state.
-2. Expand finance into evidence, categories, distribution keys, house money, and
-   owner balances.
-3. Build meeting and decision workflow end to end.
-4. Expand documents into real file storage and object linking.
-5. Turn communication into case and task workflow.
-6. Deliver annual budget, annual statement, and asset report as a guided yearly
-   cycle.
-7. Add maintenance, offers, contracts, and renovation initiatives.
+Completed foundation:
+
+- WEG onboarding with units, roles, and empty product state.
+- Finance foundation with evidence, categories, distribution keys, house money,
+  open receivables, and owner balances.
+- Meeting and decision workflow.
+- Document upload, download, storage metadata, and object linking.
+- Communication, follow-up tasks, roles, permissions, activity, and audit.
+
+Next development order:
+
+1. Deliver the annual operating cycle MVP: budget, actuals, evidence checks,
+   owner impact, annual statement preparation, asset-report readiness, and
+   decision package.
+2. Add owner financial view and owner statement preview.
+3. Turn decisions into implementation cases with offers, tasks, documents,
+   cost impact, owner updates, and closure evidence.
+4. Add bank transaction import and invoice matching.
+5. Upgrade onboarding into readiness scoring and guided risk warnings.
+6. Build expert handoff packages with scoped access and evidence bundles.
+7. Add source-linked assistance for invoice classification, summaries, and
+   message drafts.
+
+The detailed opportunity assessment is documented in
+[`opportunity-map-2026-06-12.md`](opportunity-map-2026-06-12.md).
 
 ## Definition Of Ready
 

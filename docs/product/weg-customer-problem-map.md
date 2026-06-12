@@ -1,6 +1,6 @@
 # WEG Customer Problem Map
 
-Last updated: 2026-06-06
+Last updated: 2026-06-12
 
 This map turns market research into product jobs, pain points, responses, and
 acceptance criteria. It is the reference for backlog decisions, design reviews,
@@ -60,6 +60,7 @@ and QA coverage.
 | Metric | Why it matters |
 | --- | --- |
 | Time to first WEG | Shows how quickly a new user can start real work. |
+| Annual cycle completion | Shows whether budget, actuals, evidence, owner impact, and decision package are ready. |
 | Linked booking ratio | Shows whether finance transparency is actually created. |
 | Decision implementation rate | Shows whether decisions become action. |
 | Average response time per case | Measures service reliability instead of chat volume. |
